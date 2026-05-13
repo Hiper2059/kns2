@@ -262,10 +262,16 @@ function App() {
     const endpoint = authMode === 'login' ? '/api/login' : '/api/register'
     setIsAuthLoading(true)
     try {
-      const res = await api.post(endpoint, {
+      const payload = {
         username: authData.username.trim(),
         password: authData.password.trim()
-      })
+      }
+
+      if (authMode === 'login' && authGate?.role) {
+        payload.loginAs = authGate.role
+      }
+
+      const res = await api.post(endpoint, payload)
 
       alert(res.data.message)
       if (authMode === 'login') {

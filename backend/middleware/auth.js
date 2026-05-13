@@ -17,6 +17,17 @@ const getUserFromRequest = async req => {
     return { error: { status: 401, message: 'Access token không hợp lệ hoặc đã hết hạn.' } };
   }
 
+  if (payload.role === 'admin' && payload.sub === 'admin') {
+    return {
+      user: {
+        _id: 'admin',
+        username: payload.username || config.adminUsername,
+        role: 'admin',
+        status: 'active'
+      }
+    };
+  }
+
   const user = await User.findById(payload.sub).lean();
   if (!user) {
     return { error: { status: 401, message: 'Người dùng không tồn tại.' } };

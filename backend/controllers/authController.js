@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const config = require('../config/env');
 const roles = require('../config/roles');
 const User = require('../models/User');
-const { createAuthTokens } = require('../utils/token');
+const { createAuthTokens, createAuthTokensForPayload } = require('../utils/token');
 const { comparePassword, hashPassword } = require('../utils/password');
 const { getEffectiveStatus, getEffectiveViolationCount } = require('../utils/userUtils');
 
@@ -35,9 +35,33 @@ const register = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, password, loginAs } = req.body;
     if (!username || !password) {
       return res.status(400).json({ message: 'Thiếu tên đăng nhập hoặc mật khẩu.' });
+    }
+
+    if (loginAs === 'admin') {
+      const adminUsername = config.adminUsername;
+      const adminPassword = config.adminPassword;
+
+      if (username.trim() !== adminUsername || password !== adminPassword) {
+        return res.status(401).json({ message: 'Sai tên hoặc mật khẩu rồi, kiểm tra lại nhé!' });
+      }
+
+      const tokens = createAuthTokensForPayload({
+        sub: 'admin',
+        username: adminUsername,
+        role: 'admin'
+      });
+
+      return res.json({
+        message: 'Chào mừng cậu trở lại!',
+        username: adminUsername,
+        role: 'admin',
+        status: 'active',
+        violationCount: 0,
+        ...tokens
+      });
     }
 
     const normalizedUsername = username.trim();
@@ -45,6 +69,18 @@ const login = async (req, res) => {
 
     if (!user) {
       return res.status(401).json({ message: 'Sai tên hoặc mật khẩu rồi, kiểm tra lại nhé!' });
+    }
+
+    if (loginAs === 'teacher' && user.role !== roles.TEACHER) {
+      return res.status(403).json({ message: 'Tai khoan khong thuoc vai tro giang vien.' });
+    }
+
+    if (loginAs === 'student' && user.role !== roles.STUDENT) {
+      return res.status(403).json({ message: 'Tai khoan khong thuoc vai tro hoc sinh.' });
+    }
+
+    if (!loginAs && user.role !== roles.STUDENT) {
+      return res.status(403).json({ message: 'Vui long dang nhap dung duong dan theo vai tro.' });
     }
 
     let passwordValid = false;
@@ -102,6 +138,15 @@ const refresh = async (req, res) => {
       payload = jwt.verify(refreshToken, config.jwt.refreshSecret);
     } catch {
       return res.status(401).json({ message: 'Refresh token không hợp lệ hoặc đã hết hạn.' });
+    }
+
+    if (payload.sub === 'admin') {
+      const tokens = createAuthTokensForPayload({
+        sub: 'admin',
+        username: config.adminUsername,
+        role: 'admin'
+      });
+      return res.json(tokens);
     }
 
     const user = await User.findById(payload.sub);
