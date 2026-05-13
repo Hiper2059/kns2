@@ -34,6 +34,29 @@ const normalizeClientRole = role => {
   return role === 'user' ? 'student' : role
 }
 
+const getAuthGateFromPath = pathname => {
+  if (pathname === '/admin') {
+    return { role: 'admin', label: 'Admin' }
+  }
+  if (pathname === '/teacher') {
+    return { role: 'teacher', label: 'Giang vien' }
+  }
+  if (pathname === '/student') {
+    return { role: 'student', label: 'Hoc sinh' }
+  }
+  return null
+}
+
+const getRoleLabel = role => {
+  if (role === 'admin') {
+    return 'Admin'
+  }
+  if (role === 'teacher') {
+    return 'Giang vien'
+  }
+  return 'Hoc sinh'
+}
+
 function App() {
   const [isAuthOpen, setIsAuthOpen] = useState(false)
   const [authMode, setAuthMode] = useState('login')
@@ -45,8 +68,18 @@ function App() {
     normalizeClientRole(localStorage.getItem('zmate_current_role') || 'student')
   )
   const [authData, setAuthData] = useState({ username: '', password: '' })
-  const getInitialTab = () => (window.location.pathname === '/admin' ? 'manage' : 'home')
+  const getInitialTab = () => {
+    if (window.location.pathname === '/admin') {
+      return 'manage'
+    }
+    if (window.location.pathname === '/teacher') {
+      return 'teacher'
+    }
+    return 'home'
+  }
   const [activeTab, setActiveTab] = useState(getInitialTab)
+  const [authGate, setAuthGate] = useState(() => getAuthGateFromPath(window.location.pathname))
+  const [authIntentRole, setAuthIntentRole] = useState(null)
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -121,16 +154,28 @@ function App() {
     role: 'teacher'
   })
 
-  const handleTabChange = tab => {
-    setActiveTab(tab)
+  const updatePathForTab = tab => {
     if (tab === 'manage') {
       window.history.pushState({}, '', '/admin')
+      setAuthGate(getAuthGateFromPath('/admin'))
       return
     }
 
-    if (window.location.pathname === '/admin') {
-      window.history.pushState({}, '', '/')
+    if (tab === 'teacher') {
+      window.history.pushState({}, '', '/teacher')
+      setAuthGate(getAuthGateFromPath('/teacher'))
+      return
     }
+
+    if (['/admin', '/teacher', '/student'].includes(window.location.pathname)) {
+      window.history.pushState({}, '', '/')
+      setAuthGate(null)
+    }
+  }
+
+  const handleTabChange = tab => {
+    setActiveTab(tab)
+    updatePathForTab(tab)
   }
 
   useEffect(() => {
@@ -156,13 +201,33 @@ function App() {
 
   useEffect(() => {
     const handlePopState = () => {
-      const isAdminPath = window.location.pathname === '/admin'
-      setActiveTab(isAdminPath ? 'manage' : 'home')
+      const pathname = window.location.pathname
+      setAuthGate(getAuthGateFromPath(pathname))
+      if (pathname === '/admin') {
+        setActiveTab('manage')
+        return
+      }
+      if (pathname === '/teacher') {
+        setActiveTab('teacher')
+        return
+      }
+      setActiveTab('home')
     }
 
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
   }, [])
+
+  useEffect(() => {
+    if (!authGate) {
+      return
+    }
+
+    if (!currentUser || currentRole !== authGate.role) {
+      setAuthMode('login')
+      setIsAuthOpen(true)
+    }
+  }, [authGate, currentUser, currentRole])
 
   const filteredForumPosts = useMemo(() => {
     const keyword = searchTerm.trim().toLowerCase()
@@ -199,6 +264,11 @@ function App() {
       return
     }
 
+    if (authGate && authMode === 'register') {
+      alert('Trang nay chi ho tro dang nhap theo vai tro.')
+      return
+    }
+
     const endpoint = authMode === 'login' ? '/api/login' : '/api/register'
     setIsAuthLoading(true)
     try {
@@ -211,6 +281,46 @@ function App() {
       if (authMode === 'login') {
         setCurrentUser(res.data.username)
         const normalizedRole = normalizeClientRole(res.data.role || 'student')
+        if (authGate && normalizedRole !== authGate.role) {
+          clearTokens()
+          localStorage.removeItem('zmate_current_user')
+          localStorage.removeItem('zmate_current_role')
+          setCurrentUser(null)
+          setCurrentRole('student')
+          alert(`Tai khoan khong thuoc vai tro ${authGate.label}.`)
+          return
+        }
+
+        if (!authGate && window.location.pathname === '/' && normalizedRole === 'admin') {
+          clearTokens()
+          localStorage.removeItem('zmate_current_user')
+          localStorage.removeItem('zmate_current_role')
+          setCurrentUser(null)
+          setCurrentRole('student')
+          alert('Admin phai dang nhap tai duong dan /admin.')
+          return
+        }
+
+        if (!authGate && window.location.pathname === '/' && normalizedRole === 'teacher') {
+          clearTokens()
+          localStorage.removeItem('zmate_current_user')
+          localStorage.removeItem('zmate_current_role')
+          setCurrentUser(null)
+          setCurrentRole('student')
+          alert('Giang vien phai dang nhap tai duong dan /teacher.')
+          return
+        }
+
+        if (authIntentRole && normalizedRole !== authIntentRole) {
+          clearTokens()
+          localStorage.removeItem('zmate_current_user')
+          localStorage.removeItem('zmate_current_role')
+          setCurrentUser(null)
+          setCurrentRole('student')
+          alert(`Tai khoan khong thuoc vai tro ${getRoleLabel(authIntentRole)}.`)
+          return
+        }
+
         setCurrentRole(normalizedRole)
         setTokens({
           accessToken: res.data.accessToken,
@@ -219,6 +329,18 @@ function App() {
         })
         localStorage.setItem('zmate_current_user', res.data.username)
         localStorage.setItem('zmate_current_role', normalizedRole)
+        setAuthIntentRole(null)
+
+        if (authGate?.role === 'admin') {
+          setActiveTab('manage')
+          updatePathForTab('manage')
+        } else if (authGate?.role === 'teacher') {
+          setActiveTab('teacher')
+          updatePathForTab('teacher')
+        } else if (authGate?.role === 'student') {
+          setActiveTab('home')
+        }
+
         setIsAuthOpen(false)
         setAuthData({ username: '', password: '' })
       } else {
@@ -1310,8 +1432,21 @@ function App() {
   }
 
   const handleOpenAuth = mode => {
+    if (authGate) {
+      setAuthMode('login')
+      setIsAuthOpen(true)
+      return
+    }
+
+    setAuthIntentRole(null)
     setIsAuthOpen(true)
     setAuthMode(mode)
+  }
+
+  const openRoleLogin = role => {
+    setAuthIntentRole(role)
+    setAuthMode('login')
+    setIsAuthOpen(true)
   }
 
   const handleCommentDraftChange = (postId, value) => {
@@ -1341,13 +1476,84 @@ function App() {
         authMode={authMode}
         authData={authData}
         isAuthLoading={isAuthLoading}
-        onClose={() => setIsAuthOpen(false)}
+        title={
+          authGate
+            ? `Dang nhap ${authGate.label}`
+            : authIntentRole
+              ? `Dang nhap ${getRoleLabel(authIntentRole)}`
+              : undefined
+        }
+        disableRegister={Boolean(authGate)}
+        onClose={() => {
+          setIsAuthOpen(false)
+          setAuthIntentRole(null)
+        }}
         onAuth={handleAuth}
-        onSwitchMode={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
+        onSwitchMode={() => {
+          if (authGate) {
+            return
+          }
+          setAuthMode(authMode === 'login' ? 'register' : 'login')
+        }}
         onChange={setAuthData}
       />
 
       <main className="main-content">
+        {!currentUser && (
+          <div className="auth-landing">
+            <div className="auth-landing-card">
+              {authGate?.role === 'admin' && (
+                <>
+                  <h2>Dang nhap Admin</h2>
+                  <p>Chi tai khoan admin moi vao duoc khu vuc quan ly.</p>
+                  <button className="btn-post" onClick={() => openRoleLogin('admin')}>
+                    Dang nhap Admin
+                  </button>
+                </>
+              )}
+              {authGate?.role === 'teacher' && (
+                <>
+                  <h2>Dang nhap Giang vien</h2>
+                  <p>Dang nhap tai khoan giang vien de quan ly lop hoc.</p>
+                  <button className="btn-post" onClick={() => openRoleLogin('teacher')}>
+                    Dang nhap Giang vien
+                  </button>
+                </>
+              )}
+              {authGate?.role === 'student' && (
+                <>
+                  <h2>Dang nhap Hoc sinh</h2>
+                  <p>Dang nhap tai khoan hoc sinh de vao lop hoc.</p>
+                  <button className="btn-post" onClick={() => openRoleLogin('student')}>
+                    Dang nhap Hoc sinh
+                  </button>
+                </>
+              )}
+              {!authGate && (
+                <>
+                  <h2>Dang nhap de vao noi dung</h2>
+                  <p>Hoc sinh dang nhap tai day. Giang vien vao /teacher, admin vao /admin.</p>
+                  <div className="auth-landing-actions">
+                    <button className="btn-post" onClick={() => openRoleLogin('student')}>
+                      Dang nhap Hoc sinh
+                    </button>
+                  </div>
+                  <div className="auth-landing-links">
+                    <a className="auth-landing-link" href="/teacher">
+                      Dang nhap Giang vien
+                    </a>
+                    <a className="auth-landing-link" href="/admin">
+                      Dang nhap Admin
+                    </a>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {currentUser && (
+          <>
         {activeTab === 'home' && (
           <HomeView
             searchTerm={searchTerm}
@@ -1423,6 +1629,7 @@ function App() {
 
         {activeTab === 'teacher' && (currentRole === 'teacher' || currentRole === 'admin') && (
           <TeacherView
+            categories={categories}
             courses={teacherCourses}
             lessons={courseLessons}
             enrollments={teacherEnrollments}
@@ -1483,6 +1690,8 @@ function App() {
 
         {activeTab === 'manage' && currentRole !== 'admin' && (
           <div className="empty-state">Cậu cần đăng nhập bằng tài khoản admin để vào trang /admin.</div>
+        )}
+          </>
         )}
       </main>
 

@@ -5,6 +5,8 @@ const AuthModal = ({
   authMode,
   authData,
   isAuthLoading,
+  title,
+  disableRegister = false,
   onClose,
   onAuth,
   onSwitchMode,
@@ -20,7 +22,7 @@ const AuthModal = ({
         <button className="close-btn" onClick={onClose}>
           ×
         </button>
-        <h2>{authMode === 'login' ? 'Đăng nhập' : 'Đăng ký tài khoản'}</h2>
+        <h2>{title || (authMode === 'login' ? 'Đăng nhập' : 'Đăng ký tài khoản')}</h2>
         <input
           type="text"
           placeholder="Tên đăng nhập"
@@ -36,9 +38,11 @@ const AuthModal = ({
         <button className="btn-post" onClick={onAuth} disabled={isAuthLoading}>
           {isAuthLoading ? 'Đang xử lý...' : authMode === 'login' ? 'Vào ngay' : 'Tạo tài khoản'}
         </button>
-        <p onClick={onSwitchMode} className="auth-switch">
-          {authMode === 'login' ? 'Chưa có tài khoản? Đăng ký ngay' : 'Đã có tài khoản? Đăng nhập'}
-        </p>
+        {!disableRegister && (
+          <p onClick={onSwitchMode} className="auth-switch">
+            {authMode === 'login' ? 'Chưa có tài khoản? Đăng ký ngay' : 'Đã có tài khoản? Đăng nhập'}
+          </p>
+        )}
       </div>
     </div>
   )

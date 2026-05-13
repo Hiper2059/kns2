@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import './TeacherView.css'
 
 const TeacherView = ({
+  categories,
   courses,
   lessons,
   enrollments,
@@ -56,12 +57,14 @@ const TeacherView = ({
               value={newCourseData.title}
               onChange={e => onNewCourseDataChange({ ...newCourseData, title: e.target.value })}
             />
-            <input
-              type="text"
-              placeholder="Danh mục"
+            <select
               value={newCourseData.category}
               onChange={e => onNewCourseDataChange({ ...newCourseData, category: e.target.value })}
-            />
+            >
+              {categories.map(category => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
             <input
               type="file"
               accept="image/png,image/jpeg,image/webp"
