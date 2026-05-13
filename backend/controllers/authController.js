@@ -25,7 +25,7 @@ const register = async (req, res) => {
     }
 
     const passwordHash = await hashPassword(password);
-    await User.create({ username: normalizedUsername, passwordHash, role: roles.USER });
+    await User.create({ username: normalizedUsername, passwordHash, role: roles.STUDENT });
     res.json({ message: 'Đăng ký thành công mỹ mãn!' });
   } catch (error) {
     console.error('Loi dang ky:', error);

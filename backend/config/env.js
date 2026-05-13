@@ -7,6 +7,12 @@ const config = {
   adminUsername: process.env.ADMIN_USERNAME || 'admin',
   adminPassword: process.env.ADMIN_PASSWORD || 'admin123',
   geminiApiKey: process.env.GEMINI_API_KEY || '',
+  cloudinary: {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME || '',
+    apiKey: process.env.CLOUDINARY_API_KEY || '',
+    apiSecret: process.env.CLOUDINARY_API_SECRET || '',
+    folder: process.env.CLOUDINARY_FOLDER || 'kns'
+  },
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET || 'dev_access_secret',
     refreshSecret: process.env.JWT_REFRESH_SECRET || 'dev_refresh_secret',

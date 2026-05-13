@@ -1,5 +1,41 @@
 const User = require('../models/User');
 const { normalizeRole, allowedStatuses } = require('../utils/userUtils');
+const { hashPassword } = require('../utils/password');
+
+const createUser = async (req, res) => {
+  try {
+    const { username, password, role } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ message: 'Thiếu username hoặc mật khẩu.' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Mật khẩu cần từ 6 ký tự trở lên.' });
+    }
+
+    const normalizedUsername = username.trim();
+    const existed = await User.findOne({ username: normalizedUsername }).lean();
+    if (existed) {
+      return res.status(400).json({ message: 'Tài khoản đã tồn tại.' });
+    }
+
+    const passwordHash = await hashPassword(password);
+    const created = await User.create({
+      username: normalizedUsername,
+      passwordHash,
+      role: normalizeRole(role)
+    });
+
+    res.status(201).json({
+      message: 'Đã tạo tài khoản thành công.',
+      user: { username: created.username, role: created.role, status: created.status }
+    });
+  } catch (error) {
+    console.error('Loi tao user:', error);
+    res.status(500).json({ message: 'Không tạo được tài khoản.' });
+  }
+};
 
 const listUsers = async (req, res) => {
   try {
@@ -90,6 +126,7 @@ const deleteUser = async (req, res) => {
 };
 
 module.exports = {
+  createUser,
   listUsers,
   updateUserRole,
   updateUserStatus,

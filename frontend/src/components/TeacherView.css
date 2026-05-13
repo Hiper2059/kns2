@@ -1,0 +1,175 @@
+.teacher-view {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.teacher-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.teacher-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.form-grid textarea {
+  grid-column: span 2;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.teacher-course-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.teacher-course-detail {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  gap: 12px;
+  align-items: center;
+  background: #f9fafb;
+}
+
+.teacher-course-detail img {
+  width: 120px;
+  height: 120px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.teacher-course-placeholder {
+  width: 120px;
+  height: 120px;
+  border-radius: 12px;
+  background: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.teacher-course-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  color: #374151;
+  font-size: 13px;
+}
+
+.course-pill {
+  background: #f3f4f6;
+  border-radius: 999px;
+  padding: 8px 14px;
+  border: none;
+  cursor: pointer;
+}
+
+.course-pill.active {
+  background: #111827;
+  color: #fff;
+}
+
+.lesson-row {
+  display: grid;
+  grid-template-columns: 1fr 160px;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+  align-items: center;
+}
+
+.lesson-meta p {
+  margin: 6px 0 0;
+  color: #4b5563;
+  font-size: 13px;
+}
+
+.lesson-media {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+.lesson-media img {
+  width: 160px;
+  height: 90px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.lesson-media-placeholder {
+  width: 160px;
+  height: 90px;
+  border-radius: 10px;
+  background: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.enrollment-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.evaluation-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (max-width: 1000px) {
+  .teacher-view {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-grid textarea {
+    grid-column: span 1;
+  }
+
+  .teacher-course-detail {
+    grid-template-columns: 1fr;
+    text-align: left;
+  }
+
+  .lesson-row {
+    grid-template-columns: 1fr;
+  }
+
+  .lesson-media {
+    align-items: flex-start;
+  }
+}

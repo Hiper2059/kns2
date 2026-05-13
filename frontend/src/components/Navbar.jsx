@@ -31,6 +31,14 @@ const Navbar = ({
       <button className={activeTab === 'forum' ? 'active' : ''} onClick={onForumClick}>
         Diễn đàn
       </button>
+      <button className={activeTab === 'lms' ? 'active' : ''} onClick={() => onTabChange('lms')}>
+        Lớp học
+      </button>
+      {(currentRole === 'teacher' || currentRole === 'admin') && (
+        <button className={activeTab === 'teacher' ? 'active' : ''} onClick={() => onTabChange('teacher')}>
+          Giảng viên
+        </button>
+      )}
       {currentRole === 'admin' && (
         <button className={activeTab === 'manage' ? 'active' : ''} onClick={() => onTabChange('manage')}>
           Quản lý user

@@ -11,6 +11,9 @@ const ManageView = ({
   onFetchDeletedComments,
   deletedReasonFilter,
   onReasonChange,
+  newUserData,
+  onNewUserDataChange,
+  onCreateUser,
   newVideoData,
   onVideoDataChange,
   onAddVideo,
@@ -65,6 +68,36 @@ const ManageView = ({
       </div>
 
       <div className="management-card">
+        <h4>Tạo tài khoản mới</h4>
+        <div className="video-admin-form">
+          <input
+            type="text"
+            placeholder="Username"
+            value={newUserData.username}
+            onChange={e => onNewUserDataChange({ ...newUserData, username: e.target.value })}
+          />
+          <input
+            type="password"
+            placeholder="Mật khẩu"
+            value={newUserData.password}
+            onChange={e => onNewUserDataChange({ ...newUserData, password: e.target.value })}
+          />
+          <select
+            value={newUserData.role}
+            onChange={e => onNewUserDataChange({ ...newUserData, role: e.target.value })}
+          >
+            <option value="student">student</option>
+            <option value="teacher">teacher</option>
+            <option value="admin">admin</option>
+          </select>
+          <button className="btn-post" onClick={onCreateUser}>Tạo tài khoản</button>
+        </div>
+        <p className="helper-text">
+          Tạo tài khoản giáo viên xong, vào tab "Giảng viên" để thêm lớp học, bài học và video.
+        </p>
+      </div>
+
+      <div className="management-card">
         <h4>Admin thêm video YouTube theo danh mục</h4>
         <div className="video-admin-form">
           <select
@@ -102,7 +135,8 @@ const ManageView = ({
                   onChange={e => onRoleChange(user.username, e.target.value)}
                   disabled={user.username === currentUser}
                 >
-                  <option value="user">user</option>
+                  <option value="student">student</option>
+                  <option value="teacher">teacher</option>
                   <option value="admin">admin</option>
                 </select>
 

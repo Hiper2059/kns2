@@ -1,0 +1,64 @@
+@startuml
+left to right direction
+
+actor "Guest" as Guest
+actor "User" as User
+actor "Admin" as Admin
+actor "AI Moderator" as AI
+
+rectangle "KNS Main API" {
+  usecase "Register" as UC_Register
+  usecase "Login" as UC_Login
+  usecase "Refresh Token" as UC_Refresh
+
+  usecase "View Forum Posts" as UC_ViewPosts
+  usecase "View Forum Comments" as UC_ViewComments
+  usecase "Create Forum Post" as UC_CreatePost
+  usecase "Create Forum Comment" as UC_CreateComment
+  usecase "Delete Own Post" as UC_DeletePost
+  usecase "Delete Own Comment" as UC_DeleteComment
+
+  usecase "Report Content" as UC_Report
+  usecase "Chat with Z-Mate" as UC_Chat
+
+  usecase "View Videos" as UC_ViewVideos
+  usecase "Manage Videos" as UC_ManageVideos
+
+  usecase "Manage Users" as UC_ManageUsers
+  usecase "Review Reports" as UC_ReviewReports
+  usecase "Clear/Delete Reports" as UC_ClearReports
+  usecase "Restore Deleted Content" as UC_Restore
+  usecase "Permanently Delete Content" as UC_Purge
+}
+
+Guest --> UC_Register
+Guest --> UC_Login
+Guest --> UC_ViewPosts
+Guest --> UC_ViewComments
+Guest --> UC_ViewVideos
+Guest --> UC_Chat
+
+User --> UC_ViewPosts
+User --> UC_ViewComments
+User --> UC_CreatePost
+User --> UC_CreateComment
+User --> UC_DeletePost
+User --> UC_DeleteComment
+User --> UC_Report
+User --> UC_Chat
+User --> UC_ViewVideos
+
+Admin --> UC_ManageUsers
+Admin --> UC_ManageVideos
+Admin --> UC_ReviewReports
+Admin --> UC_ClearReports
+Admin --> UC_Restore
+Admin --> UC_Purge
+
+AI --> UC_ReviewReports
+
+UC_Report .> UC_ReviewReports : <<include>>
+UC_DeletePost .> UC_Purge : <<extend>>
+UC_DeleteComment .> UC_Purge : <<extend>>
+
+@enduml

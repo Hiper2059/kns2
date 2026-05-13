@@ -7,6 +7,8 @@ import Navbar from './components/Navbar'
 import ForumView from './components/ForumView'
 import HomeView from './components/HomeView'
 import ManageView from './components/ManageView'
+import LmsView from './components/LmsView'
+import TeacherView from './components/TeacherView'
 import {
   categories,
   defaultCategoryVideos,
@@ -25,6 +27,13 @@ const api = createApiClient(API_BASE_URL)
 
 const FORUM_PAGE_SIZE = 6
 
+const normalizeClientRole = role => {
+  if (!role) {
+    return 'student'
+  }
+  return role === 'user' ? 'student' : role
+}
+
 function App() {
   const [isAuthOpen, setIsAuthOpen] = useState(false)
   const [authMode, setAuthMode] = useState('login')
@@ -32,9 +41,12 @@ function App() {
     const storedUser = localStorage.getItem('zmate_current_user')
     return storedUser || null
   })
-  const [currentRole, setCurrentRole] = useState(() => localStorage.getItem('zmate_current_role') || 'user')
+  const [currentRole, setCurrentRole] = useState(() =>
+    normalizeClientRole(localStorage.getItem('zmate_current_role') || 'student')
+  )
   const [authData, setAuthData] = useState({ username: '', password: '' })
-  const [activeTab, setActiveTab] = useState('home')
+  const getInitialTab = () => (window.location.pathname === '/admin' ? 'manage' : 'home')
+  const [activeTab, setActiveTab] = useState(getInitialTab)
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -80,6 +92,46 @@ function App() {
   const [deletedComments, setDeletedComments] = useState([])
   const [isLoadingDeletedComments, setIsLoadingDeletedComments] = useState(false)
   const [deletedReasonFilter, setDeletedReasonFilter] = useState('all')
+  const [lmsCategory, setLmsCategory] = useState(null)
+  const [courses, setCourses] = useState([])
+  const [selectedCourse, setSelectedCourse] = useState(null)
+  const [courseLessons, setCourseLessons] = useState([])
+  const [myEnrollments, setMyEnrollments] = useState([])
+  const [teacherCourses, setTeacherCourses] = useState([])
+  const [teacherEnrollments, setTeacherEnrollments] = useState([])
+  const [selectedTeacherCourseId, setSelectedTeacherCourseId] = useState('')
+  const [newCourseData, setNewCourseData] = useState({
+    title: '',
+    category: categories[0],
+    description: '',
+    imageUrl: '',
+    imageFile: null
+  })
+  const [newLessonData, setNewLessonData] = useState({
+    title: '',
+    content: '',
+    videoUrl: '',
+    imageUrl: '',
+    order: 1,
+    imageFile: null
+  })
+  const [newUserData, setNewUserData] = useState({
+    username: '',
+    password: '',
+    role: 'teacher'
+  })
+
+  const handleTabChange = tab => {
+    setActiveTab(tab)
+    if (tab === 'manage') {
+      window.history.pushState({}, '', '/admin')
+      return
+    }
+
+    if (window.location.pathname === '/admin') {
+      window.history.pushState({}, '', '/')
+    }
+  }
 
   useEffect(() => {
     localStorage.setItem('zmate_points_by_user', JSON.stringify(pointsByUser))
@@ -101,6 +153,16 @@ function App() {
   useEffect(() => {
     setForumPage(1)
   }, [searchTerm])
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const isAdminPath = window.location.pathname === '/admin'
+      setActiveTab(isAdminPath ? 'manage' : 'home')
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
 
   const filteredForumPosts = useMemo(() => {
     const keyword = searchTerm.trim().toLowerCase()
@@ -148,14 +210,15 @@ function App() {
       alert(res.data.message)
       if (authMode === 'login') {
         setCurrentUser(res.data.username)
-        setCurrentRole(res.data.role || 'user')
+        const normalizedRole = normalizeClientRole(res.data.role || 'student')
+        setCurrentRole(normalizedRole)
         setTokens({
           accessToken: res.data.accessToken,
           refreshToken: res.data.refreshToken,
           signatureToken: res.data.signatureToken
         })
         localStorage.setItem('zmate_current_user', res.data.username)
-        localStorage.setItem('zmate_current_role', res.data.role || 'user')
+        localStorage.setItem('zmate_current_role', normalizedRole)
         setIsAuthOpen(false)
         setAuthData({ username: '', password: '' })
       } else {
@@ -258,9 +321,18 @@ function App() {
       normalizedInput.includes('co nhung ky nang nao') ||
       normalizedInput.includes('co gi de hoc')
     ) {
+      addSuggestion({ id: 'go-lms', label: 'Xem lớp học' })
       categories.forEach(category => {
         addSuggestion({ id: `open-category:${category}`, label: `Học ${category}` })
       })
+    }
+
+    if (
+      normalizedInput.includes('lop') ||
+      normalizedInput.includes('khoa hoc') ||
+      normalizedInput.includes('giang vien')
+    ) {
+      addSuggestion({ id: 'go-lms', label: 'Mở lớp học' })
     }
 
     Object.entries(skillKeywordMap).forEach(([category, keywords]) => {
@@ -283,19 +355,25 @@ function App() {
 
   const handleChatAction = actionId => {
     if (actionId === 'go-home') {
-      setActiveTab('home')
+      handleTabChange('home')
       return
     }
 
     if (actionId === 'go-overview') {
-      setActiveTab('home')
+      handleTabChange('home')
       setSelectedCategory(null)
       return
     }
 
     if (actionId === 'go-forum') {
-      setActiveTab('forum')
+      handleTabChange('forum')
       setSelectedCategory(null)
+      return
+    }
+
+    if (actionId === 'go-lms') {
+      handleTabChange('lms')
+      setLmsCategory(null)
       return
     }
 
@@ -314,8 +392,8 @@ function App() {
     if (actionId.startsWith('open-category:')) {
       const category = actionId.split(':')[1]
       if (category && categories.includes(category)) {
-        setActiveTab('home')
-        setSelectedCategory(category)
+        handleTabChange('lms')
+        setLmsCategory(category)
       }
     }
   }
@@ -683,6 +761,262 @@ function App() {
     }
   }
 
+  const handleCreateUser = async () => {
+    if (!currentUser || currentRole !== 'admin') {
+      return
+    }
+
+    if (!newUserData.username.trim() || !newUserData.password.trim()) {
+      alert('Cậu nhập đủ username và mật khẩu nhé.')
+      return
+    }
+
+    try {
+      const response = await api.post('/api/users', {
+        username: newUserData.username.trim(),
+        password: newUserData.password.trim(),
+        role: newUserData.role
+      })
+      alert(response.data.message)
+      setNewUserData({ username: '', password: '', role: newUserData.role })
+      fetchManagedUsers()
+    } catch (error) {
+      alert(error.response?.data?.message || 'Không tạo được tài khoản.')
+    }
+  }
+
+  const fetchCourses = useCallback(async () => {
+    try {
+      const response = await api.get('/api/courses')
+      setCourses(response.data.courses || [])
+    } catch {
+      setCourses([])
+    }
+  }, [])
+
+  const fetchCourseLessons = useCallback(async courseId => {
+    if (!courseId) {
+      setCourseLessons([])
+      return
+    }
+
+    try {
+      const response = await api.get(`/api/courses/${courseId}/lessons`)
+      setCourseLessons(response.data.lessons || [])
+    } catch (error) {
+      setCourseLessons([])
+      if (error?.response?.status === 401) {
+        alert('Cậu cần đăng nhập để xem bài học.')
+      } else if (error?.response?.status === 403) {
+        alert(error.response?.data?.message || 'Cần tham gia lớp trước khi xem bài học.')
+      }
+    }
+  }, [])
+
+  const fetchMyEnrollments = useCallback(async () => {
+    if (!currentUser || (currentRole !== 'student' && currentRole !== 'user')) {
+      setMyEnrollments([])
+      return
+    }
+
+    try {
+      const response = await api.get('/api/enrollments/me')
+      setMyEnrollments(response.data.enrollments || [])
+    } catch {
+      setMyEnrollments([])
+    }
+  }, [currentRole, currentUser])
+
+  const fetchTeacherCourses = useCallback(async () => {
+    if (!currentUser || (currentRole !== 'teacher' && currentRole !== 'admin')) {
+      setTeacherCourses([])
+      return
+    }
+
+    try {
+      const response = await api.get('/api/courses/mine')
+      setTeacherCourses(response.data.courses || [])
+    } catch {
+      setTeacherCourses([])
+    }
+  }, [currentRole, currentUser])
+
+  const fetchTeacherEnrollments = useCallback(
+    async courseId => {
+      if (!courseId) {
+        setTeacherEnrollments([])
+        return
+      }
+
+      try {
+        const response = await api.get(`/api/courses/${courseId}/enrollments`)
+        setTeacherEnrollments(response.data.enrollments || [])
+      } catch (error) {
+        setTeacherEnrollments([])
+        alert(error.response?.data?.message || 'Không tải được danh sách học viên.')
+      }
+    },
+    []
+  )
+
+  const handleSelectCourse = course => {
+    setSelectedCourse(course)
+    if (course?._id) {
+      fetchCourseLessons(course._id)
+    } else {
+      setCourseLessons([])
+    }
+  }
+
+  const handleSelectTeacherCourse = courseId => {
+    setSelectedTeacherCourseId(courseId)
+    if (courseId) {
+      fetchCourseLessons(courseId)
+    } else {
+      setCourseLessons([])
+    }
+  }
+
+  const validateImageFile = file => {
+    if (!file) {
+      return ''
+    }
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      return 'Chi ho tro anh JPG, PNG, WebP.'
+    }
+
+    const maxSize = 2 * 1024 * 1024
+    if (file.size > maxSize) {
+      return 'Anh vuot qua 2MB.'
+    }
+
+    return ''
+  }
+
+  const uploadImageFile = async file => {
+    const formData = new FormData()
+    formData.append('image', file)
+    const response = await api.post('/api/uploads/image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    return response.data?.url || ''
+  }
+
+  const handleCreateCourse = async () => {
+    if (!currentUser || (currentRole !== 'teacher' && currentRole !== 'admin')) {
+      alert('Chỉ giảng viên hoặc admin mới tạo được lớp học.')
+      return
+    }
+
+    if (!newCourseData.title.trim() || !newCourseData.category.trim()) {
+      alert('Cậu điền tên lớp và danh mục trước nhé.')
+      return
+    }
+
+    try {
+      let imageUrl = newCourseData.imageUrl.trim()
+      if (newCourseData.imageFile) {
+        const errorMessage = validateImageFile(newCourseData.imageFile)
+        if (errorMessage) {
+          alert(errorMessage)
+          return
+        }
+        imageUrl = await uploadImageFile(newCourseData.imageFile)
+      }
+
+      const response = await api.post('/api/courses', {
+        title: newCourseData.title.trim(),
+        category: newCourseData.category.trim(),
+        description: newCourseData.description.trim(),
+        imageUrl
+      })
+      alert(response.data.message || 'Đã tạo lớp học.')
+      setNewCourseData({ title: '', category: categories[0], description: '', imageUrl: '', imageFile: null })
+      fetchTeacherCourses()
+      fetchCourses()
+    } catch (error) {
+      alert(error.response?.data?.message || 'Không tạo được lớp học.')
+    }
+  }
+
+  const handleCreateLesson = async () => {
+    if (!selectedTeacherCourseId) {
+      alert('Cậu chọn lớp trước nhé.')
+      return
+    }
+
+    if (!newLessonData.title.trim()) {
+      alert('Cậu điền tiêu đề bài học trước nhé.')
+      return
+    }
+
+    try {
+      let imageUrl = newLessonData.imageUrl.trim()
+      if (newLessonData.imageFile) {
+        const errorMessage = validateImageFile(newLessonData.imageFile)
+        if (errorMessage) {
+          alert(errorMessage)
+          return
+        }
+        imageUrl = await uploadImageFile(newLessonData.imageFile)
+      }
+
+      const response = await api.post(`/api/courses/${selectedTeacherCourseId}/lessons`, {
+        title: newLessonData.title.trim(),
+        content: newLessonData.content.trim(),
+        videoUrl: newLessonData.videoUrl.trim(),
+        imageUrl,
+        order: newLessonData.order
+      })
+      alert(response.data.message || 'Đã thêm bài học.')
+      setNewLessonData({ title: '', content: '', videoUrl: '', imageUrl: '', order: 1, imageFile: null })
+      fetchCourseLessons(selectedTeacherCourseId)
+    } catch (error) {
+      alert(error.response?.data?.message || 'Không thêm được bài học.')
+    }
+  }
+
+  const handleEnroll = async courseId => {
+    if (!ensureAuthenticated('tham gia lớp học')) {
+      return
+    }
+
+    try {
+      const response = await api.post(`/api/courses/${courseId}/enroll`)
+      alert(response.data.message || 'Đã tham gia lớp học.')
+      fetchMyEnrollments()
+      fetchCourseLessons(courseId)
+    } catch (error) {
+      alert(error.response?.data?.message || 'Không tham gia được lớp học.')
+    }
+  }
+
+  const handleCompleteLesson = async lessonId => {
+    if (!ensureAuthenticated('đánh dấu hoàn thành bài học')) {
+      return
+    }
+
+    try {
+      const response = await api.post(`/api/lessons/${lessonId}/complete`)
+      alert(response.data.message || 'Đã cập nhật tiến độ.')
+      fetchMyEnrollments()
+    } catch (error) {
+      alert(error.response?.data?.message || 'Không cập nhật được tiến độ.')
+    }
+  }
+
+  const handleEvaluateEnrollment = async (enrollmentId, payload) => {
+    try {
+      const response = await api.patch(`/api/enrollments/${enrollmentId}/evaluate`, payload)
+      alert(response.data.message || 'Đã lưu đánh giá.')
+      fetchTeacherEnrollments(selectedTeacherCourseId)
+    } catch (error) {
+      alert(error.response?.data?.message || 'Không lưu được đánh giá.')
+    }
+  }
+
   const handleAdminDeletePost = async post => {
     if (!currentUser || currentRole !== 'admin') {
       return
@@ -876,14 +1210,15 @@ function App() {
 
   const handleLogout = () => {
     setCurrentUser(null)
-    setCurrentRole('user')
+    setCurrentRole('student')
     clearTokens()
     localStorage.removeItem('zmate_current_user')
     localStorage.removeItem('zmate_current_role')
+    handleTabChange('home')
   }
 
   const handleBrandClick = () => {
-    setActiveTab('home')
+    handleTabChange('home')
     setSelectedCategory(null)
     window.location.reload()
   }
@@ -895,6 +1230,19 @@ function App() {
   useEffect(() => {
     fetchForumData()
   }, [fetchForumData])
+
+  useEffect(() => {
+    if (activeTab === 'lms') {
+      fetchCourses()
+      fetchMyEnrollments()
+    }
+  }, [activeTab, fetchCourses, fetchMyEnrollments])
+
+  useEffect(() => {
+    if (activeTab === 'teacher') {
+      fetchTeacherCourses()
+    }
+  }, [activeTab, fetchTeacherCourses])
 
   useEffect(() => {
     if (activeTab === 'manage' && currentRole === 'admin') {
@@ -918,6 +1266,13 @@ function App() {
     }
     return filteredForumPosts.filter(post => post.category === selectedCategory)
   }, [filteredForumPosts, selectedCategory])
+
+  const enrollmentByCourse = useMemo(() => {
+    return myEnrollments.reduce((acc, enrollment) => {
+      acc[String(enrollment.course)] = enrollment
+      return acc
+    }, {})
+  }, [myEnrollments])
 
   const totalPosts = forumPosts.length
   const totalCategories = categories.length
@@ -950,7 +1305,7 @@ function App() {
   }, [forumPosts])
 
   const goToForumTab = () => {
-    setActiveTab('forum')
+    handleTabChange('forum')
     setSelectedCategory(null)
   }
 
@@ -970,7 +1325,7 @@ function App() {
     <div className="app-container">
       <Navbar
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         currentRole={currentRole}
         currentUser={currentUser}
         currentRank={currentRank}
@@ -1049,6 +1404,45 @@ function App() {
           />
         )}
 
+        {activeTab === 'lms' && (
+          <LmsView
+            categories={categories}
+            selectedCategory={lmsCategory}
+            onSelectCategory={setLmsCategory}
+            courses={courses}
+            selectedCourse={selectedCourse}
+            onSelectCourse={handleSelectCourse}
+            lessons={courseLessons}
+            enrollmentByCourse={enrollmentByCourse}
+            onEnroll={handleEnroll}
+            onCompleteLesson={handleCompleteLesson}
+            currentRole={currentRole}
+            currentUser={currentUser}
+          />
+        )}
+
+        {activeTab === 'teacher' && (currentRole === 'teacher' || currentRole === 'admin') && (
+          <TeacherView
+            courses={teacherCourses}
+            lessons={courseLessons}
+            enrollments={teacherEnrollments}
+            selectedCourseId={selectedTeacherCourseId}
+            onSelectCourseId={handleSelectTeacherCourse}
+            newCourseData={newCourseData}
+            onNewCourseDataChange={setNewCourseData}
+            onCreateCourse={handleCreateCourse}
+            newLessonData={newLessonData}
+            onNewLessonDataChange={setNewLessonData}
+            onCreateLesson={handleCreateLesson}
+            onLoadEnrollments={fetchTeacherEnrollments}
+            onEvaluateEnrollment={handleEvaluateEnrollment}
+          />
+        )}
+
+        {activeTab === 'teacher' && currentRole !== 'teacher' && currentRole !== 'admin' && (
+          <div className="empty-state">Cậu cần đăng nhập bằng tài khoản giảng viên để vào khu vực này.</div>
+        )}
+
         {activeTab === 'manage' && currentRole === 'admin' && (
           <ManageView
             isLoadingUsers={isLoadingUsers}
@@ -1061,6 +1455,9 @@ function App() {
             onFetchDeletedComments={fetchDeletedComments}
             deletedReasonFilter={deletedReasonFilter}
             onReasonChange={setDeletedReasonFilter}
+            newUserData={newUserData}
+            onNewUserDataChange={setNewUserData}
+            onCreateUser={handleCreateUser}
             newVideoData={newVideoData}
             onVideoDataChange={setNewVideoData}
             onAddVideo={handleAddVideo}
@@ -1082,6 +1479,10 @@ function App() {
             onRestoreComment={handleRestoreComment}
             onPermanentDeleteComment={handlePermanentDeleteComment}
           />
+        )}
+
+        {activeTab === 'manage' && currentRole !== 'admin' && (
+          <div className="empty-state">Cậu cần đăng nhập bằng tài khoản admin để vào trang /admin.</div>
         )}
       </main>
 
