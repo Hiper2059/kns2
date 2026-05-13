@@ -47,15 +47,6 @@ const getAuthGateFromPath = pathname => {
   return null
 }
 
-const getRoleLabel = role => {
-  if (role === 'admin') {
-    return 'Admin'
-  }
-  if (role === 'teacher') {
-    return 'Giang vien'
-  }
-  return 'Hoc sinh'
-}
 
 function App() {
   const [isAuthOpen, setIsAuthOpen] = useState(false)
@@ -79,7 +70,6 @@ function App() {
   }
   const [activeTab, setActiveTab] = useState(getInitialTab)
   const [authGate, setAuthGate] = useState(() => getAuthGateFromPath(window.location.pathname))
-  const [authIntentRole, setAuthIntentRole] = useState(null)
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -311,15 +301,6 @@ function App() {
           return
         }
 
-        if (authIntentRole && normalizedRole !== authIntentRole) {
-          clearTokens()
-          localStorage.removeItem('zmate_current_user')
-          localStorage.removeItem('zmate_current_role')
-          setCurrentUser(null)
-          setCurrentRole('student')
-          alert(`Tai khoan khong thuoc vai tro ${getRoleLabel(authIntentRole)}.`)
-          return
-        }
 
         setCurrentRole(normalizedRole)
         setTokens({
@@ -329,7 +310,6 @@ function App() {
         })
         localStorage.setItem('zmate_current_user', res.data.username)
         localStorage.setItem('zmate_current_role', normalizedRole)
-        setAuthIntentRole(null)
 
         if (authGate?.role === 'admin') {
           setActiveTab('manage')
@@ -1438,15 +1418,8 @@ function App() {
       return
     }
 
-    setAuthIntentRole(null)
     setIsAuthOpen(true)
     setAuthMode(mode)
-  }
-
-  const openRoleLogin = role => {
-    setAuthIntentRole(role)
-    setAuthMode('login')
-    setIsAuthOpen(true)
   }
 
   const handleCommentDraftChange = (postId, value) => {
@@ -1476,18 +1449,9 @@ function App() {
         authMode={authMode}
         authData={authData}
         isAuthLoading={isAuthLoading}
-        title={
-          authGate
-            ? `Dang nhap ${authGate.label}`
-            : authIntentRole
-              ? `Dang nhap ${getRoleLabel(authIntentRole)}`
-              : undefined
-        }
+        title={authGate ? `Dang nhap ${authGate.label}` : undefined}
         disableRegister={Boolean(authGate)}
-        onClose={() => {
-          setIsAuthOpen(false)
-          setAuthIntentRole(null)
-        }}
+        onClose={() => setIsAuthOpen(false)}
         onAuth={handleAuth}
         onSwitchMode={() => {
           if (authGate) {
@@ -1499,61 +1463,6 @@ function App() {
       />
 
       <main className="main-content">
-        {!currentUser && (
-          <div className="auth-landing">
-            <div className="auth-landing-card">
-              {authGate?.role === 'admin' && (
-                <>
-                  <h2>Dang nhap Admin</h2>
-                  <p>Chi tai khoan admin moi vao duoc khu vuc quan ly.</p>
-                  <button className="btn-post" onClick={() => openRoleLogin('admin')}>
-                    Dang nhap Admin
-                  </button>
-                </>
-              )}
-              {authGate?.role === 'teacher' && (
-                <>
-                  <h2>Dang nhap Giang vien</h2>
-                  <p>Dang nhap tai khoan giang vien de quan ly lop hoc.</p>
-                  <button className="btn-post" onClick={() => openRoleLogin('teacher')}>
-                    Dang nhap Giang vien
-                  </button>
-                </>
-              )}
-              {authGate?.role === 'student' && (
-                <>
-                  <h2>Dang nhap Hoc sinh</h2>
-                  <p>Dang nhap tai khoan hoc sinh de vao lop hoc.</p>
-                  <button className="btn-post" onClick={() => openRoleLogin('student')}>
-                    Dang nhap Hoc sinh
-                  </button>
-                </>
-              )}
-              {!authGate && (
-                <>
-                  <h2>Dang nhap de vao noi dung</h2>
-                  <p>Hoc sinh dang nhap tai day. Giang vien vao /teacher, admin vao /admin.</p>
-                  <div className="auth-landing-actions">
-                    <button className="btn-post" onClick={() => openRoleLogin('student')}>
-                      Dang nhap Hoc sinh
-                    </button>
-                  </div>
-                  <div className="auth-landing-links">
-                    <a className="auth-landing-link" href="/teacher">
-                      Dang nhap Giang vien
-                    </a>
-                    <a className="auth-landing-link" href="/admin">
-                      Dang nhap Admin
-                    </a>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-
-        {currentUser && (
-          <>
         {activeTab === 'home' && (
           <HomeView
             searchTerm={searchTerm}
@@ -1690,8 +1599,6 @@ function App() {
 
         {activeTab === 'manage' && currentRole !== 'admin' && (
           <div className="empty-state">Cậu cần đăng nhập bằng tài khoản admin để vào trang /admin.</div>
-        )}
-          </>
         )}
       </main>
 

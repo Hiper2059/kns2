@@ -189,52 +189,6 @@
   padding: 26px 20px 90px;
 }
 
-.auth-landing {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 60vh;
-}
-
-.auth-landing-card {
-  width: min(560px, 100%);
-  background: var(--bg-main);
-  border-radius: 22px;
-  padding: 28px;
-  box-shadow: var(--card-shadow);
-  text-align: center;
-}
-
-.auth-landing-card h2 {
-  font-size: 24px;
-  margin-bottom: 10px;
-}
-
-.auth-landing-card p {
-  color: var(--text-muted);
-  margin-bottom: 18px;
-}
-
-.auth-landing-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
-}
-
-.auth-landing-link {
-  display: inline-block;
-  color: var(--brand);
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.auth-landing-links {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-}
 
 .hero-section {
   background: var(--bg-main);
