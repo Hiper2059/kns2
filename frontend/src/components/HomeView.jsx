@@ -1,16 +1,7 @@
-import YouTube from 'react-youtube'
-import { getYouTubeVideoId } from '../utils/appUtils'
 import './HomeView.css'
 
 const HomeView = ({
-  searchTerm,
-  onSearchChange,
   categories,
-  selectedCategory,
-  onSelectCategory,
-  totalPosts,
-  totalCategories,
-  topContributors,
   currentUser,
   currentRank,
   currentUserPoints,
@@ -19,21 +10,23 @@ const HomeView = ({
   rankLeaderboard,
   categoryVideos,
   currentRole,
-  onDeleteVideo,
-  watchedVideosByUser,
-  onVideoEnded,
-  currentQuiz,
-  selectedQuizAnswer,
-  onSelectQuizAnswer,
-  isCurrentQuizDone,
-  onSubmitQuiz,
-  quizFeedback,
-  newPost,
-  onNewPostChange,
-  onPostSubmit,
-  postsBySelectedCategory,
-  onGoForumTab
-}) => (
+  onDeleteVideo
+}) => {
+  const getVideoEmbedUrl = url => {
+    if (!url) return ''
+    if (url.includes('embed/')) return url
+    if (url.includes('watch?v=')) {
+      const id = url.split('watch?v=')[1]?.split('&')[0]
+      return id ? `https://www.youtube.com/embed/${id}` : url
+    }
+    if (url.includes('youtu.be/')) {
+      const id = url.split('youtu.be/')[1]?.split('?')[0]
+      return id ? `https://www.youtube.com/embed/${id}` : url
+    }
+    return url
+  }
+
+  return (
   <div className="home-view">
     <div className="hero-section">
       <div className="rank-board">
@@ -75,17 +68,16 @@ const HomeView = ({
         <div className="video-grid">
           {(categoryVideos[categories[0]] || []).slice(0, 1).map((video, index) => (
             <div key={video._id || `${video.url}-${index}`} className="video-card">
-              <YouTube
-                videoId={getYouTubeVideoId(video.url)}
-                title="Video huong dan"
-                className="video-frame-wrap"
-                iframeClassName="video-frame"
-                opts={{
-                  width: '100%',
-                  height: '260',
-                  playerVars: { modestbranding: 1, rel: 0 }
-                }}
-              />
+              <div className="video-frame-wrap">
+                <iframe
+                  src={getVideoEmbedUrl(video.url)}
+                  title="Video huong dan"
+                  className="video-frame"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              </div>
               {currentRole === 'admin' && (
                 <button
                   className="btn-danger"
@@ -102,6 +94,7 @@ const HomeView = ({
       </div>
     </div>
   </div>
-)
+  )
+}
 
 export default HomeView

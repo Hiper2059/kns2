@@ -1734,14 +1734,7 @@ function App() {
 
         {!lessonRouteSlug && activeTab === 'home' && (
           <HomeView
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
             categories={categories}
-            selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
-            totalPosts={totalPosts}
-            totalCategories={totalCategories}
-            topContributors={topContributors}
             currentUser={currentUser}
             currentRank={currentRank}
             currentUserPoints={currentUserPoints}
@@ -1751,19 +1744,6 @@ function App() {
             categoryVideos={categoryVideos}
             currentRole={currentRole}
             onDeleteVideo={handleDeleteVideo}
-            watchedVideosByUser={watchedVideosByUser}
-            onVideoEnded={handleVideoEnded}
-            currentQuiz={currentQuiz}
-            selectedQuizAnswer={selectedQuizAnswer}
-            onSelectQuizAnswer={setSelectedQuizAnswer}
-            isCurrentQuizDone={isCurrentQuizDone}
-            onSubmitQuiz={handleSubmitQuiz}
-            quizFeedback={quizFeedback}
-            newPost={newPost}
-            onNewPostChange={setNewPost}
-            onPostSubmit={handlePostSubmit}
-            postsBySelectedCategory={postsBySelectedCategory}
-            onGoForumTab={goToForumTab}
           />
         )}
 
