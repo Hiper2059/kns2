@@ -15,7 +15,6 @@ import {
   categories,
   defaultCategoryVideos,
   defaultForumPosts,
-  quizBank,
   rankTiers
 } from './data/skills'
 import { getRankInfo, groupVideosByCategory, normalizeText } from './utils/appUtils'
@@ -73,7 +72,6 @@ function App() {
   const [activeTab, setActiveTab] = useState(getInitialTab)
   const [authGate, setAuthGate] = useState(() => getAuthGateFromPath(window.location.pathname))
   const [isChatOpen, setIsChatOpen] = useState(false)
-  const [selectedCategory, setSelectedCategory] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [forumPage, setForumPage] = useState(1)
   const [isAuthLoading, setIsAuthLoading] = useState(false)
@@ -96,16 +94,6 @@ function App() {
     const savedPoints = localStorage.getItem('zmate_points_by_user')
     return savedPoints ? JSON.parse(savedPoints) : {}
   })
-  const [watchedVideosByUser, setWatchedVideosByUser] = useState(() => {
-    const savedWatched = localStorage.getItem('zmate_watched_videos')
-    return savedWatched ? JSON.parse(savedWatched) : {}
-  })
-  const [completedQuizByUser, setCompletedQuizByUser] = useState(() => {
-    const savedQuiz = localStorage.getItem('zmate_completed_quiz')
-    return savedQuiz ? JSON.parse(savedQuiz) : {}
-  })
-  const [selectedQuizAnswer, setSelectedQuizAnswer] = useState('')
-  const [quizFeedback, setQuizFeedback] = useState('')
   const [managedUsers, setManagedUsers] = useState([])
   const [isLoadingUsers, setIsLoadingUsers] = useState(false)
   const [categoryVideos, setCategoryVideos] = useState(defaultCategoryVideos)
@@ -211,56 +199,10 @@ function App() {
     localStorage.setItem('zmate_points_by_user', JSON.stringify(pointsByUser))
   }, [pointsByUser])
 
-  useEffect(() => {
-    localStorage.setItem('zmate_watched_videos', JSON.stringify(watchedVideosByUser))
-  }, [watchedVideosByUser])
-
-  useEffect(() => {
-    localStorage.setItem('zmate_completed_quiz', JSON.stringify(completedQuizByUser))
-  }, [completedQuizByUser])
-
-  useEffect(() => {
-    setSelectedQuizAnswer('')
-    setQuizFeedback('')
-  }, [selectedCategory])
 
   useEffect(() => {
     setForumPage(1)
   }, [searchTerm])
-
-  useEffect(() => {
-    const handlePopState = () => {
-      const pathname = window.location.pathname
-      if (pathname.startsWith('/lesson/')) {
-        const slug = decodeURIComponent(pathname.replace('/lesson/', ''))
-        setLessonRouteSlug(slug)
-        setActiveTab('lms')
-        fetchLessonRoute(slug)
-        return
-      }
-
-      if (lessonRouteSlug) {
-        setLessonRouteSlug(null)
-        setLessonRouteLesson(null)
-        setLessonRouteCourse(null)
-        setLessonRouteLessons([])
-      }
-      setAuthGate(getAuthGateFromPath(pathname))
-      if (pathname === '/admin') {
-        setActiveTab('manage')
-        return
-      }
-      if (pathname === '/teacher') {
-        setActiveTab('teacher')
-        return
-      }
-      setActiveTab('home')
-    }
-
-    window.addEventListener('popstate', handlePopState)
-    handlePopState()
-    return () => window.removeEventListener('popstate', handlePopState)
-  }, [fetchLessonRoute, lessonRouteSlug])
 
   useEffect(() => {
     if (!authGate) {
@@ -523,13 +465,11 @@ function App() {
 
     if (actionId === 'go-overview') {
       handleTabChange('home')
-      setSelectedCategory(null)
       return
     }
 
     if (actionId === 'go-forum') {
       handleTabChange('forum')
-      setSelectedCategory(null)
       return
     }
 
@@ -604,17 +544,6 @@ function App() {
     return false
   }
 
-  const awardPoints = (amount, reason) => {
-    if (!currentUser) {
-      return
-    }
-
-    setPointsByUser(prev => ({
-      ...prev,
-      [currentUser]: (prev[currentUser] || 0) + amount
-    }))
-    alert(`+${amount} điểm: ${reason}`)
-  }
 
   const handlePostSubmit = async (overrideCategory = null) => {
     if (!ensureAuthenticated('đăng bài')) {
@@ -692,68 +621,6 @@ function App() {
     }
   }
 
-  const handleVideoEnded = (category, url, index) => {
-    if (!ensureAuthenticated('xem video để nhận điểm')) {
-      return
-    }
-
-    const videoKey = `${category}-${index}-${url}`
-    const watchedByCurrentUser = watchedVideosByUser[currentUser] || {}
-
-    if (watchedByCurrentUser[videoKey]) {
-      alert('Video này cậu đã nhận điểm rồi nha.')
-      return
-    }
-
-    setWatchedVideosByUser(prev => ({
-      ...prev,
-      [currentUser]: {
-        ...(prev[currentUser] || {}),
-        [videoKey]: true
-      }
-    }))
-
-    awardPoints(10, 'Hoàn thành một video học tập')
-  }
-
-  const handleSubmitQuiz = () => {
-    if (!selectedCategory || !quizBank[selectedCategory]) {
-      return
-    }
-
-    if (!ensureAuthenticated('trả lời câu hỏi')) {
-      return
-    }
-
-    if (!selectedQuizAnswer) {
-      setQuizFeedback('Cậu chọn đáp án trước rồi gửi nhé.')
-      return
-    }
-
-    const quiz = quizBank[selectedCategory]
-    const quizKey = `${selectedCategory}-${quiz.id}`
-    const completedByCurrentUser = completedQuizByUser[currentUser] || {}
-
-    if (completedByCurrentUser[quizKey]) {
-      setQuizFeedback('Câu hỏi này cậu đã hoàn thành và nhận điểm rồi.')
-      return
-    }
-
-    if (selectedQuizAnswer === quiz.answer) {
-      setCompletedQuizByUser(prev => ({
-        ...prev,
-        [currentUser]: {
-          ...(prev[currentUser] || {}),
-          [quizKey]: true
-        }
-      }))
-      setQuizFeedback('Chính xác! Cậu vừa nhận thêm 15 điểm.')
-      awardPoints(15, 'Trả lời đúng câu hỏi kỹ năng')
-      return
-    }
-
-    setQuizFeedback('Chưa đúng rồi, cậu thử lại nhé.')
-  }
 
   const fetchManagedUsers = useCallback(async () => {
     if (!currentUser || currentRole !== 'admin') {
@@ -1066,6 +933,40 @@ function App() {
     },
     [fetchCourseLessons]
   )
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const pathname = window.location.pathname
+      if (pathname.startsWith('/lesson/')) {
+        const slug = decodeURIComponent(pathname.replace('/lesson/', ''))
+        setLessonRouteSlug(slug)
+        setActiveTab('lms')
+        fetchLessonRoute(slug)
+        return
+      }
+
+      if (lessonRouteSlug) {
+        setLessonRouteSlug(null)
+        setLessonRouteLesson(null)
+        setLessonRouteCourse(null)
+        setLessonRouteLessons([])
+      }
+      setAuthGate(getAuthGateFromPath(pathname))
+      if (pathname === '/admin') {
+        setActiveTab('manage')
+        return
+      }
+      if (pathname === '/teacher') {
+        setActiveTab('teacher')
+        return
+      }
+      setActiveTab('home')
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    handlePopState()
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [fetchLessonRoute, lessonRouteSlug])
 
   const openLessonRoute = lesson => {
     if (!lesson) {
@@ -1538,7 +1439,6 @@ function App() {
 
   const handleBrandClick = () => {
     handleTabChange('home')
-    setSelectedCategory(null)
     window.location.reload()
   }
 
@@ -1594,13 +1494,6 @@ function App() {
     return
   }, [courseLessons, lessonRouteSlug])
 
-  const postsBySelectedCategory = useMemo(() => {
-    if (!selectedCategory) {
-      return []
-    }
-    return filteredForumPosts.filter(post => post.category === selectedCategory)
-  }, [filteredForumPosts, selectedCategory])
-
   const enrollmentByCourse = useMemo(() => {
     return myEnrollments.reduce((acc, enrollment) => {
       acc[String(enrollment.course)] = enrollment
@@ -1619,8 +1512,6 @@ function App() {
     return new Set((lessonRouteEnrollment?.completedLessons || []).map(item => String(item)))
   }, [lessonRouteEnrollment])
 
-  const totalPosts = forumPosts.length
-  const totalCategories = categories.length
   const currentUserPoints = currentUser ? pointsByUser[currentUser] || 0 : 0
   const { currentRank, nextRank, pointsToNext } = useMemo(
     () => getRankInfo(currentUserPoints, rankTiers),
@@ -1633,25 +1524,8 @@ function App() {
       .slice(0, 5)
   }, [pointsByUser])
 
-  const currentQuiz = selectedCategory ? quizBank[selectedCategory] : null
-  const currentQuizKey = currentQuiz && selectedCategory ? `${selectedCategory}-${currentQuiz.id}` : null
-  const isCurrentQuizDone =
-    currentUser && currentQuizKey ? Boolean(completedQuizByUser[currentUser]?.[currentQuizKey]) : false
-
-  const topContributors = useMemo(() => {
-    const score = forumPosts.reduce((acc, post) => {
-      acc[post.author] = (acc[post.author] || 0) + 1
-      return acc
-    }, {})
-
-    return Object.entries(score)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-  }, [forumPosts])
-
   const goToForumTab = () => {
     handleTabChange('forum')
-    setSelectedCategory(null)
   }
 
   const handleOpenAuth = mode => {
