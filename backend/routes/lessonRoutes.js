@@ -4,6 +4,7 @@ const { requireActiveUser, requireTeacherOrAdmin } = require('../middleware/auth
 
 const router = express.Router();
 
+// Get lessons for a course
 router.get('/courses/:courseId/lessons', requireActiveUser, listLessons);
 router.post('/courses/:courseId/lessons', requireTeacherOrAdmin, createLesson);
 router.patch('/lessons/:lessonId', requireTeacherOrAdmin, updateLesson);

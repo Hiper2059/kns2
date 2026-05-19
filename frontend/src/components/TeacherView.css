@@ -147,6 +147,16 @@
   gap: 8px;
 }
 
+.profile-link {
+  border: none;
+  background: transparent;
+  color: #1d4ed8;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+
 @media (max-width: 1000px) {
   .teacher-view {
     grid-template-columns: 1fr;

@@ -10,7 +10,8 @@ const Navbar = ({
   onLogout,
   onOpenAuth,
   onBrandClick,
-  onForumClick
+  onForumClick,
+  onOpenProfile
 }) => (
   <header className="navbar">
     <div
@@ -49,10 +50,15 @@ const Navbar = ({
     <div className="auth-buttons">
       {currentUser ? (
         <>
-          <span className="user-name">Chào, {currentUser}</span>
+          <button className="user-name" onClick={onOpenProfile}>
+            Chào, {currentUser}
+          </button>
           <span className="rank-pill">
             {currentRank.name} · {currentUserPoints} điểm
           </span>
+          <button className="btn-login" onClick={onOpenProfile}>
+            Ho so
+          </button>
           <button className="btn-login" onClick={onLogout}>
             Đăng xuất
           </button>

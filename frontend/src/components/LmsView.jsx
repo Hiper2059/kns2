@@ -8,11 +8,14 @@ const LmsView = ({
   selectedCourse,
   onSelectCourse,
   lessons,
+  selectedLessonId,
+  onSelectLesson,
   enrollmentByCourse,
   onEnroll,
   onCompleteLesson,
   currentRole,
-  currentUser
+  currentUser,
+  onOpenProfile
 }) => {
   const visibleCourses = selectedCategory
     ? courses.filter(course => course.category === selectedCategory)
@@ -22,6 +25,29 @@ const LmsView = ({
   const canEnroll = currentUser && (currentRole === 'student' || currentRole === 'user')
   const isEnrolled = Boolean(enrollment)
   const completedLessonIds = new Set((enrollment?.completedLessons || []).map(item => String(item)))
+  const selectedLesson =
+    lessons.find(lesson => String(lesson._id) === String(selectedLessonId)) || lessons[0] || null
+
+  const getProgressLabel = value => {
+    const percent = Number(value) || 0
+    if (percent <= 30) return 'Tan binh'
+    if (percent < 80) return 'Hieu biet'
+    return 'Biet tuot'
+  }
+
+  const getVideoEmbedUrl = url => {
+    if (!url) return ''
+    if (url.includes('embed/')) return url
+    if (url.includes('watch?v=')) {
+      const id = url.split('watch?v=')[1]?.split('&')[0]
+      return id ? `https://www.youtube.com/embed/${id}` : url
+    }
+    if (url.includes('youtu.be/')) {
+      const id = url.split('youtu.be/')[1]?.split('?')[0]
+      return id ? `https://www.youtube.com/embed/${id}` : url
+    }
+    return url
+  }
 
   return (
     <div className="lms-view">
@@ -65,7 +91,18 @@ const LmsView = ({
                 <div className="course-info">
                   <h4>{course.title}</h4>
                   <p>{course.description || 'Chưa có mô tả lớp học.'}</p>
-                  <span>Giảng viên: {course.teacherName}</span>
+                  <span>
+                    Giảng viên:{' '}
+                    <button
+                      className="profile-link"
+                      onClick={event => {
+                        event.stopPropagation()
+                        onOpenProfile?.(course.teacher)
+                      }}
+                    >
+                      {course.teacherName}
+                    </button>
+                  </span>
                 </div>
               </button>
             ))
@@ -86,6 +123,7 @@ const LmsView = ({
                     <div className="progress-block">
                       <div className="progress-text">
                         Tiến độ: {enrollment.progressPercent || 0}% ·
+                        {` ${getProgressLabel(enrollment.progressPercent)}`} ·
                         {enrollment.evaluation?.score !== null && enrollment.evaluation?.score !== undefined
                           ? ` Điểm: ${enrollment.evaluation.score}`
                           : ' Chưa có điểm'}
@@ -111,44 +149,62 @@ const LmsView = ({
                 </div>
               </div>
 
-              <div className="lesson-list">
-                <h3>Danh sách bài học</h3>
-                {lessons.length ? (
-                  lessons.map(lesson => (
-                    <div key={lesson._id} className="lesson-card">
-                      <div>
-                        <div className="lesson-title">
-                          <strong>{lesson.order}. {lesson.title}</strong>
-                          {completedLessonIds.has(String(lesson._id)) && (
-                            <span className="lesson-pill">Đã hoàn thành</span>
-                          )}
+              <div className="lesson-stack">
+                <div className="lesson-list">
+                  <h3>Danh sách bài học</h3>
+                  {lessons.length ? (
+                    lessons.map(lesson => (
+                      <button
+                        key={lesson._id}
+                        className={
+                          String(selectedLesson?._id) === String(lesson._id)
+                            ? 'lesson-item active'
+                            : 'lesson-item'
+                        }
+                        onClick={() => onSelectLesson(lesson._id)}
+                      >
+                        <span>{lesson.order}. {lesson.title}</span>
+                        {completedLessonIds.has(String(lesson._id)) && (
+                          <span className="lesson-pill">Đã hoàn thành</span>
+                        )}
+                      </button>
+                    ))
+                  ) : (
+                    <p>Chưa có bài học nào.</p>
+                  )}
+                </div>
+
+                <div className="lesson-detail">
+                  {selectedLesson ? (
+                    <>
+                      <h3>{selectedLesson.title}</h3>
+                      {selectedLesson.videoUrl ? (
+                        <div className="lesson-video">
+                          <iframe
+                            src={getVideoEmbedUrl(selectedLesson.videoUrl)}
+                            title={selectedLesson.title}
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                          ></iframe>
                         </div>
-                        <p>{lesson.content || 'Không có mô tả.'}</p>
-                        {lesson.imageUrl && (
-                          <div className="lesson-thumb">
-                            <img src={lesson.imageUrl} alt={lesson.title} />
-                          </div>
-                        )}
-                        {lesson.videoUrl && (
-                          <a className="lesson-link" href={lesson.videoUrl} target="_blank" rel="noreferrer">
-                            Xem video bài học
-                          </a>
-                        )}
-                      </div>
+                      ) : (
+                        <p>Chưa có video cho bài học này.</p>
+                      )}
                       {isEnrolled && canEnroll && (
                         <button
                           className="btn-post"
-                          onClick={() => onCompleteLesson(lesson._id)}
-                          disabled={completedLessonIds.has(String(lesson._id))}
+                          onClick={() => onCompleteLesson(selectedLesson._id)}
+                          disabled={completedLessonIds.has(String(selectedLesson._id))}
                         >
-                          {completedLessonIds.has(String(lesson._id)) ? 'Đã xong' : 'Đã hoàn thành'}
+                          {completedLessonIds.has(String(selectedLesson._id)) ? 'Đã xong' : 'Đã hoàn thành'}
                         </button>
                       )}
-                    </div>
-                  ))
-                ) : (
-                  <p>Chưa có bài học nào.</p>
-                )}
+                    </>
+                  ) : (
+                    <p>Chọn một bài học để xem video.</p>
+                  )}
+                </div>
               </div>
             </>
           ) : (

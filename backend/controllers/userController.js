@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Course = require('../models/Course');
 const { normalizeRole, allowedStatuses } = require('../utils/userUtils');
 const { hashPassword } = require('../utils/password');
 
@@ -125,10 +126,118 @@ const deleteUser = async (req, res) => {
   }
 };
 
+const buildPublicProfile = async user => {
+  const profilePayload = {
+    _id: user._id,
+    username: user.username,
+    role: user.role,
+    profile: user.profile || {}
+  };
+
+  if (user.role === 'teacher') {
+    const courses = await Course.find({ teacher: user._id }, { title: 1 }).lean();
+    profilePayload.managedCourses = courses.map(course => ({ _id: course._id, title: course.title }));
+  }
+
+  return profilePayload;
+};
+
+const getPublicProfile = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId).lean();
+    if (!user) {
+      return res.status(404).json({ message: 'Không tìm thấy người dùng.' });
+    }
+
+    const profilePayload = await buildPublicProfile(user);
+    res.json({ user: profilePayload });
+  } catch (error) {
+    console.error('Loi lay profile:', error);
+    res.status(500).json({ message: 'Không tải được hồ sơ.' });
+  }
+};
+
+const getMyProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.currentUser._id).lean();
+    if (!user) {
+      return res.status(404).json({ message: 'Không tìm thấy người dùng.' });
+    }
+
+    const profilePayload = await buildPublicProfile(user);
+    res.json({ user: profilePayload });
+  } catch (error) {
+    console.error('Loi lay profile ca nhan:', error);
+    res.status(500).json({ message: 'Không tải được hồ sơ.' });
+  }
+};
+
+const updateMyProfile = async (req, res) => {
+  try {
+    const payload = req.body || {};
+    const user = await User.findById(req.currentUser._id);
+    if (!user) {
+      return res.status(404).json({ message: 'Không tìm thấy người dùng.' });
+    }
+
+    const nextProfile = {
+      ...(user.profile || {})
+    };
+
+    if (payload.displayName !== undefined) nextProfile.displayName = String(payload.displayName).trim();
+    if (payload.stageName !== undefined) nextProfile.stageName = String(payload.stageName).trim();
+    if (payload.avatarUrl !== undefined) nextProfile.avatarUrl = String(payload.avatarUrl).trim();
+    if (payload.bio !== undefined) nextProfile.bio = String(payload.bio).trim();
+
+    if (payload.teacher && typeof payload.teacher === 'object') {
+      nextProfile.teacher = { ...(nextProfile.teacher || {}) };
+      const teacher = payload.teacher;
+      if (teacher.mainSubject !== undefined) nextProfile.teacher.mainSubject = String(teacher.mainSubject).trim();
+      if (teacher.certificates !== undefined) nextProfile.teacher.certificates = String(teacher.certificates).trim();
+      if (teacher.degree !== undefined) nextProfile.teacher.degree = String(teacher.degree).trim();
+      if (teacher.personalRecords !== undefined) nextProfile.teacher.personalRecords = String(teacher.personalRecords).trim();
+      if (teacher.teachingYears !== undefined) nextProfile.teacher.teachingYears = String(teacher.teachingYears).trim();
+      if (teacher.teachingClubs !== undefined) nextProfile.teacher.teachingClubs = String(teacher.teachingClubs).trim();
+      if (teacher.studentAchievements !== undefined) {
+        nextProfile.teacher.studentAchievements = String(teacher.studentAchievements).trim();
+      }
+      if (teacher.philosophy !== undefined) nextProfile.teacher.philosophy = String(teacher.philosophy).trim();
+      if (teacher.phone !== undefined) nextProfile.teacher.phone = String(teacher.phone).trim();
+      if (teacher.email !== undefined) nextProfile.teacher.email = String(teacher.email).trim();
+      if (teacher.fanpage !== undefined) nextProfile.teacher.fanpage = String(teacher.fanpage).trim();
+      if (teacher.address !== undefined) nextProfile.teacher.address = String(teacher.address).trim();
+    }
+
+    if (payload.student && typeof payload.student === 'object') {
+      nextProfile.student = { ...(nextProfile.student || {}) };
+      const student = payload.student;
+      if (student.dob !== undefined) nextProfile.student.dob = String(student.dob).trim();
+      if (student.className !== undefined) nextProfile.student.className = String(student.className).trim();
+      if (student.strengths !== undefined) nextProfile.student.strengths = String(student.strengths).trim();
+      if (student.goalsShort !== undefined) nextProfile.student.goalsShort = String(student.goalsShort).trim();
+      if (student.goalsLong !== undefined) nextProfile.student.goalsLong = String(student.goalsLong).trim();
+      if (student.teacherNote !== undefined) nextProfile.student.teacherNote = String(student.teacherNote).trim();
+    }
+
+    user.profile = nextProfile;
+    await user.save();
+
+    const profilePayload = await buildPublicProfile(user.toObject());
+    res.json({ message: 'Đã cập nhật hồ sơ.', user: profilePayload });
+  } catch (error) {
+    console.error('Loi cap nhat profile:', error);
+    res.status(500).json({ message: 'Không cập nhật được hồ sơ.' });
+  }
+};
+
 module.exports = {
   createUser,
   listUsers,
   updateUserRole,
   updateUserStatus,
-  deleteUser
+  deleteUser,
+  getPublicProfile,
+  getMyProfile,
+  updateMyProfile
 };

@@ -9,6 +9,7 @@ import HomeView from './components/HomeView'
 import ManageView from './components/ManageView'
 import LmsView from './components/LmsView'
 import TeacherView from './components/TeacherView'
+import ProfileModal from './components/ProfileModal'
 import {
   categories,
   defaultCategoryVideos,
@@ -138,10 +139,43 @@ function App() {
     order: 1,
     imageFile: null
   })
+  const [selectedLessonId, setSelectedLessonId] = useState(null)
   const [newUserData, setNewUserData] = useState({
     username: '',
     password: '',
     role: 'teacher'
+  })
+  const [profileModalOpen, setProfileModalOpen] = useState(false)
+  const [profileMode, setProfileMode] = useState('view')
+  const [profileLoading, setProfileLoading] = useState(false)
+  const [profileUser, setProfileUser] = useState(null)
+  const [profileDraft, setProfileDraft] = useState({
+    displayName: '',
+    stageName: '',
+    avatarUrl: '',
+    bio: '',
+    teacher: {
+      mainSubject: '',
+      certificates: '',
+      degree: '',
+      personalRecords: '',
+      teachingYears: '',
+      teachingClubs: '',
+      studentAchievements: '',
+      philosophy: '',
+      phone: '',
+      email: '',
+      fanpage: '',
+      address: ''
+    },
+    student: {
+      dob: '',
+      className: '',
+      strengths: '',
+      goalsShort: '',
+      goalsLong: '',
+      teacherNote: ''
+    }
   })
 
   const updatePathForTab = tab => {
@@ -969,6 +1003,7 @@ function App() {
 
   const handleSelectCourse = course => {
     setSelectedCourse(course)
+    setSelectedLessonId(null)
     if (course?._id) {
       fetchCourseLessons(course._id)
     } else {
@@ -982,6 +1017,102 @@ function App() {
       fetchCourseLessons(courseId)
     } else {
       setCourseLessons([])
+    }
+  }
+
+  const applyProfileToDraft = user => {
+    const profile = user?.profile || {}
+    setProfileDraft({
+      displayName: profile.displayName || '',
+      stageName: profile.stageName || '',
+      avatarUrl: profile.avatarUrl || '',
+      bio: profile.bio || '',
+      teacher: {
+        mainSubject: profile.teacher?.mainSubject || '',
+        certificates: profile.teacher?.certificates || '',
+        degree: profile.teacher?.degree || '',
+        personalRecords: profile.teacher?.personalRecords || '',
+        teachingYears: profile.teacher?.teachingYears || '',
+        teachingClubs: profile.teacher?.teachingClubs || '',
+        studentAchievements: profile.teacher?.studentAchievements || '',
+        philosophy: profile.teacher?.philosophy || '',
+        phone: profile.teacher?.phone || '',
+        email: profile.teacher?.email || '',
+        fanpage: profile.teacher?.fanpage || '',
+        address: profile.teacher?.address || ''
+      },
+      student: {
+        dob: profile.student?.dob || '',
+        className: profile.student?.className || '',
+        strengths: profile.student?.strengths || '',
+        goalsShort: profile.student?.goalsShort || '',
+        goalsLong: profile.student?.goalsLong || '',
+        teacherNote: profile.student?.teacherNote || ''
+      }
+    })
+  }
+
+  const fetchProfileById = useCallback(async userId => {
+    if (!userId) {
+      return
+    }
+
+    setProfileLoading(true)
+    try {
+      const response = await api.get(`/api/users/${userId}/profile`)
+      setProfileUser(response.data?.user || null)
+    } catch (error) {
+      alert(error.response?.data?.message || 'Không tải được hồ sơ.')
+      setProfileUser(null)
+    } finally {
+      setProfileLoading(false)
+    }
+  }, [])
+
+  const fetchMyProfile = useCallback(async () => {
+    setProfileLoading(true)
+    try {
+      const response = await api.get('/api/users/me/profile')
+      const user = response.data?.user || null
+      setProfileUser(user)
+      applyProfileToDraft(user)
+    } catch (error) {
+      alert(error.response?.data?.message || 'Không tải được hồ sơ cá nhân.')
+      setProfileUser(null)
+    } finally {
+      setProfileLoading(false)
+    }
+  }, [])
+
+  const handleOpenProfile = userId => {
+    setProfileMode('view')
+    setProfileModalOpen(true)
+    fetchProfileById(userId)
+  }
+
+  const handleOpenMyProfile = () => {
+    if (!ensureAuthenticated('cap nhat ho so')) {
+      return
+    }
+    setProfileMode('edit')
+    setProfileModalOpen(true)
+    fetchMyProfile()
+  }
+
+  const handleSaveProfile = async () => {
+    if (!ensureAuthenticated('cap nhat ho so')) {
+      return
+    }
+
+    try {
+      const response = await api.patch('/api/users/me/profile', profileDraft)
+      const user = response.data?.user || null
+      setProfileUser(user)
+      applyProfileToDraft(user)
+      alert(response.data?.message || 'Da cap nhat ho so.')
+      setProfileMode('view')
+    } catch (error) {
+      alert(error.response?.data?.message || 'Khong cap nhat duoc ho so.')
     }
   }
 
@@ -1368,6 +1499,14 @@ function App() {
     fetchDeletedComments
   ])
 
+  useEffect(() => {
+    if (courseLessons.length) {
+      setSelectedLessonId(courseLessons[0]._id)
+    } else {
+      setSelectedLessonId(null)
+    }
+  }, [courseLessons])
+
   const postsBySelectedCategory = useMemo(() => {
     if (!selectedCategory) {
       return []
@@ -1448,6 +1587,7 @@ function App() {
         onOpenAuth={handleOpenAuth}
         onBrandClick={handleBrandClick}
         onForumClick={goToForumTab}
+        onOpenProfile={handleOpenMyProfile}
       />
 
       <AuthModal
@@ -1534,11 +1674,14 @@ function App() {
             selectedCourse={selectedCourse}
             onSelectCourse={handleSelectCourse}
             lessons={courseLessons}
+            selectedLessonId={selectedLessonId}
+            onSelectLesson={setSelectedLessonId}
             enrollmentByCourse={enrollmentByCourse}
             onEnroll={handleEnroll}
             onCompleteLesson={handleCompleteLesson}
             currentRole={currentRole}
             currentUser={currentUser}
+            onOpenProfile={handleOpenProfile}
           />
         )}
 
@@ -1558,6 +1701,7 @@ function App() {
             onCreateLesson={handleCreateLesson}
             onLoadEnrollments={fetchTeacherEnrollments}
             onEvaluateEnrollment={handleEvaluateEnrollment}
+            onOpenProfile={handleOpenProfile}
           />
         )}
 
@@ -1618,6 +1762,22 @@ function App() {
         onToggle={() => setIsChatOpen(!isChatOpen)}
         onClose={() => setIsChatOpen(false)}
         onActionClick={handleChatAction}
+      />
+
+      <ProfileModal
+        isOpen={profileModalOpen}
+        mode={profileMode}
+        profileUser={profileUser}
+        profileDraft={profileDraft}
+        isLoading={profileLoading}
+        onClose={() => setProfileModalOpen(false)}
+        onEdit={() => {
+          setProfileMode('edit')
+          fetchMyProfile()
+        }}
+        onSave={handleSaveProfile}
+        onChange={setProfileDraft}
+        isOwnProfile={profileUser?.username === currentUser}
       />
 
       <Footer />

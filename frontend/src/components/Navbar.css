@@ -1,0 +1,7 @@
+.user-name {
+	border: none;
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+	font-weight: 600;
+}

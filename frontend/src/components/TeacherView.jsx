@@ -15,7 +15,8 @@ const TeacherView = ({
   onNewLessonDataChange,
   onCreateLesson,
   onLoadEnrollments,
-  onEvaluateEnrollment
+  onEvaluateEnrollment,
+  onOpenProfile
 }) => {
   const [evaluationDrafts, setEvaluationDrafts] = useState({})
 
@@ -41,6 +42,13 @@ const TeacherView = ({
       note: draft.note,
       progressPercent: draft.progressPercent
     })
+  }
+
+  const getProgressLabel = value => {
+    const percent = Number(value) || 0
+    if (percent <= 30) return 'Tan binh'
+    if (percent < 80) return 'Hieu biet'
+    return 'Biet tuot'
   }
 
   return (
@@ -225,8 +233,15 @@ const TeacherView = ({
             enrollments.map(enrollment => (
               <div key={enrollment._id} className="enrollment-row">
                 <div>
-                  <strong>{enrollment.studentName}</strong>
-                  <p>Tiến độ: {enrollment.progressPercent || 0}%</p>
+                  <button
+                    className="profile-link"
+                    onClick={() => onOpenProfile?.(enrollment.student)}
+                  >
+                    {enrollment.studentName}
+                  </button>
+                  <p>
+                    Tiến độ: {enrollment.progressPercent || 0}% · {getProgressLabel(enrollment.progressPercent)}
+                  </p>
                   <p>Ghi chú: {enrollment.evaluation?.note || 'Chưa có'}</p>
                 </div>
                 <div className="evaluation-form">
