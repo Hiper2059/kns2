@@ -81,6 +81,12 @@
   white-space: pre-wrap;
   line-height: 1.6;
   margin-bottom: 16px;
+  text-transform: none;
+}
+
+.lesson-topbar p {
+  white-space: pre-wrap;
+  text-transform: none;
 }
 
 @media (max-width: 1000px) {

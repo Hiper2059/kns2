@@ -82,6 +82,12 @@
   margin: 0 0 6px;
 }
 
+.course-info p,
+.lms-course-detail p {
+  white-space: pre-wrap;
+  text-transform: none;
+}
+
 .lms-course-detail {
   background: #fff;
   border-radius: 16px;

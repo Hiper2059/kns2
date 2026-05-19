@@ -17,6 +17,11 @@
   padding: 16px;
 }
 
+.teacher-view input,
+.teacher-view textarea {
+  text-transform: none;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -105,6 +110,13 @@
   margin: 6px 0 0;
   color: #4b5563;
   font-size: 13px;
+  white-space: pre-wrap;
+  text-transform: none;
+}
+
+.teacher-course-detail p {
+  white-space: pre-wrap;
+  text-transform: none;
 }
 
 .lesson-media {
