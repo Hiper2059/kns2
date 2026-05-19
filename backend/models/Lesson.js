@@ -24,13 +24,9 @@ const lessonSchema = new mongoose.Schema(
             type: String,
             default: ''
         },
-        chapterTitle: {
+        slug: {
             type: String,
-            default: 'Chuong 1'
-        },
-        chapterOrder: {
-            type: Number,
-            default: 1
+            default: ''
         },
         order: {
             type: Number,

@@ -1,7 +1,31 @@
+const mongoose = require('mongoose');
 const Course = require('../models/Course');
 const Lesson = require('../models/Lesson');
 const Enrollment = require('../models/Enrollment');
 const { isStudentRole } = require('../utils/userUtils');
+
+const slugify = value =>
+  String(value || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-{2,}/g, '-')
+
+const ensureUniqueSlug = async (baseSlug, excludeId) => {
+  let slug = baseSlug || 'bai-hoc'
+  let suffix = 1
+  while (true) {
+    const query = excludeId ? { slug, _id: { $ne: excludeId } } : { slug }
+    const exists = await Lesson.findOne(query).lean()
+    if (!exists) {
+      return slug
+    }
+    slug = `${baseSlug}-${suffix}`
+    suffix += 1
+  }
+}
 
 const listLessons = async (req, res) => {
   try {
@@ -24,7 +48,7 @@ const listLessons = async (req, res) => {
     }
 
     const lessons = await Lesson.find({ course: courseId })
-      .sort({ chapterOrder: 1, order: 1, createdAt: 1 })
+      .sort({ order: 1, createdAt: 1 })
       .lean();
 
     res.json({ lessons });
@@ -37,7 +61,7 @@ const listLessons = async (req, res) => {
 const createLesson = async (req, res) => {
   try {
     const { courseId } = req.params;
-    const { title, content, videoUrl, imageUrl, order, chapterTitle, chapterOrder } = req.body;
+    const { title, content, videoUrl, imageUrl, order } = req.body;
 
     if (!title) {
       return res.status(400).json({ message: 'Thiếu tiêu đề bài học.' });
@@ -60,10 +84,8 @@ const createLesson = async (req, res) => {
       normalizedOrder = lastLesson ? lastLesson.order + 1 : 1;
     }
 
-    let normalizedChapterOrder = Number(chapterOrder);
-    if (!normalizedChapterOrder || Number.isNaN(normalizedChapterOrder)) {
-      normalizedChapterOrder = 1;
-    }
+    const baseSlug = slugify(`${course.title} ${title}`)
+    const uniqueSlug = await ensureUniqueSlug(baseSlug)
 
     const created = await Lesson.create({
       course: courseId,
@@ -71,8 +93,7 @@ const createLesson = async (req, res) => {
       content: content?.trim() || '',
       videoUrl: videoUrl?.trim() || '',
       imageUrl: imageUrl?.trim() || '',
-      chapterTitle: chapterTitle?.trim() || `Chuong ${normalizedChapterOrder}`,
-      chapterOrder: normalizedChapterOrder,
+      slug: uniqueSlug,
       order: normalizedOrder,
       createdBy: req.currentUser._id,
       createdByName: req.currentUser.username
@@ -88,7 +109,7 @@ const createLesson = async (req, res) => {
 const updateLesson = async (req, res) => {
   try {
     const { lessonId } = req.params;
-    const { title, content, videoUrl, imageUrl, order, chapterTitle, chapterOrder } = req.body;
+    const { title, content, videoUrl, imageUrl, order } = req.body;
 
     const lesson = await Lesson.findById(lessonId);
     if (!lesson) {
@@ -104,14 +125,14 @@ const updateLesson = async (req, res) => {
       return res.status(403).json({ message: 'Bạn không có quyền sửa bài học này.' });
     }
 
-    if (title) lesson.title = title.trim();
+    if (title) {
+      lesson.title = title.trim();
+      const baseSlug = slugify(`${course.title} ${lesson.title}`)
+      lesson.slug = await ensureUniqueSlug(baseSlug, lesson._id);
+    }
     if (content !== undefined) lesson.content = content.trim();
     if (videoUrl !== undefined) lesson.videoUrl = videoUrl.trim();
     if (imageUrl !== undefined) lesson.imageUrl = imageUrl.trim();
-    if (chapterTitle !== undefined) lesson.chapterTitle = chapterTitle.trim() || lesson.chapterTitle;
-    if (chapterOrder !== undefined && !Number.isNaN(Number(chapterOrder))) {
-      lesson.chapterOrder = Number(chapterOrder);
-    }
     if (order !== undefined && !Number.isNaN(Number(order))) lesson.order = Number(order);
 
     await lesson.save();
@@ -168,9 +189,44 @@ const deleteLesson = async (req, res) => {
   }
 };
 
+const getLessonBySlug = async (req, res) => {
+  try {
+    const { slug } = req.params;
+    let lesson = await Lesson.findOne({ slug }).lean();
+    if (!lesson && mongoose.Types.ObjectId.isValid(slug)) {
+      lesson = await Lesson.findById(slug).lean();
+    }
+    if (!lesson) {
+      return res.status(404).json({ message: 'Không tìm thấy bài học.' });
+    }
+
+    const course = await Course.findById(lesson.course).lean();
+    if (!course) {
+      return res.status(404).json({ message: 'Không tìm thấy lớp học.' });
+    }
+
+    if (isStudentRole(req.currentUser.role)) {
+      const enrolled = await Enrollment.findOne({
+        course: lesson.course,
+        student: req.currentUser._id
+      }).lean();
+
+      if (!enrolled) {
+        return res.status(403).json({ message: 'Cậu cần tham gia lớp trước khi xem bài học.' });
+      }
+    }
+
+    res.json({ lesson, course });
+  } catch (error) {
+    console.error('Loi lay bai hoc theo slug:', error);
+    res.status(500).json({ message: 'Không tải được bài học.' });
+  }
+};
+
 module.exports = {
   listLessons,
   createLesson,
   updateLesson,
-  deleteLesson
+  deleteLesson,
+  getLessonBySlug
 };

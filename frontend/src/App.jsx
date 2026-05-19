@@ -10,6 +10,7 @@ import ManageView from './components/ManageView'
 import LmsView from './components/LmsView'
 import TeacherView from './components/TeacherView'
 import ProfileModal from './components/ProfileModal'
+import LessonFullPage from './components/LessonFullPage'
 import {
   categories,
   defaultCategoryVideos,
@@ -139,8 +140,11 @@ function App() {
     order: 1,
     imageFile: null
   })
-  const [selectedLessonId, setSelectedLessonId] = useState(null)
-  const [lmsViewMode, setLmsViewMode] = useState('list')
+  const [lessonRouteSlug, setLessonRouteSlug] = useState(null)
+  const [lessonRouteLesson, setLessonRouteLesson] = useState(null)
+  const [lessonRouteCourse, setLessonRouteCourse] = useState(null)
+  const [lessonRouteLessons, setLessonRouteLessons] = useState([])
+  const [lessonRouteLoading, setLessonRouteLoading] = useState(false)
   const [newUserData, setNewUserData] = useState({
     username: '',
     password: '',
@@ -227,6 +231,20 @@ function App() {
   useEffect(() => {
     const handlePopState = () => {
       const pathname = window.location.pathname
+      if (pathname.startsWith('/lesson/')) {
+        const slug = decodeURIComponent(pathname.replace('/lesson/', ''))
+        setLessonRouteSlug(slug)
+        setActiveTab('lms')
+        fetchLessonRoute(slug)
+        return
+      }
+
+      if (lessonRouteSlug) {
+        setLessonRouteSlug(null)
+        setLessonRouteLesson(null)
+        setLessonRouteCourse(null)
+        setLessonRouteLessons([])
+      }
       setAuthGate(getAuthGateFromPath(pathname))
       if (pathname === '/admin') {
         setActiveTab('manage')
@@ -240,8 +258,9 @@ function App() {
     }
 
     window.addEventListener('popstate', handlePopState)
+    handlePopState()
     return () => window.removeEventListener('popstate', handlePopState)
-  }, [])
+  }, [fetchLessonRoute, lessonRouteSlug])
 
   useEffect(() => {
     if (!authGate) {
@@ -1004,8 +1023,6 @@ function App() {
 
   const handleSelectCourse = course => {
     setSelectedCourse(course)
-    setSelectedLessonId(null)
-    setLmsViewMode('list')
     if (course?._id) {
       fetchCourseLessons(course._id)
     } else {
@@ -1020,6 +1037,54 @@ function App() {
     } else {
       setCourseLessons([])
     }
+  }
+
+  const fetchLessonRoute = useCallback(
+    async slug => {
+      if (!slug) {
+        return
+      }
+
+      setLessonRouteLoading(true)
+      try {
+        const response = await api.get(`/api/lessons/slug/${encodeURIComponent(slug)}`)
+        const lesson = response.data?.lesson || null
+        const course = response.data?.course || null
+        setLessonRouteLesson(lesson)
+        setLessonRouteCourse(course)
+        if (course?._id) {
+          setSelectedCourse(course)
+          await fetchCourseLessons(course._id)
+        }
+      } catch (error) {
+        alert(error.response?.data?.message || 'Khong tai duoc bai hoc.')
+        setLessonRouteLesson(null)
+        setLessonRouteCourse(null)
+      } finally {
+        setLessonRouteLoading(false)
+      }
+    },
+    [fetchCourseLessons]
+  )
+
+  const openLessonRoute = lesson => {
+    if (!lesson) {
+      return
+    }
+    const slug = lesson.slug || lesson._id
+    setLessonRouteSlug(slug)
+    setActiveTab('lms')
+    window.history.pushState({}, '', `/lesson/${slug}`)
+    fetchLessonRoute(slug)
+  }
+
+  const closeLessonRoute = () => {
+    setLessonRouteSlug(null)
+    setLessonRouteLesson(null)
+    setLessonRouteCourse(null)
+    setLessonRouteLessons([])
+    window.history.pushState({}, '', '/')
+    setActiveTab('lms')
   }
 
   const applyProfileToDraft = user => {
@@ -1250,6 +1315,12 @@ function App() {
       const response = await api.post(`/api/lessons/${lessonId}/complete`)
       alert(response.data.message || 'Đã cập nhật tiến độ.')
       fetchMyEnrollments()
+      if (currentUser) {
+        setPointsByUser(prev => ({
+          ...prev,
+          [currentUser]: (prev[currentUser] || 0) + 10
+        }))
+      }
     } catch (error) {
       alert(error.response?.data?.message || 'Không cập nhật được tiến độ.')
     }
@@ -1487,6 +1558,12 @@ function App() {
   }, [activeTab, fetchCourses, fetchMyEnrollments])
 
   useEffect(() => {
+    if (lessonRouteSlug && !courses.length) {
+      fetchCourses()
+    }
+  }, [lessonRouteSlug, courses.length, fetchCourses])
+
+  useEffect(() => {
     if (activeTab === 'teacher') {
       fetchTeacherCourses()
     }
@@ -1509,12 +1586,13 @@ function App() {
   ])
 
   useEffect(() => {
-    if (courseLessons.length) {
-      setSelectedLessonId(courseLessons[0]._id)
-    } else {
-      setSelectedLessonId(null)
+    if (lessonRouteSlug) {
+      setLessonRouteLessons(courseLessons)
+      return
     }
-  }, [courseLessons])
+
+    return
+  }, [courseLessons, lessonRouteSlug])
 
   const postsBySelectedCategory = useMemo(() => {
     if (!selectedCategory) {
@@ -1529,6 +1607,17 @@ function App() {
       return acc
     }, {})
   }, [myEnrollments])
+
+  const lessonRouteEnrollment = useMemo(() => {
+    if (!lessonRouteCourse?._id) {
+      return null
+    }
+    return enrollmentByCourse[String(lessonRouteCourse._id)] || null
+  }, [enrollmentByCourse, lessonRouteCourse])
+
+  const lessonRouteCompletedIds = useMemo(() => {
+    return new Set((lessonRouteEnrollment?.completedLessons || []).map(item => String(item)))
+  }, [lessonRouteEnrollment])
 
   const totalPosts = forumPosts.length
   const totalCategories = categories.length
@@ -1618,7 +1707,32 @@ function App() {
       />
 
       <main className="main-content">
-        {activeTab === 'home' && (
+        {lessonRouteSlug && (
+          <LessonFullPage
+            lesson={lessonRouteLesson}
+            course={lessonRouteCourse}
+            lessons={lessonRouteLessons}
+            courses={courses}
+            categories={categories}
+            onClose={closeLessonRoute}
+            onOpenLesson={openLessonRoute}
+            onSelectCourse={course => {
+              closeLessonRoute()
+              handleSelectCourse(course)
+            }}
+            onSelectCategory={category => {
+              closeLessonRoute()
+              setLmsCategory(category)
+              handleTabChange('lms')
+            }}
+            onCompleteLesson={handleCompleteLesson}
+            canComplete={Boolean(lessonRouteEnrollment)}
+            isCompleted={lessonRouteCompletedIds.has(String(lessonRouteLesson?._id))}
+            isLoading={lessonRouteLoading}
+          />
+        )}
+
+        {!lessonRouteSlug && activeTab === 'home' && (
           <HomeView
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
@@ -1653,7 +1767,7 @@ function App() {
           />
         )}
 
-        {activeTab === 'forum' && (
+        {!lessonRouteSlug && activeTab === 'forum' && (
           <ForumView
             newPost={newPost}
             onNewPostChange={setNewPost}
@@ -1674,7 +1788,7 @@ function App() {
           />
         )}
 
-        {activeTab === 'lms' && (
+        {!lessonRouteSlug && activeTab === 'lms' && (
           <LmsView
             categories={categories}
             selectedCategory={lmsCategory}
@@ -1683,20 +1797,16 @@ function App() {
             selectedCourse={selectedCourse}
             onSelectCourse={handleSelectCourse}
             lessons={courseLessons}
-            selectedLessonId={selectedLessonId}
-            onSelectLesson={setSelectedLessonId}
-            viewMode={lmsViewMode}
-            onChangeViewMode={setLmsViewMode}
             enrollmentByCourse={enrollmentByCourse}
             onEnroll={handleEnroll}
-            onCompleteLesson={handleCompleteLesson}
             currentRole={currentRole}
             currentUser={currentUser}
             onOpenProfile={handleOpenProfile}
+            onOpenLesson={openLessonRoute}
           />
         )}
 
-        {activeTab === 'teacher' && (currentRole === 'teacher' || currentRole === 'admin') && (
+        {!lessonRouteSlug && activeTab === 'teacher' && (currentRole === 'teacher' || currentRole === 'admin') && (
           <TeacherView
             categories={categories}
             courses={teacherCourses}
@@ -1716,11 +1826,11 @@ function App() {
           />
         )}
 
-        {activeTab === 'teacher' && currentRole !== 'teacher' && currentRole !== 'admin' && (
+        {!lessonRouteSlug && activeTab === 'teacher' && currentRole !== 'teacher' && currentRole !== 'admin' && (
           <div className="empty-state">Cậu cần đăng nhập bằng tài khoản giảng viên để vào khu vực này.</div>
         )}
 
-        {activeTab === 'manage' && currentRole === 'admin' && (
+        {!lessonRouteSlug && activeTab === 'manage' && currentRole === 'admin' && (
           <ManageView
             isLoadingUsers={isLoadingUsers}
             isLoadingReports={isLoadingReports}
@@ -1758,7 +1868,7 @@ function App() {
           />
         )}
 
-        {activeTab === 'manage' && currentRole !== 'admin' && (
+        {!lessonRouteSlug && activeTab === 'manage' && currentRole !== 'admin' && (
           <div className="empty-state">Cậu cần đăng nhập bằng tài khoản admin để vào trang /admin.</div>
         )}
       </main>
