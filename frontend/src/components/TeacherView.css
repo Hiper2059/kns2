@@ -22,6 +22,15 @@
   text-transform: none;
 }
 
+.rich-editor .ql-container {
+  border-radius: 12px;
+  min-height: 140px;
+}
+
+.rich-editor .ql-editor {
+  min-height: 140px;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -30,6 +39,10 @@
 }
 
 .form-grid textarea {
+  grid-column: span 2;
+}
+
+.form-grid .rich-editor {
   grid-column: span 2;
 }
 
@@ -117,6 +130,11 @@
   border-radius: 12px;
   padding: 12px;
   background: #fafafa;
+}
+
+.lesson-edit-form .rich-editor .ql-container,
+.lesson-edit-form .rich-editor .ql-editor {
+  min-height: 180px;
 }
 
 .lesson-edit-actions {

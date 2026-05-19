@@ -80,7 +80,10 @@ const LessonFullPage = ({
         <div className="lesson-topbar">
           <div>
             <h2>{course?.title || 'Bai hoc'}</h2>
-            <p>{course?.description || ''}</p>
+            <div
+              className="rich-text"
+              dangerouslySetInnerHTML={{ __html: course?.description || '' }}
+            ></div>
           </div>
           <button className="btn-ghost" onClick={onClose}>Quay lai lop hoc</button>
         </div>
@@ -105,7 +108,10 @@ const LessonFullPage = ({
 
             <h3>{lesson.title}</h3>
 
-            <div className="lesson-text">{lesson.content || ''}</div>
+            <div
+              className="lesson-text rich-text"
+              dangerouslySetInnerHTML={{ __html: lesson.content || '' }}
+            ></div>
 
             {canComplete && (
               <button

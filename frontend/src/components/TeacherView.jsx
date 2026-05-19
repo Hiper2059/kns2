@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import ReactQuill from 'react-quill'
+import 'react-quill/dist/quill.snow.css'
 import './TeacherView.css'
 
 const TeacherView = ({
@@ -95,12 +97,14 @@ const TeacherView = ({
               value={newCourseData.imageUrl}
               onChange={e => onNewCourseDataChange({ ...newCourseData, imageUrl: e.target.value })}
             />
-            <textarea
-              rows="3"
-              placeholder="Mô tả lớp học"
-              value={newCourseData.description}
-              onChange={e => onNewCourseDataChange({ ...newCourseData, description: e.target.value })}
-            ></textarea>
+            <div className="rich-editor">
+              <ReactQuill
+                theme="snow"
+                value={newCourseData.description}
+                onChange={value => onNewCourseDataChange({ ...newCourseData, description: value })}
+                placeholder="Mô tả lớp học"
+              />
+            </div>
           </div>
           <button className="btn-post" onClick={onCreateCourse}>Tạo lớp</button>
         </div>
@@ -148,12 +152,14 @@ const TeacherView = ({
               value={newLessonData.order}
               onChange={e => onNewLessonDataChange({ ...newLessonData, order: e.target.value })}
             />
-            <textarea
-              rows="3"
-              placeholder="Nội dung bài học"
-              value={newLessonData.content}
-              onChange={e => onNewLessonDataChange({ ...newLessonData, content: e.target.value })}
-            ></textarea>
+            <div className="rich-editor">
+              <ReactQuill
+                theme="snow"
+                value={newLessonData.content}
+                onChange={value => onNewLessonDataChange({ ...newLessonData, content: value })}
+                placeholder="Nội dung bài học"
+              />
+            </div>
           </div>
           <button className="btn-post" onClick={onCreateLesson} disabled={!selectedCourseId}>
             Thêm bài học
@@ -188,7 +194,12 @@ const TeacherView = ({
             <div className="teacher-course-detail">
               <div className="teacher-course-info">
                 <h4>{selectedCourse.title}</h4>
-                <p>{selectedCourse.description || 'Chưa có mô tả lớp học.'}</p>
+                <div
+                  className="rich-text"
+                  dangerouslySetInnerHTML={{
+                    __html: selectedCourse.description || 'Chưa có mô tả lớp học.'
+                  }}
+                ></div>
                 <div className="teacher-course-meta">
                   <span>Danh mục: {selectedCourse.category}</span>
                   <span>Bài học: {lessons.length}</span>
@@ -212,7 +223,9 @@ const TeacherView = ({
                 <div className="lesson-meta">
                   <strong>{lesson.order}. {lesson.title}</strong>
                   <span>{lesson.videoUrl ? 'Có video' : 'Chưa có video'}</span>
-                  {lesson.content && <p>{lesson.content}</p>}
+                  {lesson.content && (
+                    <div className="rich-text" dangerouslySetInnerHTML={{ __html: lesson.content }}></div>
+                  )}
                   <div className="lesson-actions">
                     <button className="btn-ghost" onClick={() => onEditLessonStart?.(lesson)}>
                       Sua bai
@@ -268,12 +281,14 @@ const TeacherView = ({
                         value={editLessonData.order}
                         onChange={e => onEditLessonChange({ ...editLessonData, order: e.target.value })}
                       />
-                      <textarea
-                        rows="4"
-                        placeholder="Noi dung bai hoc"
-                        value={editLessonData.content}
-                        onChange={e => onEditLessonChange({ ...editLessonData, content: e.target.value })}
-                      ></textarea>
+                      <div className="rich-editor">
+                        <ReactQuill
+                          theme="snow"
+                          value={editLessonData.content}
+                          onChange={value => onEditLessonChange({ ...editLessonData, content: value })}
+                          placeholder="Noi dung bai hoc"
+                        />
+                      </div>
                     </div>
                     <div className="lesson-edit-actions">
                       <button className="btn-post" onClick={() => onUpdateLesson?.(lesson._id)}>

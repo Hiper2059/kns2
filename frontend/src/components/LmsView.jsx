@@ -73,7 +73,12 @@ const LmsView = ({
                 </div>
                 <div className="course-info">
                   <h4>{course.title}</h4>
-                  <p>{course.description || 'Chưa có mô tả lớp học.'}</p>
+                  <div
+                    className="rich-text"
+                    dangerouslySetInnerHTML={{
+                      __html: course.description || 'Chưa có mô tả lớp học.'
+                    }}
+                  ></div>
                   <span>
                     Giảng viên:{' '}
                     <button
@@ -100,7 +105,12 @@ const LmsView = ({
               <div className="course-header">
                 <div>
                   <h2>{selectedCourse.title}</h2>
-                  <p>{selectedCourse.description || 'Chưa có mô tả chi tiết.'}</p>
+                  <div
+                    className="rich-text"
+                    dangerouslySetInnerHTML={{
+                      __html: selectedCourse.description || 'Chưa có mô tả chi tiết.'
+                    }}
+                  ></div>
                   <span>Danh mục: {selectedCourse.category}</span>
                   {enrollment && (
                     <div className="progress-block">

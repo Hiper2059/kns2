@@ -183,6 +183,20 @@
   border: 1px solid #ffd8c6;
 }
 
+.rich-text {
+  color: var(--text-main);
+  line-height: 1.6;
+}
+
+.rich-text p {
+  margin: 0 0 8px;
+}
+
+.rich-text ul,
+.rich-text ol {
+  margin: 8px 0 8px 20px;
+}
+
 .main-content {
   width: min(1220px, 100%);
   margin: 0 auto;
