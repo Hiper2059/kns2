@@ -10,6 +10,8 @@ const LmsView = ({
   lessons,
   selectedLessonId,
   onSelectLesson,
+  viewMode,
+  onChangeViewMode,
   enrollmentByCourse,
   onEnroll,
   onCompleteLesson,
@@ -27,6 +29,8 @@ const LmsView = ({
   const completedLessonIds = new Set((enrollment?.completedLessons || []).map(item => String(item)))
   const selectedLesson =
     lessons.find(lesson => String(lesson._id) === String(selectedLessonId)) || lessons[0] || null
+
+  const sortedLessons = [...lessons].sort((a, b) => (a.order || 1) - (b.order || 1))
 
   const getProgressLabel = value => {
     const percent = Number(value) || 0
@@ -149,63 +153,100 @@ const LmsView = ({
                 </div>
               </div>
 
-              <div className="lesson-stack">
-                <div className="lesson-list">
-                  <h3>Danh sách bài học</h3>
-                  {lessons.length ? (
-                    lessons.map(lesson => (
-                      <button
-                        key={lesson._id}
-                        className={
-                          String(selectedLesson?._id) === String(lesson._id)
-                            ? 'lesson-item active'
-                            : 'lesson-item'
-                        }
-                        onClick={() => onSelectLesson(lesson._id)}
-                      >
-                        <span>{lesson.order}. {lesson.title}</span>
-                        {completedLessonIds.has(String(lesson._id)) && (
-                          <span className="lesson-pill">Đã hoàn thành</span>
-                        )}
-                      </button>
-                    ))
+              {viewMode === 'list' && (
+                <div className="syllabus-panel">
+                  <div className="syllabus-header">
+                    <h3>Danh sach bai hoc</h3>
+                  </div>
+
+                  {sortedLessons.length ? (
+                    <div className="lesson-list-grid">
+                      {sortedLessons.map(lesson => (
+                        <button
+                          key={lesson._id}
+                          className="lesson-row"
+                          onClick={() => {
+                            onSelectLesson(lesson._id)
+                            onChangeViewMode('lesson')
+                          }}
+                        >
+                          <span>{lesson.order}. {lesson.title}</span>
+                          {lesson.videoUrl ? <span className="lesson-chip">Video</span> : null}
+                        </button>
+                      ))}
+                    </div>
                   ) : (
                     <p>Chưa có bài học nào.</p>
                   )}
                 </div>
+              )}
 
-                <div className="lesson-detail">
-                  {selectedLesson ? (
-                    <>
-                      <h3>{selectedLesson.title}</h3>
-                      {selectedLesson.videoUrl ? (
-                        <div className="lesson-video">
-                          <iframe
-                            src={getVideoEmbedUrl(selectedLesson.videoUrl)}
-                            title={selectedLesson.title}
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                          ></iframe>
-                        </div>
-                      ) : (
-                        <p>Chưa có video cho bài học này.</p>
-                      )}
-                      {isEnrolled && canEnroll && (
+              {viewMode === 'lesson' && (
+                <div className="lesson-page">
+                  <div className="lesson-page-header">
+                    <button className="btn-ghost" onClick={() => onChangeViewMode('list')}>
+                      Quay lai giao trinh
+                    </button>
+                    {selectedLesson && (
+                      <div className="lesson-page-title">
+                        <strong>{selectedLesson.title}</strong>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="lesson-page-grid">
+                    <div className="lesson-page-syllabus">
+                      {sortedLessons.map(lesson => (
                         <button
-                          className="btn-post"
-                          onClick={() => onCompleteLesson(selectedLesson._id)}
-                          disabled={completedLessonIds.has(String(selectedLesson._id))}
+                          key={lesson._id}
+                          className={
+                            String(selectedLesson?._id) === String(lesson._id)
+                              ? 'lesson-row active'
+                              : 'lesson-row'
+                          }
+                          onClick={() => onSelectLesson(lesson._id)}
                         >
-                          {completedLessonIds.has(String(selectedLesson._id)) ? 'Đã xong' : 'Đã hoàn thành'}
+                          <span>{lesson.order}. {lesson.title}</span>
+                          {completedLessonIds.has(String(lesson._id)) && (
+                            <span className="lesson-chip">Da hoc</span>
+                          )}
                         </button>
+                      ))}
+                    </div>
+
+                    <div className="lesson-detail">
+                      {selectedLesson ? (
+                        <>
+                          {selectedLesson.videoUrl ? (
+                            <div className="lesson-video">
+                              <iframe
+                                src={getVideoEmbedUrl(selectedLesson.videoUrl)}
+                                title={selectedLesson.title}
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                              ></iframe>
+                            </div>
+                          ) : (
+                            <p>Chưa có video cho bài học này.</p>
+                          )}
+                          {isEnrolled && canEnroll && (
+                            <button
+                              className="btn-post"
+                              onClick={() => onCompleteLesson(selectedLesson._id)}
+                              disabled={completedLessonIds.has(String(selectedLesson._id))}
+                            >
+                              {completedLessonIds.has(String(selectedLesson._id)) ? 'Da xong' : 'Da hoan thanh'}
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        <p>Chon mot bai hoc de xem video.</p>
                       )}
-                    </>
-                  ) : (
-                    <p>Chọn một bài học để xem video.</p>
-                  )}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </>
           ) : (
             <div className="empty-state">Chọn một lớp để xem chi tiết.</div>

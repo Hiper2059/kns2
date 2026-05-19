@@ -24,7 +24,7 @@ const listLessons = async (req, res) => {
     }
 
     const lessons = await Lesson.find({ course: courseId })
-      .sort({ order: 1, createdAt: 1 })
+      .sort({ chapterOrder: 1, order: 1, createdAt: 1 })
       .lean();
 
     res.json({ lessons });
@@ -37,7 +37,7 @@ const listLessons = async (req, res) => {
 const createLesson = async (req, res) => {
   try {
     const { courseId } = req.params;
-    const { title, content, videoUrl, imageUrl, order } = req.body;
+    const { title, content, videoUrl, imageUrl, order, chapterTitle, chapterOrder } = req.body;
 
     if (!title) {
       return res.status(400).json({ message: 'Thiếu tiêu đề bài học.' });
@@ -60,12 +60,19 @@ const createLesson = async (req, res) => {
       normalizedOrder = lastLesson ? lastLesson.order + 1 : 1;
     }
 
+    let normalizedChapterOrder = Number(chapterOrder);
+    if (!normalizedChapterOrder || Number.isNaN(normalizedChapterOrder)) {
+      normalizedChapterOrder = 1;
+    }
+
     const created = await Lesson.create({
       course: courseId,
       title: title.trim(),
       content: content?.trim() || '',
       videoUrl: videoUrl?.trim() || '',
       imageUrl: imageUrl?.trim() || '',
+      chapterTitle: chapterTitle?.trim() || `Chuong ${normalizedChapterOrder}`,
+      chapterOrder: normalizedChapterOrder,
       order: normalizedOrder,
       createdBy: req.currentUser._id,
       createdByName: req.currentUser.username
@@ -81,7 +88,7 @@ const createLesson = async (req, res) => {
 const updateLesson = async (req, res) => {
   try {
     const { lessonId } = req.params;
-    const { title, content, videoUrl, imageUrl, order } = req.body;
+    const { title, content, videoUrl, imageUrl, order, chapterTitle, chapterOrder } = req.body;
 
     const lesson = await Lesson.findById(lessonId);
     if (!lesson) {
@@ -101,6 +108,10 @@ const updateLesson = async (req, res) => {
     if (content !== undefined) lesson.content = content.trim();
     if (videoUrl !== undefined) lesson.videoUrl = videoUrl.trim();
     if (imageUrl !== undefined) lesson.imageUrl = imageUrl.trim();
+    if (chapterTitle !== undefined) lesson.chapterTitle = chapterTitle.trim() || lesson.chapterTitle;
+    if (chapterOrder !== undefined && !Number.isNaN(Number(chapterOrder))) {
+      lesson.chapterOrder = Number(chapterOrder);
+    }
     if (order !== undefined && !Number.isNaN(Number(order))) lesson.order = Number(order);
 
     await lesson.save();

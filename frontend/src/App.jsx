@@ -140,6 +140,7 @@ function App() {
     imageFile: null
   })
   const [selectedLessonId, setSelectedLessonId] = useState(null)
+  const [lmsViewMode, setLmsViewMode] = useState('list')
   const [newUserData, setNewUserData] = useState({
     username: '',
     password: '',
@@ -1004,6 +1005,7 @@ function App() {
   const handleSelectCourse = course => {
     setSelectedCourse(course)
     setSelectedLessonId(null)
+    setLmsViewMode('list')
     if (course?._id) {
       fetchCourseLessons(course._id)
     } else {
@@ -1210,7 +1212,14 @@ function App() {
         order: newLessonData.order
       })
       alert(response.data.message || 'Đã thêm bài học.')
-      setNewLessonData({ title: '', content: '', videoUrl: '', imageUrl: '', order: 1, imageFile: null })
+      setNewLessonData({
+        title: '',
+        content: '',
+        videoUrl: '',
+        imageUrl: '',
+        order: 1,
+        imageFile: null
+      })
       fetchCourseLessons(selectedTeacherCourseId)
     } catch (error) {
       alert(error.response?.data?.message || 'Không thêm được bài học.')
@@ -1676,6 +1685,8 @@ function App() {
             lessons={courseLessons}
             selectedLessonId={selectedLessonId}
             onSelectLesson={setSelectedLessonId}
+            viewMode={lmsViewMode}
+            onChangeViewMode={setLmsViewMode}
             enrollmentByCourse={enrollmentByCourse}
             onEnroll={handleEnroll}
             onCompleteLesson={handleCompleteLesson}
