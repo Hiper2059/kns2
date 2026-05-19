@@ -128,6 +128,15 @@ function App() {
     order: 1,
     imageFile: null
   })
+  const [editLessonId, setEditLessonId] = useState(null)
+  const [editLessonData, setEditLessonData] = useState({
+    title: '',
+    content: '',
+    videoUrl: '',
+    imageUrl: '',
+    order: 1,
+    imageFile: null
+  })
   const [lessonRouteSlug, setLessonRouteSlug] = useState(null)
   const [lessonRouteLesson, setLessonRouteLesson] = useState(null)
   const [lessonRouteCourse, setLessonRouteCourse] = useState(null)
@@ -1192,6 +1201,71 @@ function App() {
     }
   }
 
+  const handleStartEditLesson = lesson => {
+    if (!lesson) {
+      return
+    }
+    setEditLessonId(lesson._id)
+    setEditLessonData({
+      title: lesson.title || '',
+      content: lesson.content || '',
+      videoUrl: lesson.videoUrl || '',
+      imageUrl: lesson.imageUrl || '',
+      order: lesson.order || 1,
+      imageFile: null
+    })
+  }
+
+  const handleCancelEditLesson = () => {
+    setEditLessonId(null)
+    setEditLessonData({
+      title: '',
+      content: '',
+      videoUrl: '',
+      imageUrl: '',
+      order: 1,
+      imageFile: null
+    })
+  }
+
+  const handleUpdateLesson = async lessonId => {
+    if (!lessonId) {
+      return
+    }
+
+    if (!editLessonData.title.trim()) {
+      alert('Cậu điền tiêu đề bài học trước nhé.')
+      return
+    }
+
+    try {
+      let imageUrl = editLessonData.imageUrl.trim()
+      if (editLessonData.imageFile) {
+        const errorMessage = validateImageFile(editLessonData.imageFile)
+        if (errorMessage) {
+          alert(errorMessage)
+          return
+        }
+        imageUrl = await uploadImageFile(editLessonData.imageFile)
+      }
+
+      const response = await api.patch(`/api/lessons/${lessonId}`, {
+        title: editLessonData.title.trim(),
+        content: editLessonData.content.trim(),
+        videoUrl: editLessonData.videoUrl.trim(),
+        imageUrl,
+        order: editLessonData.order
+      })
+      alert(response.data.message || 'Đã cập nhật bài học.')
+      handleCancelEditLesson()
+      if (selectedTeacherCourseId) {
+        fetchCourseLessons(selectedTeacherCourseId)
+      }
+    } catch (error) {
+      alert(error.response?.data?.message || 'Không cập nhật được bài học.')
+    }
+  }
+
   const handleEnroll = async courseId => {
     if (!ensureAuthenticated('tham gia lớp học')) {
       return
@@ -1674,6 +1748,12 @@ function App() {
             newLessonData={newLessonData}
             onNewLessonDataChange={setNewLessonData}
             onCreateLesson={handleCreateLesson}
+            editLessonId={editLessonId}
+            editLessonData={editLessonData}
+            onEditLessonStart={handleStartEditLesson}
+            onEditLessonChange={setEditLessonData}
+            onEditLessonCancel={handleCancelEditLesson}
+            onUpdateLesson={handleUpdateLesson}
             onLoadEnrollments={fetchTeacherEnrollments}
             onEvaluateEnrollment={handleEvaluateEnrollment}
             onOpenProfile={handleOpenProfile}

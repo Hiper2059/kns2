@@ -14,6 +14,12 @@ const TeacherView = ({
   newLessonData,
   onNewLessonDataChange,
   onCreateLesson,
+  editLessonId,
+  editLessonData,
+  onEditLessonStart,
+  onEditLessonChange,
+  onEditLessonCancel,
+  onUpdateLesson,
   onLoadEnrollments,
   onEvaluateEnrollment,
   onOpenProfile
@@ -207,6 +213,11 @@ const TeacherView = ({
                   <strong>{lesson.order}. {lesson.title}</strong>
                   <span>{lesson.videoUrl ? 'Có video' : 'Chưa có video'}</span>
                   {lesson.content && <p>{lesson.content}</p>}
+                  <div className="lesson-actions">
+                    <button className="btn-ghost" onClick={() => onEditLessonStart?.(lesson)}>
+                      Sua bai
+                    </button>
+                  </div>
                 </div>
                 <div className="lesson-media">
                   {lesson.imageUrl ? (
@@ -220,6 +231,60 @@ const TeacherView = ({
                     </a>
                   )}
                 </div>
+                {editLessonId === lesson._id && (
+                  <div className="lesson-edit-form">
+                    <div className="form-grid">
+                      <input
+                        type="text"
+                        placeholder="Tiêu đề bài học"
+                        value={editLessonData.title}
+                        onChange={e => onEditLessonChange({ ...editLessonData, title: e.target.value })}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Video URL"
+                        value={editLessonData.videoUrl}
+                        onChange={e => onEditLessonChange({ ...editLessonData, videoUrl: e.target.value })}
+                      />
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        onChange={e =>
+                          onEditLessonChange({
+                            ...editLessonData,
+                            imageFile: e.target.files?.[0] || null
+                          })
+                        }
+                      />
+                      <input
+                        type="text"
+                        placeholder="Anh minh hoa (URL - tuy chon)"
+                        value={editLessonData.imageUrl}
+                        onChange={e => onEditLessonChange({ ...editLessonData, imageUrl: e.target.value })}
+                      />
+                      <input
+                        type="number"
+                        placeholder="Thu tu bai"
+                        value={editLessonData.order}
+                        onChange={e => onEditLessonChange({ ...editLessonData, order: e.target.value })}
+                      />
+                      <textarea
+                        rows="4"
+                        placeholder="Noi dung bai hoc"
+                        value={editLessonData.content}
+                        onChange={e => onEditLessonChange({ ...editLessonData, content: e.target.value })}
+                      ></textarea>
+                    </div>
+                    <div className="lesson-edit-actions">
+                      <button className="btn-post" onClick={() => onUpdateLesson?.(lesson._id)}>
+                        Luu cap nhat
+                      </button>
+                      <button className="btn-ghost" onClick={onEditLessonCancel}>
+                        Huy
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))
           ) : (

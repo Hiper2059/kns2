@@ -106,6 +106,25 @@
   align-items: center;
 }
 
+.lesson-actions {
+  margin-top: 8px;
+}
+
+.lesson-edit-form {
+  grid-column: 1 / -1;
+  margin-top: 10px;
+  border: 1px dashed #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fafafa;
+}
+
+.lesson-edit-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .lesson-meta p {
   margin: 6px 0 0;
   color: #4b5563;
