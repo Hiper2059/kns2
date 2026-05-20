@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import './LmsView.css'
 
 const LmsView = ({
@@ -23,6 +24,9 @@ const LmsView = ({
   const canEnroll = currentUser && (currentRole === 'student' || currentRole === 'user')
   const isEnrolled = Boolean(enrollment)
   const sortedLessons = [...lessons].sort((a, b) => (a.order || 1) - (b.order || 1))
+  const completedLessonIds = useMemo(() => {
+    return new Set((enrollment?.completedLessons || []).map(item => String(item)))
+  }, [enrollment])
 
   const getProgressLabel = value => {
     const percent = Number(value) || 0
@@ -37,12 +41,6 @@ const LmsView = ({
       <div className="lms-sidebar">
         <h3>Danh mục lớp học</h3>
         <ul>
-          <li
-            className={!selectedCategory ? 'active' : ''}
-            onClick={() => onSelectCategory(null)}
-          >
-            Tất cả lớp
-          </li>
           {categories.map(category => (
             <li
               key={category}
@@ -73,12 +71,6 @@ const LmsView = ({
                 </div>
                 <div className="course-info">
                   <h4>{course.title}</h4>
-                  <div
-                    className="rich-text"
-                    dangerouslySetInnerHTML={{
-                      __html: course.description || 'Chưa có mô tả lớp học.'
-                    }}
-                  ></div>
                   <span>
                     Giảng viên:{' '}
                     <button
@@ -91,6 +83,14 @@ const LmsView = ({
                       {course.teacherName}
                     </button>
                   </span>
+                  {selectedCourse && selectedCourse._id === course._id && (
+                    <div
+                      className="course-preview rich-text"
+                      dangerouslySetInnerHTML={{
+                        __html: course.description || 'Chưa có mô tả lớp học.'
+                      }}
+                    ></div>
+                  )}
                 </div>
               </button>
             ))
@@ -156,7 +156,13 @@ const LmsView = ({
                         onClick={() => onOpenLesson?.(lesson)}
                       >
                         <span>{lesson.order}. {lesson.title}</span>
-                        {lesson.videoUrl ? <span className="lesson-chip">Video</span> : null}
+                        <span
+                          className={`lesson-chip ${
+                            completedLessonIds.has(String(lesson._id)) ? 'done' : 'todo'
+                          }`}
+                        >
+                          {completedLessonIds.has(String(lesson._id)) ? 'Da hoan thanh' : 'Chua hoan thanh'}
+                        </span>
                       </button>
                     ))}
                   </div>

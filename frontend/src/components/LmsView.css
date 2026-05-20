@@ -41,6 +41,9 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding-right: 6px;
 }
 
 .course-card {
@@ -80,6 +83,10 @@
 
 .course-info h4 {
   margin: 0 0 6px;
+}
+
+.course-preview {
+  margin-top: 8px;
 }
 
 .course-info p,
@@ -166,6 +173,9 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 6px;
 }
 
 .lesson-row {
@@ -191,6 +201,14 @@
   padding: 2px 8px;
   border-radius: 999px;
   font-size: 11px;
+}
+
+.lesson-chip.done {
+  background: #22c55e;
+}
+
+.lesson-chip.todo {
+  background: #f97316;
 }
 
 .lesson-page {

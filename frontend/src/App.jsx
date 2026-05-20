@@ -105,7 +105,7 @@ function App() {
   const [deletedComments, setDeletedComments] = useState([])
   const [isLoadingDeletedComments, setIsLoadingDeletedComments] = useState(false)
   const [deletedReasonFilter, setDeletedReasonFilter] = useState('all')
-  const [lmsCategory, setLmsCategory] = useState(null)
+  const [lmsCategory, setLmsCategory] = useState(categories[0])
   const [courses, setCourses] = useState([])
   const [selectedCourse, setSelectedCourse] = useState(null)
   const [courseLessons, setCourseLessons] = useState([])
@@ -124,6 +124,7 @@ function App() {
     title: '',
     content: '',
     videoUrl: '',
+    videoFile: null,
     imageUrl: '',
     order: 1,
     imageFile: null
@@ -133,6 +134,7 @@ function App() {
     title: '',
     content: '',
     videoUrl: '',
+    videoFile: null,
     imageUrl: '',
     order: 1,
     imageFile: null
@@ -484,7 +486,7 @@ function App() {
 
     if (actionId === 'go-lms') {
       handleTabChange('lms')
-      setLmsCategory(null)
+      handleSelectLmsCategory(categories[0])
       return
     }
 
@@ -504,7 +506,7 @@ function App() {
       const category = actionId.split(':')[1]
       if (category && categories.includes(category)) {
         handleTabChange('lms')
-        setLmsCategory(category)
+        handleSelectLmsCategory(category)
       }
     }
   }
@@ -906,6 +908,14 @@ function App() {
     }
   }
 
+  const handleSelectLmsCategory = category => {
+    setLmsCategory(category)
+    if (selectedCourse && category && selectedCourse.category !== category) {
+      setSelectedCourse(null)
+      setCourseLessons([])
+    }
+  }
+
   const handleSelectTeacherCourse = courseId => {
     setSelectedTeacherCourseId(courseId)
     if (courseId) {
@@ -1111,6 +1121,24 @@ function App() {
     return ''
   }
 
+  const validateVideoFile = file => {
+    if (!file) return ''
+    const allowed = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime']
+    if (!allowed.includes(file.type)) return 'Chi ho tro video MP4, WebM, OGG, MOV.'
+    const maxSize = 200 * 1024 * 1024
+    if (file.size > maxSize) return 'Video vuot qua 200MB.'
+    return ''
+  }
+
+  const uploadVideoFile = async file => {
+    const formData = new FormData()
+    formData.append('video', file)
+    const response = await api.post('/api/uploads/video', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    return response.data?.url || ''
+  }
+
   const uploadImageFile = async file => {
     const formData = new FormData()
     formData.append('image', file)
@@ -1179,10 +1207,20 @@ function App() {
         imageUrl = await uploadImageFile(newLessonData.imageFile)
       }
 
+      let videoUrl = newLessonData.videoUrl.trim()
+      if (newLessonData.videoFile) {
+        const videoError = validateVideoFile(newLessonData.videoFile)
+        if (videoError) {
+          alert(videoError)
+          return
+        }
+        videoUrl = await uploadVideoFile(newLessonData.videoFile)
+      }
+
       const response = await api.post(`/api/courses/${selectedTeacherCourseId}/lessons`, {
         title: newLessonData.title.trim(),
         content: newLessonData.content.trim(),
-        videoUrl: newLessonData.videoUrl.trim(),
+        videoUrl,
         imageUrl,
         order: newLessonData.order
       })
@@ -1191,6 +1229,7 @@ function App() {
         title: '',
         content: '',
         videoUrl: '',
+        videoFile: null,
         imageUrl: '',
         order: 1,
         imageFile: null
@@ -1210,6 +1249,7 @@ function App() {
       title: lesson.title || '',
       content: lesson.content || '',
       videoUrl: lesson.videoUrl || '',
+      videoFile: null,
       imageUrl: lesson.imageUrl || '',
       order: lesson.order || 1,
       imageFile: null
@@ -1222,6 +1262,7 @@ function App() {
       title: '',
       content: '',
       videoUrl: '',
+      videoFile: null,
       imageUrl: '',
       order: 1,
       imageFile: null
@@ -1249,10 +1290,20 @@ function App() {
         imageUrl = await uploadImageFile(editLessonData.imageFile)
       }
 
+      let videoUrl = editLessonData.videoUrl.trim()
+      if (editLessonData.videoFile) {
+        const videoError = validateVideoFile(editLessonData.videoFile)
+        if (videoError) {
+          alert(videoError)
+          return
+        }
+        videoUrl = await uploadVideoFile(editLessonData.videoFile)
+      }
+
       const response = await api.patch(`/api/lessons/${lessonId}`, {
         title: editLessonData.title.trim(),
         content: editLessonData.content.trim(),
-        videoUrl: editLessonData.videoUrl.trim(),
+        videoUrl,
         imageUrl,
         order: editLessonData.order
       })
@@ -1263,6 +1314,60 @@ function App() {
       }
     } catch (error) {
       alert(error.response?.data?.message || 'Không cập nhật được bài học.')
+    }
+  }
+
+  const handleUploadCourseEditorVideo = async file => {
+    if (!file) return
+    const err = validateVideoFile(file)
+    if (err) {
+      alert(err)
+      return
+    }
+    try {
+      const url = await uploadVideoFile(file)
+      setNewCourseData(prev => ({
+        ...prev,
+        description: `${prev.description || ''}<p><video controls src="${url}" style="max-width:100%"></video></p>`
+      }))
+    } catch (e) {
+      alert('Không upload được video.')
+    }
+  }
+
+  const handleUploadLessonEditorVideo = async file => {
+    if (!file) return
+    const err = validateVideoFile(file)
+    if (err) {
+      alert(err)
+      return
+    }
+    try {
+      const url = await uploadVideoFile(file)
+      setNewLessonData(prev => ({
+        ...prev,
+        content: `${prev.content || ''}<p><video controls src="${url}" style="max-width:100%"></video></p>`
+      }))
+    } catch (e) {
+      alert('Không upload được video.')
+    }
+  }
+
+  const handleUploadEditLessonEditorVideo = async file => {
+    if (!file) return
+    const err = validateVideoFile(file)
+    if (err) {
+      alert(err)
+      return
+    }
+    try {
+      const url = await uploadVideoFile(file)
+      setEditLessonData(prev => ({
+        ...prev,
+        content: `${prev.content || ''}<p><video controls src="${url}" style="max-width:100%"></video></p>`
+      }))
+    } catch (e) {
+      alert('Không upload được video.')
     }
   }
 
@@ -1670,7 +1775,7 @@ function App() {
             }}
             onSelectCategory={category => {
               closeLessonRoute()
-              setLmsCategory(category)
+              handleSelectLmsCategory(category)
               handleTabChange('lms')
             }}
             onCompleteLesson={handleCompleteLesson}
@@ -1720,7 +1825,7 @@ function App() {
           <LmsView
             categories={categories}
             selectedCategory={lmsCategory}
-            onSelectCategory={setLmsCategory}
+            onSelectCategory={handleSelectLmsCategory}
             courses={courses}
             selectedCourse={selectedCourse}
             onSelectCourse={handleSelectCourse}
@@ -1757,6 +1862,9 @@ function App() {
             onLoadEnrollments={fetchTeacherEnrollments}
             onEvaluateEnrollment={handleEvaluateEnrollment}
             onOpenProfile={handleOpenProfile}
+            onUploadCourseEditorVideo={handleUploadCourseEditorVideo}
+            onUploadLessonEditorVideo={handleUploadLessonEditorVideo}
+            onUploadEditLessonEditorVideo={handleUploadEditLessonEditorVideo}
           />
         )}
 

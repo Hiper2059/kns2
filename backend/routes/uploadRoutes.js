@@ -1,7 +1,7 @@
 const express = require('express');
-const { uploadImage } = require('../controllers/uploadController');
+const { uploadImage, uploadVideo } = require('../controllers/uploadController');
 const { requireTeacherOrAdmin } = require('../middleware/auth');
-const { imageUpload } = require('../middleware/upload');
+const { imageUpload, videoUpload } = require('../middleware/upload');
 
 const router = express.Router();
 
@@ -13,5 +13,14 @@ router.post('/uploads/image', requireTeacherOrAdmin, (req, res, next) => {
     return next();
   });
 }, uploadImage);
+
+router.post('/uploads/video', requireTeacherOrAdmin, (req, res, next) => {
+  videoUpload.single('video')(req, res, err => {
+    if (err) {
+      return res.status(400).json({ message: err.message || 'Upload that bai.' });
+    }
+    return next();
+  });
+}, uploadVideo);
 
 module.exports = router;

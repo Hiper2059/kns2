@@ -1,53 +1,6 @@
 import { useMemo, useState } from 'react'
-import ReactQuill, { Quill } from 'react-quill'
-import 'react-quill/dist/quill.snow.css'
+import RichTextEditor from './RichTextEditor'
 import './TeacherView.css'
-
-const Font = Quill.import('formats/font')
-Font.whitelist = [
-  'sans-serif',
-  'serif',
-  'monospace',
-  'be-vietnam-pro',
-  'merriweather',
-  'fira-sans'
-]
-Quill.register(Font, true)
-
-const quillModules = {
-  toolbar: [
-    [{ font: Font.whitelist }],
-    [{ header: [1, 2, 3, false] }],
-    ['bold', 'italic', 'underline', 'strike'],
-    [{ color: [] }, { background: [] }],
-    [{ script: 'sub' }, { script: 'super' }],
-    [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }],
-    [{ align: [] }],
-    ['blockquote', 'code-block'],
-    ['link', 'image', 'video'],
-    ['clean']
-  ]
-}
-
-const quillFormats = [
-  'font',
-  'header',
-  'bold',
-  'italic',
-  'underline',
-  'strike',
-  'color',
-  'background',
-  'script',
-  'list',
-  'indent',
-  'align',
-  'blockquote',
-  'code-block',
-  'link',
-  'image',
-  'video'
-]
 
 const TeacherView = ({
   categories,
@@ -71,6 +24,10 @@ const TeacherView = ({
   onLoadEnrollments,
   onEvaluateEnrollment,
   onOpenProfile
+  ,
+  onUploadCourseEditorVideo,
+  onUploadLessonEditorVideo,
+  onUploadEditLessonEditorVideo
 }) => {
   const [evaluationDrafts, setEvaluationDrafts] = useState({})
 
@@ -143,14 +100,18 @@ const TeacherView = ({
               value={newCourseData.imageUrl}
               onChange={e => onNewCourseDataChange({ ...newCourseData, imageUrl: e.target.value })}
             />
-            <div className="rich-editor">
-              <ReactQuill
-                theme="snow"
-                modules={quillModules}
-                formats={quillFormats}
-                value={newCourseData.description}
-                onChange={value => onNewCourseDataChange({ ...newCourseData, description: value })}
-                placeholder="Mô tả lớp học"
+            <RichTextEditor
+              toolbarId="course-description-toolbar"
+              value={newCourseData.description}
+              onChange={value => onNewCourseDataChange({ ...newCourseData, description: value })}
+              placeholder="Mô tả lớp học"
+            />
+            <div className="editor-upload">
+              <label>Upload video to description:</label>
+              <input
+                type="file"
+                accept="video/*"
+                onChange={e => onUploadCourseEditorVideo?.(e.target.files?.[0] || null)}
               />
             </div>
           </div>
@@ -200,14 +161,18 @@ const TeacherView = ({
               value={newLessonData.order}
               onChange={e => onNewLessonDataChange({ ...newLessonData, order: e.target.value })}
             />
-            <div className="rich-editor">
-              <ReactQuill
-                theme="snow"
-                modules={quillModules}
-                formats={quillFormats}
-                value={newLessonData.content}
-                onChange={value => onNewLessonDataChange({ ...newLessonData, content: value })}
-                placeholder="Nội dung bài học"
+            <RichTextEditor
+              toolbarId="lesson-content-toolbar"
+              value={newLessonData.content}
+              onChange={value => onNewLessonDataChange({ ...newLessonData, content: value })}
+              placeholder="Nội dung bài học"
+            />
+            <div className="editor-upload">
+              <label>Upload video to content:</label>
+              <input
+                type="file"
+                accept="video/*"
+                onChange={e => onUploadLessonEditorVideo?.(e.target.files?.[0] || null)}
               />
             </div>
           </div>
@@ -311,6 +276,11 @@ const TeacherView = ({
                       />
                       <input
                         type="file"
+                        accept="video/*"
+                        onChange={e => onEditLessonChange({ ...editLessonData, videoFile: e.target.files?.[0] || null })}
+                      />
+                      <input
+                        type="file"
                         accept="image/png,image/jpeg,image/webp"
                         onChange={e =>
                           onEditLessonChange({
@@ -331,14 +301,18 @@ const TeacherView = ({
                         value={editLessonData.order}
                         onChange={e => onEditLessonChange({ ...editLessonData, order: e.target.value })}
                       />
-                      <div className="rich-editor">
-                        <ReactQuill
-                          theme="snow"
-                          modules={quillModules}
-                          formats={quillFormats}
-                          value={editLessonData.content}
-                          onChange={value => onEditLessonChange({ ...editLessonData, content: value })}
-                          placeholder="Noi dung bai hoc"
+                      <RichTextEditor
+                        toolbarId={`lesson-edit-toolbar-${lesson._id}`}
+                        value={editLessonData.content}
+                        onChange={value => onEditLessonChange({ ...editLessonData, content: value })}
+                        placeholder="Noi dung bai hoc"
+                      />
+                      <div className="editor-upload">
+                        <label>Upload video to content:</label>
+                        <input
+                          type="file"
+                          accept="video/*"
+                          onChange={e => onUploadEditLessonEditorVideo?.(e.target.files?.[0] || null)}
                         />
                       </div>
                     </div>
