@@ -5,6 +5,25 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   build: {
-    chunkSizeWarningLimit: 2000,
+    chunkSizeWarningLimit: 2500,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/react-quill')) {
+            return 'editor'
+          }
+
+          if (id.includes('node_modules/hls.js') || id.includes('node_modules/dashjs') || id.includes('node_modules/react-youtube')) {
+            return 'player'
+          }
+
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'vendor'
+          }
+
+          return undefined
+        }
+      }
+    }
   },
 })
