@@ -1,7 +1,53 @@
 import { useMemo, useState } from 'react'
-import ReactQuill from 'react-quill'
+import ReactQuill, { Quill } from 'react-quill'
 import 'react-quill/dist/quill.snow.css'
 import './TeacherView.css'
+
+const Font = Quill.import('formats/font')
+Font.whitelist = [
+  'sans-serif',
+  'serif',
+  'monospace',
+  'be-vietnam-pro',
+  'merriweather',
+  'fira-sans'
+]
+Quill.register(Font, true)
+
+const quillModules = {
+  toolbar: [
+    [{ font: Font.whitelist }],
+    [{ header: [1, 2, 3, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ color: [] }, { background: [] }],
+    [{ script: 'sub' }, { script: 'super' }],
+    [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }],
+    [{ align: [] }],
+    ['blockquote', 'code-block'],
+    ['link', 'image', 'video'],
+    ['clean']
+  ]
+}
+
+const quillFormats = [
+  'font',
+  'header',
+  'bold',
+  'italic',
+  'underline',
+  'strike',
+  'color',
+  'background',
+  'script',
+  'list',
+  'indent',
+  'align',
+  'blockquote',
+  'code-block',
+  'link',
+  'image',
+  'video'
+]
 
 const TeacherView = ({
   categories,
@@ -100,6 +146,8 @@ const TeacherView = ({
             <div className="rich-editor">
               <ReactQuill
                 theme="snow"
+                modules={quillModules}
+                formats={quillFormats}
                 value={newCourseData.description}
                 onChange={value => onNewCourseDataChange({ ...newCourseData, description: value })}
                 placeholder="Mô tả lớp học"
@@ -155,6 +203,8 @@ const TeacherView = ({
             <div className="rich-editor">
               <ReactQuill
                 theme="snow"
+                modules={quillModules}
+                formats={quillFormats}
                 value={newLessonData.content}
                 onChange={value => onNewLessonDataChange({ ...newLessonData, content: value })}
                 placeholder="Nội dung bài học"
@@ -284,6 +334,8 @@ const TeacherView = ({
                       <div className="rich-editor">
                         <ReactQuill
                           theme="snow"
+                          modules={quillModules}
+                          formats={quillFormats}
                           value={editLessonData.content}
                           onChange={value => onEditLessonChange({ ...editLessonData, content: value })}
                           placeholder="Noi dung bai hoc"

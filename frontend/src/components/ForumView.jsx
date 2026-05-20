@@ -1,4 +1,52 @@
+import ReactQuill, { Quill } from 'react-quill'
+import 'react-quill/dist/quill.snow.css'
 import './ForumView.css'
+
+const Font = Quill.import('formats/font')
+Font.whitelist = [
+  'sans-serif',
+  'serif',
+  'monospace',
+  'be-vietnam-pro',
+  'merriweather',
+  'fira-sans'
+]
+Quill.register(Font, true)
+
+const quillModules = {
+  toolbar: [
+    [{ font: Font.whitelist }],
+    [{ header: [1, 2, 3, false] }],
+    ['bold', 'italic', 'underline', 'strike'],
+    [{ color: [] }, { background: [] }],
+    [{ script: 'sub' }, { script: 'super' }],
+    [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }],
+    [{ align: [] }],
+    ['blockquote', 'code-block'],
+    ['link', 'image', 'video'],
+    ['clean']
+  ]
+}
+
+const quillFormats = [
+  'font',
+  'header',
+  'bold',
+  'italic',
+  'underline',
+  'strike',
+  'color',
+  'background',
+  'script',
+  'list',
+  'indent',
+  'align',
+  'blockquote',
+  'code-block',
+  'link',
+  'image',
+  'video'
+]
 
 const ForumView = ({
   newPost,
@@ -34,11 +82,16 @@ const ForumView = ({
         >
           {categories.map((cat, i) => <option key={i} value={cat}>{cat}</option>)}
         </select>
-        <textarea
-          placeholder="Nội dung bạn muốn chia sẻ..." rows="4"
-          value={newPost.content}
-          onChange={e => onNewPostChange({ ...newPost, content: e.target.value })}
-        ></textarea>
+        <div className="rich-editor">
+          <ReactQuill
+            theme="snow"
+            modules={quillModules}
+            formats={quillFormats}
+            value={newPost.content}
+            onChange={value => onNewPostChange({ ...newPost, content: value })}
+            placeholder="Nội dung bạn muốn chia sẻ..."
+          />
+        </div>
         <button onClick={() => onPostSubmit()} className="btn-post">Đăng bài</button>
       </div>
 
