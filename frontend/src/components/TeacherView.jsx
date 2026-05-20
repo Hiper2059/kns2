@@ -30,6 +30,8 @@ const TeacherView = ({
   onUploadEditLessonEditorVideo
 }) => {
   const [evaluationDrafts, setEvaluationDrafts] = useState({})
+  const [isCreateCourseOpen, setIsCreateCourseOpen] = useState(false)
+  const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false)
 
   const selectedCourse = useMemo(
     () => courses.find(course => course._id === selectedCourseId) || null,
@@ -68,117 +70,135 @@ const TeacherView = ({
         <h2>Quản lý lớp học giảng viên</h2>
 
         <div className="teacher-card">
-          <h3>Tạo lớp học mới</h3>
-          <div className="form-grid">
-            <input
-              type="text"
-              placeholder="Tên lớp học"
-              value={newCourseData.title}
-              onChange={e => onNewCourseDataChange({ ...newCourseData, title: e.target.value })}
-            />
-            <select
-              value={newCourseData.category}
-              onChange={e => onNewCourseDataChange({ ...newCourseData, category: e.target.value })}
-            >
-              {categories.map(category => (
-                <option key={category} value={category}>{category}</option>
-              ))}
-            </select>
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              onChange={e =>
-                onNewCourseDataChange({
-                  ...newCourseData,
-                  imageFile: e.target.files?.[0] || null
-                })
-              }
-            />
-            <input
-              type="text"
-              placeholder="Anh dai dien (URL - tuy chon)"
-              value={newCourseData.imageUrl}
-              onChange={e => onNewCourseDataChange({ ...newCourseData, imageUrl: e.target.value })}
-            />
-            <RichTextEditor
-              toolbarId="course-description-toolbar"
-              value={newCourseData.description}
-              onChange={value => onNewCourseDataChange({ ...newCourseData, description: value })}
-              placeholder="Mô tả lớp học"
-            />
-            <div className="editor-upload">
-              <label>Upload video to description:</label>
-              <input
-                type="file"
-                accept="video/*"
-                onChange={e => onUploadCourseEditorVideo?.(e.target.files?.[0] || null)}
-              />
-            </div>
-          </div>
-          <button className="btn-post" onClick={onCreateCourse}>Tạo lớp</button>
+          <button
+            className="toggle-section-button"
+            onClick={() => setIsCreateCourseOpen(prev => !prev)}
+          >
+            {isCreateCourseOpen ? 'Ẩn tạo lớp học mới' : 'Tạo lớp học mới'}
+          </button>
+          {isCreateCourseOpen && (
+            <>
+              <div className="form-grid">
+                <input
+                  type="text"
+                  placeholder="Tên lớp học"
+                  value={newCourseData.title}
+                  onChange={e => onNewCourseDataChange({ ...newCourseData, title: e.target.value })}
+                />
+                <select
+                  value={newCourseData.category}
+                  onChange={e => onNewCourseDataChange({ ...newCourseData, category: e.target.value })}
+                >
+                  {categories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={e =>
+                    onNewCourseDataChange({
+                      ...newCourseData,
+                      imageFile: e.target.files?.[0] || null
+                    })
+                  }
+                />
+                <input
+                  type="text"
+                  placeholder="Anh dai dien (URL - tuy chon)"
+                  value={newCourseData.imageUrl}
+                  onChange={e => onNewCourseDataChange({ ...newCourseData, imageUrl: e.target.value })}
+                />
+                <RichTextEditor
+                  toolbarId="course-description-toolbar"
+                  value={newCourseData.description}
+                  onChange={value => onNewCourseDataChange({ ...newCourseData, description: value })}
+                  placeholder="Mô tả lớp học"
+                />
+                <div className="editor-upload">
+                  <label>Upload video to description:</label>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={e => onUploadCourseEditorVideo?.(e.target.files?.[0] || null)}
+                  />
+                </div>
+              </div>
+              <button className="btn-post" onClick={onCreateCourse}>Tạo lớp</button>
+            </>
+          )}
         </div>
 
         <div className="teacher-card">
-          <h3>Thêm bài học cho lớp</h3>
-          <select value={selectedCourseId || ''} onChange={e => onSelectCourseId(e.target.value)}>
-            <option value="">Chọn lớp học</option>
-            {courses.map(course => (
-              <option key={course._id} value={course._id}>{course.title}</option>
-            ))}
-          </select>
-          <div className="form-grid">
-            <input
-              type="text"
-              placeholder="Tiêu đề bài học"
-              value={newLessonData.title}
-              onChange={e => onNewLessonDataChange({ ...newLessonData, title: e.target.value })}
-            />
-            <input
-              type="text"
-              placeholder="Video URL"
-              value={newLessonData.videoUrl}
-              onChange={e => onNewLessonDataChange({ ...newLessonData, videoUrl: e.target.value })}
-            />
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              onChange={e =>
-                onNewLessonDataChange({
-                  ...newLessonData,
-                  imageFile: e.target.files?.[0] || null
-                })
-              }
-            />
-            <input
-              type="text"
-              placeholder="Anh minh hoa (URL - tuy chon)"
-              value={newLessonData.imageUrl}
-              onChange={e => onNewLessonDataChange({ ...newLessonData, imageUrl: e.target.value })}
-            />
-            <input
-              type="number"
-              placeholder="Thứ tự bài"
-              value={newLessonData.order}
-              onChange={e => onNewLessonDataChange({ ...newLessonData, order: e.target.value })}
-            />
-            <RichTextEditor
-              toolbarId="lesson-content-toolbar"
-              value={newLessonData.content}
-              onChange={value => onNewLessonDataChange({ ...newLessonData, content: value })}
-              placeholder="Nội dung bài học"
-            />
-            <div className="editor-upload">
-              <label>Upload video to content:</label>
-              <input
-                type="file"
-                accept="video/*"
-                onChange={e => onUploadLessonEditorVideo?.(e.target.files?.[0] || null)}
-              />
-            </div>
-          </div>
-          <button className="btn-post" onClick={onCreateLesson} disabled={!selectedCourseId}>
-            Thêm bài học
+          <button
+            className="toggle-section-button"
+            onClick={() => setIsCreateLessonOpen(prev => !prev)}
+          >
+            {isCreateLessonOpen ? 'Ẩn tạo bài học mới' : 'Tạo bài học mới'}
           </button>
+          {isCreateLessonOpen && (
+            <>
+              <select value={selectedCourseId || ''} onChange={e => onSelectCourseId(e.target.value)}>
+                <option value="">Chọn lớp học</option>
+                {courses.map(course => (
+                  <option key={course._id} value={course._id}>{course.title}</option>
+                ))}
+              </select>
+              <div className="form-grid">
+                <input
+                  type="text"
+                  placeholder="Tiêu đề bài học"
+                  value={newLessonData.title}
+                  onChange={e => onNewLessonDataChange({ ...newLessonData, title: e.target.value })}
+                />
+                <input
+                  type="text"
+                  placeholder="Video URL"
+                  value={newLessonData.videoUrl}
+                  onChange={e => onNewLessonDataChange({ ...newLessonData, videoUrl: e.target.value })}
+                />
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={e =>
+                    onNewLessonDataChange({
+                      ...newLessonData,
+                      imageFile: e.target.files?.[0] || null
+                    })
+                  }
+                />
+                <input
+                  type="text"
+                  placeholder="Anh minh hoa (URL - tuy chon)"
+                  value={newLessonData.imageUrl}
+                  onChange={e => onNewLessonDataChange({ ...newLessonData, imageUrl: e.target.value })}
+                />
+                <input
+                  type="number"
+                  placeholder="Thứ tự bài"
+                  value={newLessonData.order}
+                  onChange={e => onNewLessonDataChange({ ...newLessonData, order: e.target.value })}
+                />
+                <RichTextEditor
+                  toolbarId="lesson-content-toolbar"
+                  value={newLessonData.content}
+                  onChange={value => onNewLessonDataChange({ ...newLessonData, content: value })}
+                  placeholder="Nội dung bài học"
+                />
+                <div className="editor-upload">
+                  <label>Upload video to content:</label>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={e => onUploadLessonEditorVideo?.(e.target.files?.[0] || null)}
+                  />
+                </div>
+              </div>
+              <button className="btn-post" onClick={onCreateLesson} disabled={!selectedCourseId}>
+                Thêm bài học
+              </button>
+            </>
+          )}
         </div>
       </div>
 

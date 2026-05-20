@@ -1330,7 +1330,7 @@ function App() {
         ...prev,
         description: `${prev.description || ''}<p><video controls src="${url}" style="max-width:100%"></video></p>`
       }))
-    } catch (e) {
+    } catch {
       alert('Không upload được video.')
     }
   }
@@ -1348,7 +1348,7 @@ function App() {
         ...prev,
         content: `${prev.content || ''}<p><video controls src="${url}" style="max-width:100%"></video></p>`
       }))
-    } catch (e) {
+    } catch {
       alert('Không upload được video.')
     }
   }
@@ -1366,7 +1366,7 @@ function App() {
         ...prev,
         content: `${prev.content || ''}<p><video controls src="${url}" style="max-width:100%"></video></p>`
       }))
-    } catch (e) {
+    } catch {
       alert('Không upload được video.')
     }
   }
