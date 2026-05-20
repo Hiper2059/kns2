@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import ReactQuill, { Quill } from 'react-quill'
 import axios from 'axios'
 import 'react-quill/dist/quill.snow.css'
@@ -41,6 +41,32 @@ const quillFormats = [
   'image',
   'video'
 ]
+
+const latexTextReplacements = [
+  [/\\rightarrow/g, '→'],
+  [/\\leftarrow/g, '←'],
+  [/\\uparrow/g, '↑'],
+  [/\\downarrow/g, '↓'],
+  [/\\times/g, '×'],
+  [/\\div/g, '÷'],
+  [/\\leq/g, '≤'],
+  [/\\geq/g, '≥']
+]
+
+const normalizePastedText = text => {
+  let normalized = String(text || '')
+
+  latexTextReplacements.forEach(([pattern, replacement]) => {
+    normalized = normalized.replace(pattern, replacement)
+  })
+
+  normalized = normalized
+    .replace(/([→←↑↓×÷≤≥])\s*\$/g, '$1')
+    .replace(/\$\s*([→←↑↓×÷≤≥])/g, '$1')
+    .replace(/\u00a0/g, ' ')
+
+  return normalized
+}
 
 const buildModules = toolbarId => ({
   toolbar: {
@@ -114,6 +140,28 @@ const RichTextEditor = ({ value, onChange, placeholder, toolbarId }) => {
       }
     }
   }), [toolbarId])
+
+  useEffect(() => {
+    const quillInstance = quillRef.current?.getEditor?.()
+    if (!quillInstance) {
+      return
+    }
+
+    const textNodeType = window.Node?.TEXT_NODE || 3
+    quillInstance.clipboard.addMatcher(textNodeType, (node, delta) => {
+      const normalizedDelta = delta?.ops?.reduce((accumulator, op) => {
+        if (typeof op.insert === 'string') {
+          accumulator.insert(normalizePastedText(op.insert), op.attributes)
+          return accumulator
+        }
+
+        accumulator.insert(op.insert, op.attributes)
+        return accumulator
+      }, new (Quill.import('delta'))())
+
+      return normalizedDelta || delta
+    })
+  }, [])
 
   return (
     <div className="rich-editor">

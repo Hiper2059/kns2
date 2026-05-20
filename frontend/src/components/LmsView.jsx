@@ -46,6 +46,14 @@ const LmsView = ({
               key={category}
               className={selectedCategory === category ? 'active' : ''}
               onClick={() => onSelectCategory(category)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  onSelectCategory(category)
+                }
+              }}
             >
               {category}
             </li>

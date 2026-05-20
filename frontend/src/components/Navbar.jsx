@@ -19,7 +19,12 @@ const Navbar = ({
       onClick={onBrandClick}
       role="button"
       tabIndex={0}
-      onKeyDown={e => e.key === 'Enter' && onBrandClick()}
+      onKeyDown={event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          onBrandClick()
+        }
+      }}
     >
       <h1 className="logo">Z-Mate Hub</h1>
       <p className="tagline">Kỹ năng sống cho thế hệ trẻ</p>

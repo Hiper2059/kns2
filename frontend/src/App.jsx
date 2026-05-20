@@ -202,6 +202,14 @@ function App() {
   }
 
   const handleTabChange = tab => {
+    if (lessonRouteSlug) {
+      setLessonRouteSlug(null)
+      setLessonRouteLesson(null)
+      setLessonRouteCourse(null)
+      setLessonRouteLessons([])
+      window.history.pushState({}, '', '/')
+    }
+
     setActiveTab(tab)
     updatePathForTab(tab)
   }

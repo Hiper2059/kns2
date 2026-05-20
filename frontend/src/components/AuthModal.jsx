@@ -39,9 +39,9 @@ const AuthModal = ({
           {isAuthLoading ? 'Đang xử lý...' : authMode === 'login' ? 'Vào ngay' : 'Tạo tài khoản'}
         </button>
         {!disableRegister && (
-          <p onClick={onSwitchMode} className="auth-switch">
+          <button type="button" onClick={onSwitchMode} className="auth-switch">
             {authMode === 'login' ? 'Chưa có tài khoản? Đăng ký ngay' : 'Đã có tài khoản? Đăng nhập'}
-          </p>
+          </button>
         )}
       </div>
     </div>
