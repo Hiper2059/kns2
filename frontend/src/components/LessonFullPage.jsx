@@ -97,6 +97,19 @@ const LessonFullPage = ({
     return /\.mpd(\?|$)/i.test(url)
   }, [lesson?.videoUrl])
 
+  // Debug logging
+  useEffect(() => {
+    if (lesson?.videoUrl) {
+      console.log('[LessonFullPage] Video URL:', lesson.videoUrl, {
+        videoId,
+        isDirectVideo,
+        isHls,
+        isDash,
+        embedUrl: getVideoEmbedUrl(lesson.videoUrl)
+      })
+    }
+  }, [lesson?.videoUrl, videoId, isDirectVideo, isHls, isDash])
+
   useEffect(() => {
     setHasScrolledToEnd(false)
     setHasVideoEnded(false)
@@ -350,6 +363,14 @@ const LessonFullPage = ({
                   <div className="lesson-video-embed">
                     <video ref={videoElRef} controls src={lesson.videoUrl} style={{ width: '100%' }} />
                   </div>
+                ) : isHls ? (
+                  <div className="lesson-video-embed">
+                    <video ref={videoElRef} controls style={{ width: '100%' }} />
+                  </div>
+                ) : isDash ? (
+                  <div className="lesson-video-embed">
+                    <video ref={videoElRef} controls style={{ width: '100%' }} />
+                  </div>
                 ) : (
                   <iframe
                     src={getVideoEmbedUrl(lesson.videoUrl)}
@@ -357,6 +378,7 @@ const LessonFullPage = ({
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
+                    style={{ width: '100%', height: '600px' }}
                   ></iframe>
                 )}
               </div>

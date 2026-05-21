@@ -202,16 +202,29 @@ function App() {
   }
 
   const handleTabChange = tab => {
-    if (lessonRouteSlug) {
+    // Always close lesson route when changing tabs, except when already on that tab
+    if (lessonRouteSlug && activeTab !== tab) {
       setLessonRouteSlug(null)
       setLessonRouteLesson(null)
       setLessonRouteCourse(null)
       setLessonRouteLessons([])
-      window.history.pushState({}, '', '/')
     }
 
     setActiveTab(tab)
-    updatePathForTab(tab)
+    
+    // Update path after setting tab
+    if (tab === 'manage') {
+      window.history.pushState({}, '', '/admin')
+      setAuthGate(getAuthGateFromPath('/admin'))
+    } else if (tab === 'teacher') {
+      window.history.pushState({}, '', '/teacher')
+      setAuthGate(getAuthGateFromPath('/teacher'))
+    } else {
+      if (['/admin', '/teacher'].includes(window.location.pathname)) {
+        window.history.pushState({}, '', '/')
+      }
+      setAuthGate(null)
+    }
   }
 
   useEffect(() => {
@@ -944,6 +957,15 @@ function App() {
         const response = await api.get(`/api/lessons/slug/${encodeURIComponent(slug)}`)
         const lesson = response.data?.lesson || null
         const course = response.data?.course || null
+        
+        if (!lesson) {
+          alert('Không tìm thấy bài học này.')
+          setLessonRouteSlug(null)
+          setLessonRouteLesson(null)
+          setLessonRouteCourse(null)
+          return
+        }
+
         setLessonRouteLesson(lesson)
         setLessonRouteCourse(course)
         if (course?._id) {
@@ -951,7 +973,9 @@ function App() {
           await fetchCourseLessons(course._id)
         }
       } catch (error) {
-        alert(error.response?.data?.message || 'Khong tai duoc bai hoc.')
+        const message = error.response?.data?.message || 'Không tải được bài học.'
+        alert(message)
+        setLessonRouteSlug(null)
         setLessonRouteLesson(null)
         setLessonRouteCourse(null)
       } finally {
@@ -1012,7 +1036,10 @@ function App() {
     setLessonRouteCourse(null)
     setLessonRouteLessons([])
     window.history.pushState({}, '', '/')
-    setActiveTab('lms')
+    // Stay on LMS tab when closing lesson, don't force change
+    if (activeTab !== 'lms') {
+      setActiveTab('lms')
+    }
   }
 
   const applyProfileToDraft = user => {
