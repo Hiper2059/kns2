@@ -64,8 +64,8 @@ const LessonFullPage = ({
   const [hasVideoEnded, setHasVideoEnded] = useState(false)
   const [hasSeeked, setHasSeeked] = useState(false)
   const [videoReady, setVideoReady] = useState(false)
+  const [youtubeContainerEl, setYoutubeContainerEl] = useState(null)
   const playerRef = useRef(null)
-  const playerContainerRef = useRef(null)
   const videoElRef = useRef(null)
   const contentRef = useRef(null)
   const playbackIntervalRef = useRef(null)
@@ -155,10 +155,10 @@ const LessonFullPage = ({
   }, [lesson?.content])
 
   useEffect(() => {
-    if (!videoId || !playerContainerRef.current) {
-      console.log('[LessonFullPage] YouTube player setup skipped:', { videoId, hasContainer: !!playerContainerRef.current })
+    if (!videoId || !youtubeContainerEl) {
+      console.log('[LessonFullPage] YouTube player setup skipped:', { videoId, hasContainer: !!youtubeContainerEl })
       setVideoReady(false)
-      return
+      return undefined
     }
 
     let isMounted = true
@@ -185,23 +185,28 @@ const LessonFullPage = ({
 
     loadYouTubeApi()
       .then(YT => {
+        if (!isMounted || !youtubeContainerEl) return
+
         console.log('[LessonFullPage] YouTube API loaded, creating player...')
-        if (!isMounted || !playerContainerRef.current) return
         playerRef.current?.destroy?.()
-        playerRef.current = new YT.Player(playerContainerRef.current, {
+        playerRef.current = new YT.Player(youtubeContainerEl, {
           videoId,
           playerVars: {
+            controls: 1,
             rel: 0,
             modestbranding: 1,
+            playsinline: 1,
             origin: window.location.origin
           },
           events: {
             onReady: () => {
+              if (!isMounted) return
               console.log('[LessonFullPage] YouTube player ready')
               setVideoReady(true)
               lastTimeRef.current = 0
             },
             onStateChange: event => {
+              if (!isMounted) return
               console.log('[LessonFullPage] Player state changed:', event.data)
               if (event.data === YT.PlayerState.ENDED) {
                 setHasVideoEnded(true)
@@ -230,7 +235,7 @@ const LessonFullPage = ({
       playerRef.current?.destroy?.()
       playerRef.current = null
     }
-  }, [videoId])
+  }, [videoId, youtubeContainerEl])
 
   useEffect(() => {
     const video = videoElRef.current
@@ -382,7 +387,7 @@ const LessonFullPage = ({
             {lesson.videoUrl ? (
               <div className="lesson-video">
                 {videoId ? (
-                  <div className="lesson-video-embed" ref={playerContainerRef}></div>
+                  <div className="lesson-video-embed" ref={setYoutubeContainerEl}></div>
                 ) : isDirectVideo ? (
                   <div className="lesson-video-embed">
                     <video ref={videoElRef} controls src={lesson.videoUrl} style={{ width: '100%', height: 'auto' }} />
