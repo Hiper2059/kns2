@@ -156,6 +156,7 @@ const LessonFullPage = ({
 
   useEffect(() => {
     if (!videoId || !playerContainerRef.current) {
+      console.log('[LessonFullPage] YouTube player setup skipped:', { videoId, hasContainer: !!playerContainerRef.current })
       setVideoReady(false)
       return
     }
@@ -184,6 +185,7 @@ const LessonFullPage = ({
 
     loadYouTubeApi()
       .then(YT => {
+        console.log('[LessonFullPage] YouTube API loaded, creating player...')
         if (!isMounted || !playerContainerRef.current) return
         playerRef.current?.destroy?.()
         playerRef.current = new YT.Player(playerContainerRef.current, {
@@ -195,10 +197,12 @@ const LessonFullPage = ({
           },
           events: {
             onReady: () => {
+              console.log('[LessonFullPage] YouTube player ready')
               setVideoReady(true)
               lastTimeRef.current = 0
             },
             onStateChange: event => {
+              console.log('[LessonFullPage] Player state changed:', event.data)
               if (event.data === YT.PlayerState.ENDED) {
                 setHasVideoEnded(true)
                 clearPlaybackInterval()
@@ -213,7 +217,8 @@ const LessonFullPage = ({
           }
         })
       })
-      .catch(() => {
+      .catch(err => {
+        console.error('[LessonFullPage] YouTube API error:', err)
         if (isMounted) {
           setVideoReady(false)
         }

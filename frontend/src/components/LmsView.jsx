@@ -81,15 +81,24 @@ const LmsView = ({
                   <h4>{course.title}</h4>
                   <span>
                     Giảng viên:{' '}
-                    <button
+                    <span
                       className="profile-link"
+                      role="button"
+                      tabIndex={0}
                       onClick={event => {
                         event.stopPropagation()
                         onOpenProfile?.(course.teacher)
                       }}
+                      onKeyDown={event => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault()
+                          event.stopPropagation()
+                          onOpenProfile?.(course.teacher)
+                        }
+                      }}
                     >
                       {course.teacherName}
-                    </button>
+                    </span>
                   </span>
                   {selectedCourse && selectedCourse._id === course._id && (
                     <div
