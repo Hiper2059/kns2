@@ -32,9 +32,16 @@ const loadYouTubeApi = (() => {
 
 const getYouTubeId = url => {
   if (!url) return ''
-  if (url.includes('embed/')) return url.split('embed/')[1]?.split(/[?&]/)[0] || ''
+  // Remove any query params first
+  const cleanUrl = url.split('?')[0]
+  
+  if (cleanUrl.includes('embed/')) return cleanUrl.split('embed/')[1] || ''
   if (url.includes('watch?v=')) return url.split('watch?v=')[1]?.split('&')[0] || ''
-  if (url.includes('youtu.be/')) return url.split('youtu.be/')[1]?.split(/[?&]/)[0] || ''
+  if (cleanUrl.includes('youtu.be/')) return cleanUrl.split('youtu.be/')[1] || ''
+  
+  // If URL is just the video ID
+  if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url
+  
   return ''
 }
 
@@ -67,16 +74,28 @@ const LessonFullPage = ({
   const sortedLessons = [...lessons].sort((a, b) => (a.order || 1) - (b.order || 1))
   const getVideoEmbedUrl = url => {
     if (!url) return ''
+    
+    // Already embed URL
     if (url.includes('embed/')) return url
+    
+    // watch?v= format
     if (url.includes('watch?v=')) {
       const id = url.split('watch?v=')[1]?.split('&')[0]
-      return id ? `https://www.youtube.com/embed/${id}` : url
+      if (id) return `https://www.youtube.com/embed/${id}`
     }
+    
+    // youtu.be short URL
     if (url.includes('youtu.be/')) {
       const id = url.split('youtu.be/')[1]?.split('?')[0]
-      return id ? `https://www.youtube.com/embed/${id}` : url
+      if (id) return `https://www.youtube.com/embed/${id}`
     }
-    return url
+    
+    // If just video ID
+    if (/^[a-zA-Z0-9_-]{11}$/.test(url)) {
+      return `https://www.youtube.com/embed/${url}`
+    }
+    
+    return ''
   }
 
   const videoId = useMemo(() => getYouTubeId(lesson?.videoUrl), [lesson?.videoUrl])
@@ -361,25 +380,33 @@ const LessonFullPage = ({
                   <div className="lesson-video-embed" ref={playerContainerRef}></div>
                 ) : isDirectVideo ? (
                   <div className="lesson-video-embed">
-                    <video ref={videoElRef} controls src={lesson.videoUrl} style={{ width: '100%' }} />
+                    <video ref={videoElRef} controls src={lesson.videoUrl} style={{ width: '100%', height: 'auto' }} />
                   </div>
                 ) : isHls ? (
                   <div className="lesson-video-embed">
-                    <video ref={videoElRef} controls style={{ width: '100%' }} />
+                    <video ref={videoElRef} controls style={{ width: '100%', height: 'auto' }} />
                   </div>
                 ) : isDash ? (
                   <div className="lesson-video-embed">
-                    <video ref={videoElRef} controls style={{ width: '100%' }} />
+                    <video ref={videoElRef} controls style={{ width: '100%', height: 'auto' }} />
                   </div>
                 ) : (
-                  <iframe
-                    src={getVideoEmbedUrl(lesson.videoUrl)}
-                    title={lesson.title}
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    style={{ width: '100%', height: '600px' }}
-                  ></iframe>
+                  <>
+                    {getVideoEmbedUrl(lesson.videoUrl) ? (
+                      <iframe
+                        src={getVideoEmbedUrl(lesson.videoUrl)}
+                        title={lesson.title}
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        style={{ width: '100%', height: '600px', minHeight: '400px' }}
+                      ></iframe>
+                    ) : (
+                      <p style={{ color: 'red' }}>
+                        Video URL khong hop le: {lesson.videoUrl}
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
             ) : (
