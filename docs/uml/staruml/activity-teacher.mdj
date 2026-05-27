@@ -1,0 +1,99 @@
+{
+  "version": "2.0",
+  "extensions": [],
+  "model": {
+    "_type": "Project",
+    "_id": "teacher-project",
+    "name": "Activity-Teacher",
+    "ownedElements": [
+      {
+        "_type": "UMLModel",
+        "_id": "teacher-model",
+        "name": "Model",
+        "ownedElements": [
+          {
+            "_type": "UMLActivity",
+            "_id": "teacher-activity",
+            "name": "TeacherActivity",
+            "ownedElements": [
+              { "_type": "UMLInitialNode", "_id": "teacher-n0" },
+              { "_type": "UMLAction", "_id": "teacher-a1", "name": "Open Teacher dashboard" },
+              { "_type": "UMLDecisionNode", "_id": "teacher-d1", "name": "Create course?" },
+              { "_type": "UMLAction", "_id": "teacher-a2", "name": "Enter course data" },
+              { "_type": "UMLAction", "_id": "teacher-a3", "name": "Upload media" },
+              { "_type": "UMLAction", "_id": "teacher-a4", "name": "Save course" },
+              { "_type": "UMLDecisionNode", "_id": "teacher-d2", "name": "Create lesson?" },
+              { "_type": "UMLAction", "_id": "teacher-a5", "name": "Select course" },
+              { "_type": "UMLAction", "_id": "teacher-a6", "name": "Enter lesson data" },
+              { "_type": "UMLAction", "_id": "teacher-a7", "name": "Upload media" },
+              { "_type": "UMLAction", "_id": "teacher-a8", "name": "Save lesson" },
+              { "_type": "UMLDecisionNode", "_id": "teacher-d3", "name": "Review enrollments?" },
+              { "_type": "UMLAction", "_id": "teacher-a9", "name": "Load enrollments" },
+              { "_type": "UMLAction", "_id": "teacher-a10", "name": "Evaluate progress" },
+              { "_type": "UMLFinalNode", "_id": "teacher-f1" },
+
+              { "_type": "UMLControlFlow", "_id": "teacher-f01", "source": "teacher-n0", "target": "teacher-a1" },
+              { "_type": "UMLControlFlow", "_id": "teacher-f02", "source": "teacher-a1", "target": "teacher-d1" },
+              { "_type": "UMLControlFlow", "_id": "teacher-f03", "source": "teacher-d1", "target": "teacher-a2" },
+              { "_type": "UMLControlFlow", "_id": "teacher-f04", "source": "teacher-a2", "target": "teacher-a3" },
+              { "_type": "UMLControlFlow", "_id": "teacher-f05", "source": "teacher-a3", "target": "teacher-a4" },
+              { "_type": "UMLControlFlow", "_id": "teacher-f06", "source": "teacher-a4", "target": "teacher-a1" },
+              { "_type": "UMLControlFlow", "_id": "teacher-f07", "source": "teacher-d1", "target": "teacher-d2" },
+              { "_type": "UMLControlFlow", "_id": "teacher-f08", "source": "teacher-d2", "target": "teacher-a5" },
+              { "_type": "UMLControlFlow", "_id": "teacher-f09", "source": "teacher-a5", "target": "teacher-a6" },
+              { "_type": "UMLControlFlow", "_id": "teacher-f10", "source": "teacher-a6", "target": "teacher-a7" },
+              { "_type": "UMLControlFlow", "_id": "teacher-f11", "source": "teacher-a7", "target": "teacher-a8" },
+              { "_type": "UMLControlFlow", "_id": "teacher-f12", "source": "teacher-a8", "target": "teacher-a1" },
+              { "_type": "UMLControlFlow", "_id": "teacher-f13", "source": "teacher-d2", "target": "teacher-d3" },
+              { "_type": "UMLControlFlow", "_id": "teacher-f14", "source": "teacher-d3", "target": "teacher-a9" },
+              { "_type": "UMLControlFlow", "_id": "teacher-f15", "source": "teacher-a9", "target": "teacher-a10" },
+              { "_type": "UMLControlFlow", "_id": "teacher-f16", "source": "teacher-a10", "target": "teacher-f1" },
+              { "_type": "UMLControlFlow", "_id": "teacher-f17", "source": "teacher-d3", "target": "teacher-f1" }
+            ]
+          },
+          {
+            "_type": "UMLActivityDiagram",
+            "_id": "teacher-diagram",
+            "name": "TeacherActivityDiagram",
+            "diagramType": "ActivityDiagram",
+            "ownedViews": [
+              { "_type": "UMLInitialNodeView", "_id": "teacher-v0", "model": "teacher-n0", "x": 20, "y": 20, "width": 30, "height": 30 },
+              { "_type": "UMLActionView", "_id": "teacher-v1", "model": "teacher-a1", "x": 10, "y": 70, "width": 220, "height": 40 },
+              { "_type": "UMLDecisionNodeView", "_id": "teacher-v2", "model": "teacher-d1", "x": 105, "y": 130, "width": 40, "height": 40 },
+              { "_type": "UMLActionView", "_id": "teacher-v3", "model": "teacher-a2", "x": 10, "y": 190, "width": 220, "height": 40 },
+              { "_type": "UMLActionView", "_id": "teacher-v4", "model": "teacher-a3", "x": 10, "y": 250, "width": 220, "height": 40 },
+              { "_type": "UMLActionView", "_id": "teacher-v5", "model": "teacher-a4", "x": 10, "y": 310, "width": 220, "height": 40 },
+              { "_type": "UMLDecisionNodeView", "_id": "teacher-v6", "model": "teacher-d2", "x": 105, "y": 370, "width": 40, "height": 40 },
+              { "_type": "UMLActionView", "_id": "teacher-v7", "model": "teacher-a5", "x": 10, "y": 430, "width": 220, "height": 40 },
+              { "_type": "UMLActionView", "_id": "teacher-v8", "model": "teacher-a6", "x": 10, "y": 490, "width": 220, "height": 40 },
+              { "_type": "UMLActionView", "_id": "teacher-v9", "model": "teacher-a7", "x": 10, "y": 550, "width": 220, "height": 40 },
+              { "_type": "UMLActionView", "_id": "teacher-v10", "model": "teacher-a8", "x": 10, "y": 610, "width": 220, "height": 40 },
+              { "_type": "UMLDecisionNodeView", "_id": "teacher-v11", "model": "teacher-d3", "x": 105, "y": 670, "width": 40, "height": 40 },
+              { "_type": "UMLActionView", "_id": "teacher-v12", "model": "teacher-a9", "x": 10, "y": 730, "width": 220, "height": 40 },
+              { "_type": "UMLActionView", "_id": "teacher-v13", "model": "teacher-a10", "x": 10, "y": 790, "width": 220, "height": 40 },
+              { "_type": "UMLFinalNodeView", "_id": "teacher-v14", "model": "teacher-f1", "x": 105, "y": 850, "width": 30, "height": 30 },
+
+              { "_type": "UMLControlFlowView", "_id": "teacher-cf01", "model": "teacher-f01", "source": "teacher-v0", "target": "teacher-v1", "points": [{"x": 35, "y": 50}, {"x": 35, "y": 70}] },
+              { "_type": "UMLControlFlowView", "_id": "teacher-cf02", "model": "teacher-f02", "source": "teacher-v1", "target": "teacher-v2", "points": [{"x": 35, "y": 110}, {"x": 125, "y": 130}] },
+              { "_type": "UMLControlFlowView", "_id": "teacher-cf03", "model": "teacher-f03", "source": "teacher-v2", "target": "teacher-v3", "points": [{"x": 125, "y": 170}, {"x": 35, "y": 190}] },
+              { "_type": "UMLControlFlowView", "_id": "teacher-cf04", "model": "teacher-f04", "source": "teacher-v3", "target": "teacher-v4", "points": [{"x": 35, "y": 230}, {"x": 35, "y": 250}] },
+              { "_type": "UMLControlFlowView", "_id": "teacher-cf05", "model": "teacher-f05", "source": "teacher-v4", "target": "teacher-v5", "points": [{"x": 35, "y": 290}, {"x": 35, "y": 310}] },
+              { "_type": "UMLControlFlowView", "_id": "teacher-cf06", "model": "teacher-f06", "source": "teacher-v5", "target": "teacher-v1", "points": [{"x": 35, "y": 350}, {"x": 35, "y": 90}] },
+              { "_type": "UMLControlFlowView", "_id": "teacher-cf07", "model": "teacher-f07", "source": "teacher-v2", "target": "teacher-v6", "points": [{"x": 145, "y": 170}, {"x": 125, "y": 370}] },
+              { "_type": "UMLControlFlowView", "_id": "teacher-cf08", "model": "teacher-f08", "source": "teacher-v6", "target": "teacher-v7", "points": [{"x": 125, "y": 410}, {"x": 35, "y": 430}] },
+              { "_type": "UMLControlFlowView", "_id": "teacher-cf09", "model": "teacher-f09", "source": "teacher-v7", "target": "teacher-v8", "points": [{"x": 35, "y": 470}, {"x": 35, "y": 490}] },
+              { "_type": "UMLControlFlowView", "_id": "teacher-cf10", "model": "teacher-f10", "source": "teacher-v8", "target": "teacher-v9", "points": [{"x": 35, "y": 530}, {"x": 35, "y": 550}] },
+              { "_type": "UMLControlFlowView", "_id": "teacher-cf11", "model": "teacher-f11", "source": "teacher-v9", "target": "teacher-v10", "points": [{"x": 35, "y": 590}, {"x": 35, "y": 610}] },
+              { "_type": "UMLControlFlowView", "_id": "teacher-cf12", "model": "teacher-f12", "source": "teacher-v10", "target": "teacher-v1", "points": [{"x": 35, "y": 650}, {"x": 35, "y": 90}] },
+              { "_type": "UMLControlFlowView", "_id": "teacher-cf13", "model": "teacher-f13", "source": "teacher-v6", "target": "teacher-v11", "points": [{"x": 145, "y": 410}, {"x": 125, "y": 670}] },
+              { "_type": "UMLControlFlowView", "_id": "teacher-cf14", "model": "teacher-f14", "source": "teacher-v11", "target": "teacher-v12", "points": [{"x": 125, "y": 710}, {"x": 35, "y": 730}] },
+              { "_type": "UMLControlFlowView", "_id": "teacher-cf15", "model": "teacher-f15", "source": "teacher-v12", "target": "teacher-v13", "points": [{"x": 35, "y": 770}, {"x": 35, "y": 790}] },
+              { "_type": "UMLControlFlowView", "_id": "teacher-cf16", "model": "teacher-f16", "source": "teacher-v13", "target": "teacher-v14", "points": [{"x": 35, "y": 830}, {"x": 125, "y": 850}] },
+              { "_type": "UMLControlFlowView", "_id": "teacher-cf17", "model": "teacher-f17", "source": "teacher-v11", "target": "teacher-v14", "points": [{"x": 145, "y": 710}, {"x": 125, "y": 850}] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

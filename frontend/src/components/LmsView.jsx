@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import './LmsView.css'
 
 const LmsView = ({
@@ -6,19 +6,24 @@ const LmsView = ({
   selectedCategory,
   onSelectCategory,
   courses,
+  teacherCourses,
   selectedCourse,
   onSelectCourse,
   lessons,
   enrollmentByCourse,
+  teacherEnrollments,
   onEnroll,
   currentRole,
   currentUser,
   onOpenProfile,
-  onOpenLesson
+  onOpenLesson,
+  onLoadEnrollments
 }) => {
+  const isTeacherView = currentRole === 'teacher' || currentRole === 'admin'
+  const coursePool = isTeacherView ? teacherCourses : courses
   const visibleCourses = selectedCategory
-    ? courses.filter(course => course.category === selectedCategory)
-    : courses
+    ? coursePool.filter(course => course.category === selectedCategory)
+    : coursePool
 
   const enrollment = selectedCourse ? enrollmentByCourse[selectedCourse._id] : null
   const canEnroll = currentUser && (currentRole === 'student' || currentRole === 'user')
@@ -35,10 +40,17 @@ const LmsView = ({
     return 'Biet tuot'
   }
 
+  useEffect(() => {
+    if (!isTeacherView || !selectedCourse?._id) {
+      return
+    }
+    onLoadEnrollments?.(selectedCourse._id)
+  }, [isTeacherView, onLoadEnrollments, selectedCourse?._id])
+
 
   return (
     <div className="lms-view">
-      <div className="lms-sidebar">
+      <div className="lms-sidebar card-panel">
         <h3>Danh mục lớp học</h3>
         <ul>
           {categories.map(category => (
@@ -116,7 +128,7 @@ const LmsView = ({
           )}
         </div>
 
-        <div className="lms-course-detail">
+        <div className="lms-course-detail card-panel">
           {selectedCourse ? (
             <>
               <div className="course-header">
@@ -149,7 +161,7 @@ const LmsView = ({
                   {enrollment?.evaluation?.note && <p>Nhận xét: {enrollment.evaluation.note}</p>}
                 </div>
                 <div className="course-actions">
-                  {!currentUser && <span>Đăng nhập để tham gia lớp.</span>}
+                  {!currentUser && !isTeacherView && <span>Đăng nhập để tham gia lớp.</span>}
                   {canEnroll && !isEnrolled && (
                     <button className="btn-post" onClick={() => onEnroll(selectedCourse._id)}>
                       Tham gia học
@@ -158,6 +170,28 @@ const LmsView = ({
                   {isEnrolled && <span className="enrolled-pill">Đã tham gia</span>}
                 </div>
               </div>
+
+              {isTeacherView && (
+                <div className="syllabus-panel card-panel">
+                  <div className="syllabus-header">
+                    <h3>Học viên tham gia</h3>
+                  </div>
+                  {teacherEnrollments?.length ? (
+                    <div className="lesson-list-grid">
+                      {teacherEnrollments.map(enrollmentItem => (
+                        <div key={enrollmentItem._id} className="lesson-row">
+                          <span>{enrollmentItem.studentName}</span>
+                          <span className="lesson-chip done">
+                            {enrollmentItem.progressPercent || 0}%
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p>Chưa có học viên tham gia lớp này.</p>
+                  )}
+                </div>
+              )}
 
               <div className="syllabus-panel">
                 <div className="syllabus-header">

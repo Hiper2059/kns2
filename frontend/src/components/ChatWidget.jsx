@@ -13,7 +13,7 @@ const ChatWidget = ({
 }) => (
   <>
     {isOpen && (
-      <div className="chat-container floating-chat">
+      <div className="chat-container floating-chat card-panel">
         <div className="chat-header">
           <h3>Z-Mate Tư vấn</h3>
           <button className="chat-close" onClick={onClose}>×</button>

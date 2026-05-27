@@ -13,10 +13,10 @@
   width: min(720px, 100%);
   max-height: 90vh;
   overflow-y: auto;
-  background: #ffffff;
+  background: linear-gradient(180deg, var(--bg-main), var(--accent-soft));
   border-radius: 16px;
   padding: 18px;
-  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.35);
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.22);
 }
 
 .profile-modal-header {
@@ -57,7 +57,7 @@
 .profile-section {
   margin-top: 14px;
   padding-top: 12px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--line);
 }
 
 .profile-section h5 {
@@ -82,7 +82,7 @@
 }
 
 .btn-ghost {
-  border: 1px solid #cbd5f5;
+  border: 1px solid var(--line);
   background: transparent;
   border-radius: 999px;
   padding: 6px 12px;

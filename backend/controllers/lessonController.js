@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Course = require('../models/Course');
 const Lesson = require('../models/Lesson');
 const Enrollment = require('../models/Enrollment');
+const LessonView = require('../models/LessonView');
 const { isStudentRole } = require('../utils/userUtils');
 
 const slugify = value =>
@@ -214,6 +215,20 @@ const getLessonBySlug = async (req, res) => {
       if (!enrolled) {
         return res.status(403).json({ message: 'Cậu cần tham gia lớp trước khi xem bài học.' });
       }
+    }
+
+    try {
+      const userId = mongoose.Types.ObjectId.isValid(req.currentUser?._id)
+        ? req.currentUser._id
+        : null;
+      await LessonView.create({
+        lesson: lesson._id,
+        course: lesson.course,
+        user: userId,
+        userRole: req.currentUser?.role || ''
+      });
+    } catch (error) {
+      console.error('Loi ghi luot xem bai hoc:', error);
     }
 
     res.json({ lesson, course });

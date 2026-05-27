@@ -1,0 +1,28 @@
+/* Home view page panel styles for Kero tone */
+.home-view {
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
+}
+
+.home-hero {
+	background: linear-gradient(135deg, var(--accent), var(--brand));
+	color: #fff;
+	padding: 28px;
+	border-radius: 16px;
+	box-shadow: var(--card-shadow);
+}
+
+.home-grid {
+	display: grid;
+	grid-template-columns: 1fr 320px;
+	gap: 18px;
+}
+
+.card-panel {
+	background: var(--bg-main);
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	padding: 16px;
+	box-shadow: var(--card-shadow);
+}

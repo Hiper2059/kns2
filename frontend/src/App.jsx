@@ -104,12 +104,22 @@ function App() {
   const [isLoadingDeletedPosts, setIsLoadingDeletedPosts] = useState(false)
   const [deletedComments, setDeletedComments] = useState([])
   const [isLoadingDeletedComments, setIsLoadingDeletedComments] = useState(false)
+  const [adminAnalytics, setAdminAnalytics] = useState({
+    totalLessonViews: 0,
+    uniqueLessonViewers: 0,
+    topLessons: [],
+    totalLast30Days: 0,
+    viewsLast30Days: []
+  })
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false)
   const [deletedReasonFilter, setDeletedReasonFilter] = useState('all')
   const [lmsCategory, setLmsCategory] = useState(categories[0])
   const [courses, setCourses] = useState([])
   const [selectedCourse, setSelectedCourse] = useState(null)
   const [courseLessons, setCourseLessons] = useState([])
   const [myEnrollments, setMyEnrollments] = useState([])
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [teacherCourses, setTeacherCourses] = useState([])
   const [teacherEnrollments, setTeacherEnrollments] = useState([])
   const [selectedTeacherCourseId, setSelectedTeacherCourseId] = useState('')
@@ -734,6 +744,29 @@ function App() {
       setIsLoadingDeletedComments(false)
     }
   }, [currentRole, currentUser, deletedReasonFilter])
+
+  const fetchAdminAnalytics = useCallback(async () => {
+    if (!currentUser || currentRole !== 'admin') {
+      return
+    }
+
+    setIsLoadingAnalytics(true)
+    try {
+      const response = await api.get('/api/analytics/lessons/overview')
+      setAdminAnalytics(response.data || {})
+    } catch (error) {
+      alert(error.response?.data?.message || 'Không tải được thống kê bài học.')
+      setAdminAnalytics({
+        totalLessonViews: 0,
+        uniqueLessonViewers: 0,
+        topLessons: [],
+        totalLast30Days: 0,
+        viewsLast30Days: []
+      })
+    } finally {
+      setIsLoadingAnalytics(false)
+    }
+  }, [currentRole, currentUser])
 
   const handleRoleChange = async (username, role) => {
     if (!currentUser || currentRole !== 'admin') {
@@ -1441,16 +1474,6 @@ function App() {
     }
   }
 
-  const handleEvaluateEnrollment = async (enrollmentId, payload) => {
-    try {
-      const response = await api.patch(`/api/enrollments/${enrollmentId}/evaluate`, payload)
-      alert(response.data.message || 'Đã lưu đánh giá.')
-      fetchTeacherEnrollments(selectedTeacherCourseId)
-    } catch (error) {
-      alert(error.response?.data?.message || 'Không lưu được đánh giá.')
-    }
-  }
-
   const handleAdminDeletePost = async post => {
     if (!currentUser || currentRole !== 'admin') {
       return
@@ -1668,8 +1691,11 @@ function App() {
     if (activeTab === 'lms') {
       fetchCourses()
       fetchMyEnrollments()
+      if (currentRole === 'teacher' || currentRole === 'admin') {
+        fetchTeacherCourses()
+      }
     }
-  }, [activeTab, fetchCourses, fetchMyEnrollments])
+  }, [activeTab, currentRole, fetchCourses, fetchMyEnrollments, fetchTeacherCourses])
 
   useEffect(() => {
     if (lessonRouteSlug && !courses.length) {
@@ -1689,6 +1715,7 @@ function App() {
       fetchModerationReports()
       fetchDeletedPosts()
       fetchDeletedComments()
+      fetchAdminAnalytics()
     }
   }, [
     activeTab,
@@ -1696,7 +1723,8 @@ function App() {
     fetchManagedUsers,
     fetchModerationReports,
     fetchDeletedPosts,
-    fetchDeletedComments
+    fetchDeletedComments,
+    fetchAdminAnalytics
   ])
 
   useEffect(() => {
@@ -1761,7 +1789,7 @@ function App() {
   }
 
   return (
-    <div className="app-container">
+    <div className={`app-container ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
       <Navbar
         activeTab={activeTab}
         onTabChange={handleTabChange}
@@ -1774,7 +1802,18 @@ function App() {
         onBrandClick={handleBrandClick}
         onForumClick={goToForumTab}
         onOpenProfile={handleOpenMyProfile}
+        sidebarCollapsed={sidebarCollapsed}
+        sidebarOpen={sidebarOpen}
+        onToggleSidebar={() => {
+          if (typeof window !== 'undefined' && window.innerWidth < 900) {
+            setSidebarOpen(v => !v)
+          } else {
+            setSidebarCollapsed(v => !v)
+          }
+        }}
+        onCloseSidebar={() => setSidebarOpen(false)}
       />
+      {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
 
       <AuthModal
         isOpen={isAuthOpen}
@@ -1817,6 +1856,9 @@ function App() {
             canComplete={Boolean(lessonRouteEnrollment)}
             isCompleted={lessonRouteCompletedIds.has(String(lessonRouteLesson?._id))}
             isLoading={lessonRouteLoading}
+            api={api}
+            currentUser={currentUser}
+            currentRole={currentRole}
           />
         )}
 
@@ -1862,15 +1904,18 @@ function App() {
             selectedCategory={lmsCategory}
             onSelectCategory={handleSelectLmsCategory}
             courses={courses}
+            teacherCourses={teacherCourses}
             selectedCourse={selectedCourse}
             onSelectCourse={handleSelectCourse}
             lessons={courseLessons}
             enrollmentByCourse={enrollmentByCourse}
+            teacherEnrollments={teacherEnrollments}
             onEnroll={handleEnroll}
             currentRole={currentRole}
             currentUser={currentUser}
             onOpenProfile={handleOpenProfile}
             onOpenLesson={openLessonRoute}
+            onLoadEnrollments={fetchTeacherEnrollments}
           />
         )}
 
@@ -1879,7 +1924,6 @@ function App() {
             categories={categories}
             courses={teacherCourses}
             lessons={courseLessons}
-            enrollments={teacherEnrollments}
             selectedCourseId={selectedTeacherCourseId}
             onSelectCourseId={handleSelectTeacherCourse}
             newCourseData={newCourseData}
@@ -1894,9 +1938,6 @@ function App() {
             onEditLessonChange={setEditLessonData}
             onEditLessonCancel={handleCancelEditLesson}
             onUpdateLesson={handleUpdateLesson}
-            onLoadEnrollments={fetchTeacherEnrollments}
-            onEvaluateEnrollment={handleEvaluateEnrollment}
-            onOpenProfile={handleOpenProfile}
             onUploadCourseEditorVideo={handleUploadCourseEditorVideo}
             onUploadLessonEditorVideo={handleUploadLessonEditorVideo}
             onUploadEditLessonEditorVideo={handleUploadEditLessonEditorVideo}
@@ -1913,6 +1954,7 @@ function App() {
             isLoadingReports={isLoadingReports}
             isLoadingDeletedPosts={isLoadingDeletedPosts}
             isLoadingDeletedComments={isLoadingDeletedComments}
+            isLoadingAnalytics={isLoadingAnalytics}
             onFetchUsers={fetchManagedUsers}
             onFetchReports={fetchModerationReports}
             onFetchDeletedPosts={fetchDeletedPosts}
@@ -1942,6 +1984,7 @@ function App() {
             deletedComments={deletedComments}
             onRestoreComment={handleRestoreComment}
             onPermanentDeleteComment={handlePermanentDeleteComment}
+            analytics={adminAnalytics}
           />
         )}
 

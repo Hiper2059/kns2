@@ -1,0 +1,77 @@
+{
+  "version": "2.0",
+  "extensions": [],
+  "model": {
+    "_type": "Project",
+    "_id": "lesson-project",
+    "name": "Activity-Lesson",
+    "ownedElements": [
+      {
+        "_type": "UMLModel",
+        "_id": "lesson-model",
+        "name": "Model",
+        "ownedElements": [
+          {
+            "_type": "UMLActivity",
+            "_id": "lesson-activity",
+            "name": "LessonActivity",
+            "ownedElements": [
+              { "_type": "UMLInitialNode", "_id": "lesson-n0" },
+              { "_type": "UMLAction", "_id": "lesson-a1", "name": "Open lesson" },
+              { "_type": "UMLAction", "_id": "lesson-a2", "name": "Load content and video" },
+              { "_type": "UMLDecisionNode", "_id": "lesson-d1", "name": "Video required?" },
+              { "_type": "UMLAction", "_id": "lesson-a3", "name": "Play video" },
+              { "_type": "UMLAction", "_id": "lesson-a4", "name": "Track progress" },
+              { "_type": "UMLDecisionNode", "_id": "lesson-d2", "name": "Completion met?" },
+              { "_type": "UMLAction", "_id": "lesson-a5", "name": "Mark complete" },
+              { "_type": "UMLAction", "_id": "lesson-a6", "name": "Show unmet message" },
+              { "_type": "UMLFinalNode", "_id": "lesson-f1" },
+
+              { "_type": "UMLControlFlow", "_id": "lesson-f01", "source": "lesson-n0", "target": "lesson-a1" },
+              { "_type": "UMLControlFlow", "_id": "lesson-f02", "source": "lesson-a1", "target": "lesson-a2" },
+              { "_type": "UMLControlFlow", "_id": "lesson-f03", "source": "lesson-a2", "target": "lesson-d1" },
+              { "_type": "UMLControlFlow", "_id": "lesson-f04", "source": "lesson-d1", "target": "lesson-a3" },
+              { "_type": "UMLControlFlow", "_id": "lesson-f05", "source": "lesson-d1", "target": "lesson-a4" },
+              { "_type": "UMLControlFlow", "_id": "lesson-f06", "source": "lesson-a3", "target": "lesson-a4" },
+              { "_type": "UMLControlFlow", "_id": "lesson-f07", "source": "lesson-a4", "target": "lesson-d2" },
+              { "_type": "UMLControlFlow", "_id": "lesson-f08", "source": "lesson-d2", "target": "lesson-a5" },
+              { "_type": "UMLControlFlow", "_id": "lesson-f09", "source": "lesson-d2", "target": "lesson-a6" },
+              { "_type": "UMLControlFlow", "_id": "lesson-f10", "source": "lesson-a5", "target": "lesson-f1" },
+              { "_type": "UMLControlFlow", "_id": "lesson-f11", "source": "lesson-a6", "target": "lesson-f1" }
+            ]
+          },
+          {
+            "_type": "UMLActivityDiagram",
+            "_id": "lesson-diagram",
+            "name": "LessonActivityDiagram",
+            "diagramType": "ActivityDiagram",
+            "ownedViews": [
+              { "_type": "UMLInitialNodeView", "_id": "lesson-v0", "model": "lesson-n0", "x": 20, "y": 20, "width": 30, "height": 30 },
+              { "_type": "UMLActionView", "_id": "lesson-v1", "model": "lesson-a1", "x": 10, "y": 70, "width": 210, "height": 40 },
+              { "_type": "UMLActionView", "_id": "lesson-v2", "model": "lesson-a2", "x": 10, "y": 130, "width": 210, "height": 40 },
+              { "_type": "UMLDecisionNodeView", "_id": "lesson-v3", "model": "lesson-d1", "x": 95, "y": 190, "width": 40, "height": 40 },
+              { "_type": "UMLActionView", "_id": "lesson-v4", "model": "lesson-a3", "x": 10, "y": 250, "width": 210, "height": 40 },
+              { "_type": "UMLActionView", "_id": "lesson-v5", "model": "lesson-a4", "x": 10, "y": 310, "width": 210, "height": 40 },
+              { "_type": "UMLDecisionNodeView", "_id": "lesson-v6", "model": "lesson-d2", "x": 95, "y": 370, "width": 40, "height": 40 },
+              { "_type": "UMLActionView", "_id": "lesson-v7", "model": "lesson-a5", "x": 10, "y": 430, "width": 210, "height": 40 },
+              { "_type": "UMLActionView", "_id": "lesson-v8", "model": "lesson-a6", "x": 240, "y": 430, "width": 210, "height": 40 },
+              { "_type": "UMLFinalNodeView", "_id": "lesson-v9", "model": "lesson-f1", "x": 95, "y": 490, "width": 30, "height": 30 },
+
+              { "_type": "UMLControlFlowView", "_id": "lesson-cf01", "model": "lesson-f01", "source": "lesson-v0", "target": "lesson-v1", "points": [{"x": 35, "y": 50}, {"x": 35, "y": 70}] },
+              { "_type": "UMLControlFlowView", "_id": "lesson-cf02", "model": "lesson-f02", "source": "lesson-v1", "target": "lesson-v2", "points": [{"x": 35, "y": 110}, {"x": 35, "y": 130}] },
+              { "_type": "UMLControlFlowView", "_id": "lesson-cf03", "model": "lesson-f03", "source": "lesson-v2", "target": "lesson-v3", "points": [{"x": 35, "y": 170}, {"x": 115, "y": 190}] },
+              { "_type": "UMLControlFlowView", "_id": "lesson-cf04", "model": "lesson-f04", "source": "lesson-v3", "target": "lesson-v4", "points": [{"x": 115, "y": 230}, {"x": 35, "y": 250}] },
+              { "_type": "UMLControlFlowView", "_id": "lesson-cf05", "model": "lesson-f05", "source": "lesson-v3", "target": "lesson-v5", "points": [{"x": 135, "y": 230}, {"x": 35, "y": 310}] },
+              { "_type": "UMLControlFlowView", "_id": "lesson-cf06", "model": "lesson-f06", "source": "lesson-v4", "target": "lesson-v5", "points": [{"x": 35, "y": 290}, {"x": 35, "y": 310}] },
+              { "_type": "UMLControlFlowView", "_id": "lesson-cf07", "model": "lesson-f07", "source": "lesson-v5", "target": "lesson-v6", "points": [{"x": 35, "y": 350}, {"x": 115, "y": 370}] },
+              { "_type": "UMLControlFlowView", "_id": "lesson-cf08", "model": "lesson-f08", "source": "lesson-v6", "target": "lesson-v7", "points": [{"x": 115, "y": 410}, {"x": 35, "y": 430}] },
+              { "_type": "UMLControlFlowView", "_id": "lesson-cf09", "model": "lesson-f09", "source": "lesson-v6", "target": "lesson-v8", "points": [{"x": 135, "y": 410}, {"x": 265, "y": 430}] },
+              { "_type": "UMLControlFlowView", "_id": "lesson-cf10", "model": "lesson-f10", "source": "lesson-v7", "target": "lesson-v9", "points": [{"x": 35, "y": 470}, {"x": 115, "y": 490}] },
+              { "_type": "UMLControlFlowView", "_id": "lesson-cf11", "model": "lesson-f11", "source": "lesson-v8", "target": "lesson-v9", "points": [{"x": 265, "y": 470}, {"x": 115, "y": 490}] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

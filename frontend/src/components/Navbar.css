@@ -1,7 +1,152 @@
-.user-name {
+.sidebar {
+	width: 240px;
+	min-width: 220px;
+	height: 100vh;
+	position: fixed;
+	left: 0;
+	top: 0;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	background: linear-gradient(180deg, #fff, #fffaf7);
+	border-right: 1px solid rgba(236,232,227,0.9);
+	padding: 22px 16px;
+	box-shadow: 0 6px 30px rgba(25,16,7,0.04);
+	transition: width 200ms ease, transform 220ms ease;
+}
+
+.sidebar.collapsed {
+	width: 80px;
+	padding: 18px 8px;
+}
+
+.sidebar.collapsed .logo,
+.sidebar.collapsed .tagline,
+.sidebar.collapsed .label,
+.sidebar.collapsed .rank-pill {
+	display: none;
+}
+
+.sidebar .icon {
+	display: inline-block;
+	width: 28px;
+	text-align: center;
+	margin-right: 8px;
+}
+
+.sidebar.collapsed .sidebar-nav button {
+	justify-content: center;
+}
+
+.sidebar-toggle {
+	border: none;
+	background: transparent;
+	padding: 6px 8px;
+	font-size: 14px;
+	cursor: pointer;
+}
+
+/* overlay behavior for small screens */
+@media (max-width: 900px) {
+	.sidebar {
+		transform: translateX(-110%);
+		transition: transform 220ms ease;
+		z-index: 60;
+		width: 260px;
+	}
+
+	.sidebar.overlay-open {
+		transform: translateX(0);
+	}
+
+	.sidebar-backdrop {
+		display: none;
+	}
+}
+
+.sidebar-brand {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.sidebar .logo {
+	font-family: 'Space Grotesk', sans-serif;
+	color: #ff5c35;
+	font-size: 20px;
+}
+
+.sidebar .tagline {
+	font-size: 12px;
+	color: #6b6f74;
+}
+
+.label {
+	transition: opacity 180ms ease, transform 200ms ease;
+}
+
+.sidebar.collapsed .label {
+	opacity: 0;
+	transform: translateX(-6px);
+}
+
+.sidebar-nav {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-top: 18px;
+}
+
+.sidebar-nav button {
+	text-align: left;
+	padding: 12px 14px;
+	border-radius: 10px;
+	border: none;
+	background: transparent;
+	color: #394047;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.sidebar-nav button {
+	display: flex;
+	align-items: center;
+}
+
+.sidebar-nav button.active {
+	background: linear-gradient(130deg, var(--brand), #ff865f);
+	color: #fff;
+}
+
+.sidebar-bottom {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.sidebar .user-name {
 	border: none;
 	background: transparent;
 	color: inherit;
 	cursor: pointer;
-	font-weight: 600;
+	font-weight: 700;
+	text-align: left;
+}
+
+.sidebar .rank-pill {
+	font-size: 13px;
+	color: #8a5600;
+}
+
+.sidebar .auth-actions {
+	display: flex;
+	gap: 8px;
+}
+
+.btn-ghost {
+	border: 1px solid var(--line);
+	background: #fff;
+	padding: 8px 10px;
+	border-radius: 8px;
+	cursor: pointer;
 }

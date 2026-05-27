@@ -1,0 +1,87 @@
+{
+  "version": "2.0",
+  "extensions": [],
+  "model": {
+    "_type": "Project",
+    "_id": "forum-project",
+    "name": "Activity-Forum",
+    "ownedElements": [
+      {
+        "_type": "UMLModel",
+        "_id": "forum-model",
+        "name": "Model",
+        "ownedElements": [
+          {
+            "_type": "UMLActivity",
+            "_id": "forum-activity",
+            "name": "ForumActivity",
+            "ownedElements": [
+              { "_type": "UMLInitialNode", "_id": "forum-n0" },
+              { "_type": "UMLAction", "_id": "forum-a1", "name": "Open Forum" },
+              { "_type": "UMLAction", "_id": "forum-a2", "name": "Fetch posts and comments" },
+              { "_type": "UMLDecisionNode", "_id": "forum-d1", "name": "Create post?" },
+              { "_type": "UMLAction", "_id": "forum-a3", "name": "Compose post" },
+              { "_type": "UMLAction", "_id": "forum-a4", "name": "Submit post" },
+              { "_type": "UMLDecisionNode", "_id": "forum-d2", "name": "Comment?" },
+              { "_type": "UMLAction", "_id": "forum-a5", "name": "Write comment" },
+              { "_type": "UMLAction", "_id": "forum-a6", "name": "Submit comment" },
+              { "_type": "UMLDecisionNode", "_id": "forum-d3", "name": "Report?" },
+              { "_type": "UMLAction", "_id": "forum-a7", "name": "Send report" },
+              { "_type": "UMLFinalNode", "_id": "forum-f1" },
+
+              { "_type": "UMLControlFlow", "_id": "forum-f01", "source": "forum-n0", "target": "forum-a1" },
+              { "_type": "UMLControlFlow", "_id": "forum-f02", "source": "forum-a1", "target": "forum-a2" },
+              { "_type": "UMLControlFlow", "_id": "forum-f03", "source": "forum-a2", "target": "forum-d1" },
+              { "_type": "UMLControlFlow", "_id": "forum-f04", "source": "forum-d1", "target": "forum-a3" },
+              { "_type": "UMLControlFlow", "_id": "forum-f05", "source": "forum-a3", "target": "forum-a4" },
+              { "_type": "UMLControlFlow", "_id": "forum-f06", "source": "forum-a4", "target": "forum-a2" },
+              { "_type": "UMLControlFlow", "_id": "forum-f07", "source": "forum-d1", "target": "forum-d2" },
+              { "_type": "UMLControlFlow", "_id": "forum-f08", "source": "forum-d2", "target": "forum-a5" },
+              { "_type": "UMLControlFlow", "_id": "forum-f09", "source": "forum-a5", "target": "forum-a6" },
+              { "_type": "UMLControlFlow", "_id": "forum-f10", "source": "forum-a6", "target": "forum-a2" },
+              { "_type": "UMLControlFlow", "_id": "forum-f11", "source": "forum-d2", "target": "forum-d3" },
+              { "_type": "UMLControlFlow", "_id": "forum-f12", "source": "forum-d3", "target": "forum-a7" },
+              { "_type": "UMLControlFlow", "_id": "forum-f13", "source": "forum-a7", "target": "forum-a2" },
+              { "_type": "UMLControlFlow", "_id": "forum-f14", "source": "forum-d3", "target": "forum-f1" }
+            ]
+          },
+          {
+            "_type": "UMLActivityDiagram",
+            "_id": "forum-diagram",
+            "name": "ForumActivityDiagram",
+            "diagramType": "ActivityDiagram",
+            "ownedViews": [
+              { "_type": "UMLInitialNodeView", "_id": "forum-v0", "model": "forum-n0", "x": 20, "y": 20, "width": 30, "height": 30 },
+              { "_type": "UMLActionView", "_id": "forum-v1", "model": "forum-a1", "x": 10, "y": 70, "width": 200, "height": 40 },
+              { "_type": "UMLActionView", "_id": "forum-v2", "model": "forum-a2", "x": 10, "y": 130, "width": 200, "height": 40 },
+              { "_type": "UMLDecisionNodeView", "_id": "forum-v3", "model": "forum-d1", "x": 90, "y": 190, "width": 40, "height": 40 },
+              { "_type": "UMLActionView", "_id": "forum-v4", "model": "forum-a3", "x": 10, "y": 250, "width": 200, "height": 40 },
+              { "_type": "UMLActionView", "_id": "forum-v5", "model": "forum-a4", "x": 10, "y": 310, "width": 200, "height": 40 },
+              { "_type": "UMLDecisionNodeView", "_id": "forum-v6", "model": "forum-d2", "x": 90, "y": 370, "width": 40, "height": 40 },
+              { "_type": "UMLActionView", "_id": "forum-v7", "model": "forum-a5", "x": 10, "y": 430, "width": 200, "height": 40 },
+              { "_type": "UMLActionView", "_id": "forum-v8", "model": "forum-a6", "x": 10, "y": 490, "width": 200, "height": 40 },
+              { "_type": "UMLDecisionNodeView", "_id": "forum-v9", "model": "forum-d3", "x": 90, "y": 550, "width": 40, "height": 40 },
+              { "_type": "UMLActionView", "_id": "forum-v10", "model": "forum-a7", "x": 10, "y": 610, "width": 200, "height": 40 },
+              { "_type": "UMLFinalNodeView", "_id": "forum-v11", "model": "forum-f1", "x": 90, "y": 670, "width": 30, "height": 30 },
+
+              { "_type": "UMLControlFlowView", "_id": "forum-cf01", "model": "forum-f01", "source": "forum-v0", "target": "forum-v1", "points": [{"x": 35, "y": 50}, {"x": 35, "y": 70}] },
+              { "_type": "UMLControlFlowView", "_id": "forum-cf02", "model": "forum-f02", "source": "forum-v1", "target": "forum-v2", "points": [{"x": 35, "y": 110}, {"x": 35, "y": 130}] },
+              { "_type": "UMLControlFlowView", "_id": "forum-cf03", "model": "forum-f03", "source": "forum-v2", "target": "forum-v3", "points": [{"x": 35, "y": 170}, {"x": 110, "y": 190}] },
+              { "_type": "UMLControlFlowView", "_id": "forum-cf04", "model": "forum-f04", "source": "forum-v3", "target": "forum-v4", "points": [{"x": 110, "y": 230}, {"x": 35, "y": 250}] },
+              { "_type": "UMLControlFlowView", "_id": "forum-cf05", "model": "forum-f05", "source": "forum-v4", "target": "forum-v5", "points": [{"x": 35, "y": 290}, {"x": 35, "y": 310}] },
+              { "_type": "UMLControlFlowView", "_id": "forum-cf06", "model": "forum-f06", "source": "forum-v5", "target": "forum-v2", "points": [{"x": 35, "y": 350}, {"x": 35, "y": 150}] },
+              { "_type": "UMLControlFlowView", "_id": "forum-cf07", "model": "forum-f07", "source": "forum-v3", "target": "forum-v6", "points": [{"x": 130, "y": 230}, {"x": 110, "y": 370}] },
+              { "_type": "UMLControlFlowView", "_id": "forum-cf08", "model": "forum-f08", "source": "forum-v6", "target": "forum-v7", "points": [{"x": 110, "y": 410}, {"x": 35, "y": 430}] },
+              { "_type": "UMLControlFlowView", "_id": "forum-cf09", "model": "forum-f09", "source": "forum-v7", "target": "forum-v8", "points": [{"x": 35, "y": 470}, {"x": 35, "y": 490}] },
+              { "_type": "UMLControlFlowView", "_id": "forum-cf10", "model": "forum-f10", "source": "forum-v8", "target": "forum-v2", "points": [{"x": 35, "y": 530}, {"x": 35, "y": 150}] },
+              { "_type": "UMLControlFlowView", "_id": "forum-cf11", "model": "forum-f11", "source": "forum-v6", "target": "forum-v9", "points": [{"x": 130, "y": 410}, {"x": 110, "y": 550}] },
+              { "_type": "UMLControlFlowView", "_id": "forum-cf12", "model": "forum-f12", "source": "forum-v9", "target": "forum-v10", "points": [{"x": 110, "y": 590}, {"x": 35, "y": 610}] },
+              { "_type": "UMLControlFlowView", "_id": "forum-cf13", "model": "forum-f13", "source": "forum-v10", "target": "forum-v2", "points": [{"x": 35, "y": 650}, {"x": 35, "y": 150}] },
+              { "_type": "UMLControlFlowView", "_id": "forum-cf14", "model": "forum-f14", "source": "forum-v9", "target": "forum-v11", "points": [{"x": 130, "y": 590}, {"x": 110, "y": 670}] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

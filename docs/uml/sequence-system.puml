@@ -1,0 +1,74 @@
+@startuml
+title He thong KNS - Z-Mate Hub (Sequence tong quan)
+actor "Nguoi dung" as User
+participant "Frontend (React)" as FE
+participant "API Client" as API
+participant "Backend (Express)" as BE
+database "MongoDB" as DB
+participant "Cloudinary" as CDN
+participant "Gemini AI" as AI
+
+User -> FE: Mo ung dung
+FE -> API: GET /health (tuy chon)
+API -> BE: /health
+BE --> API: 200 OK
+API --> FE: OK
+
+alt Dang nhap / Dang ky
+  User -> FE: Nhap thong tin
+  FE -> API: POST /auth/login or /auth/register
+  API -> BE: Yeu cau xac thuc
+  BE -> DB: Doc/ghi user
+  DB --> BE: Du lieu user
+  BE --> API: Token + role
+  API --> FE: Luu token
+end
+
+alt Dien dan
+  User -> FE: Tao bai / binh luan / bao cao
+  FE -> API: POST /forum/posts | /forum/comments | /moderation/reports
+  API -> BE: Gui yeu cau
+  BE -> DB: Luu bai viet/binh luan/report
+  DB --> BE: Ack
+  BE --> API: Ket qua
+  API --> FE: Cap nhat UI
+end
+
+alt LMS
+  User -> FE: Xem khoa hoc/bai hoc
+  FE -> API: GET /courses | /courses/:id/lessons
+  API -> BE: Truy van
+  BE -> DB: Doc khoa hoc/bai hoc/enrollment
+  DB --> BE: Du lieu
+  BE --> API: Tra du lieu
+  API --> FE: Hien thi
+
+  User -> FE: Tham gia / hoan thanh bai hoc
+  FE -> API: POST /enrollments | POST /lessons/:id/complete
+  API -> BE: Cap nhat
+  BE -> DB: Ghi enrollment/progress
+  DB --> BE: Ack
+  BE --> API: OK
+  API --> FE: Cap nhat tien do
+end
+
+alt Tai media (anh/video)
+  User -> FE: Upload anh/video
+  FE -> API: POST /uploads/image or /uploads/video
+  API -> BE: Gui file
+  BE -> CDN: Luu media
+  CDN --> BE: URL
+  BE --> API: URL
+  API --> FE: Gan URL vao noi dung
+end
+
+alt Chat AI
+  User -> FE: Gui cau hoi
+  FE -> API: POST /chat
+  API -> BE: Gui prompt
+  BE -> AI: Goi Gemini
+  AI --> BE: Tra loi
+  BE --> API: Tra loi
+  API --> FE: Hien thi chat
+end
+@enduml

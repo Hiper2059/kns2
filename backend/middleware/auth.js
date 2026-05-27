@@ -77,4 +77,24 @@ const requireRoles = allowedRoles => async (req, res, next) => {
 const requireAdmin = requireRoles(['admin']);
 const requireTeacherOrAdmin = requireRoles(['teacher', 'admin']);
 
-module.exports = { requireActiveUser, requireAdmin, requireTeacherOrAdmin };
+// optionalAuth: do not error if no token, but attach currentUser when present and valid
+const optionalAuth = async (req, res, next) => {
+  try {
+    const token = extractBearerToken(req);
+    if (!token) {
+      return next();
+    }
+
+    const { user, error } = await getUserFromRequest(req);
+    if (user) {
+      req.currentUser = user;
+    }
+    // if error, ignore and continue as anonymous
+    return next();
+  } catch (err) {
+    // don't block public endpoints on auth parsing errors
+    return next();
+  }
+};
+
+module.exports = { requireActiveUser, requireAdmin, requireTeacherOrAdmin, optionalAuth };

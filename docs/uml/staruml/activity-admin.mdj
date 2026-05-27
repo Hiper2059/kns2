@@ -1,0 +1,83 @@
+{
+  "version": "2.0",
+  "extensions": [],
+  "model": {
+    "_type": "Project",
+    "_id": "admin-project",
+    "name": "Activity-Admin",
+    "ownedElements": [
+      {
+        "_type": "UMLModel",
+        "_id": "admin-model",
+        "name": "Model",
+        "ownedElements": [
+          {
+            "_type": "UMLActivity",
+            "_id": "admin-activity",
+            "name": "AdminActivity",
+            "ownedElements": [
+              { "_type": "UMLInitialNode", "_id": "admin-n0" },
+              { "_type": "UMLAction", "_id": "admin-a1", "name": "Open Admin dashboard" },
+              { "_type": "UMLAction", "_id": "admin-a2", "name": "Fetch users and reports" },
+              { "_type": "UMLDecisionNode", "_id": "admin-d1", "name": "Manage user?" },
+              { "_type": "UMLAction", "_id": "admin-a3", "name": "Update role or status" },
+              { "_type": "UMLDecisionNode", "_id": "admin-d2", "name": "Moderation?" },
+              { "_type": "UMLAction", "_id": "admin-a4", "name": "Review reports" },
+              { "_type": "UMLAction", "_id": "admin-a5", "name": "Delete or clear report" },
+              { "_type": "UMLDecisionNode", "_id": "admin-d3", "name": "Restore content?" },
+              { "_type": "UMLAction", "_id": "admin-a6", "name": "Restore or delete content" },
+              { "_type": "UMLFinalNode", "_id": "admin-f1" },
+
+              { "_type": "UMLControlFlow", "_id": "admin-f01", "source": "admin-n0", "target": "admin-a1" },
+              { "_type": "UMLControlFlow", "_id": "admin-f02", "source": "admin-a1", "target": "admin-a2" },
+              { "_type": "UMLControlFlow", "_id": "admin-f03", "source": "admin-a2", "target": "admin-d1" },
+              { "_type": "UMLControlFlow", "_id": "admin-f04", "source": "admin-d1", "target": "admin-a3" },
+              { "_type": "UMLControlFlow", "_id": "admin-f05", "source": "admin-a3", "target": "admin-a2" },
+              { "_type": "UMLControlFlow", "_id": "admin-f06", "source": "admin-d1", "target": "admin-d2" },
+              { "_type": "UMLControlFlow", "_id": "admin-f07", "source": "admin-d2", "target": "admin-a4" },
+              { "_type": "UMLControlFlow", "_id": "admin-f08", "source": "admin-a4", "target": "admin-a5" },
+              { "_type": "UMLControlFlow", "_id": "admin-f09", "source": "admin-a5", "target": "admin-a2" },
+              { "_type": "UMLControlFlow", "_id": "admin-f10", "source": "admin-d2", "target": "admin-d3" },
+              { "_type": "UMLControlFlow", "_id": "admin-f11", "source": "admin-d3", "target": "admin-a6" },
+              { "_type": "UMLControlFlow", "_id": "admin-f12", "source": "admin-a6", "target": "admin-a2" },
+              { "_type": "UMLControlFlow", "_id": "admin-f13", "source": "admin-d3", "target": "admin-f1" }
+            ]
+          },
+          {
+            "_type": "UMLActivityDiagram",
+            "_id": "admin-diagram",
+            "name": "AdminActivityDiagram",
+            "diagramType": "ActivityDiagram",
+            "ownedViews": [
+              { "_type": "UMLInitialNodeView", "_id": "admin-v0", "model": "admin-n0", "x": 20, "y": 20, "width": 30, "height": 30 },
+              { "_type": "UMLActionView", "_id": "admin-v1", "model": "admin-a1", "x": 10, "y": 70, "width": 220, "height": 40 },
+              { "_type": "UMLActionView", "_id": "admin-v2", "model": "admin-a2", "x": 10, "y": 130, "width": 220, "height": 40 },
+              { "_type": "UMLDecisionNodeView", "_id": "admin-v3", "model": "admin-d1", "x": 105, "y": 190, "width": 40, "height": 40 },
+              { "_type": "UMLActionView", "_id": "admin-v4", "model": "admin-a3", "x": 10, "y": 250, "width": 220, "height": 40 },
+              { "_type": "UMLDecisionNodeView", "_id": "admin-v5", "model": "admin-d2", "x": 105, "y": 310, "width": 40, "height": 40 },
+              { "_type": "UMLActionView", "_id": "admin-v6", "model": "admin-a4", "x": 10, "y": 370, "width": 220, "height": 40 },
+              { "_type": "UMLActionView", "_id": "admin-v7", "model": "admin-a5", "x": 10, "y": 430, "width": 220, "height": 40 },
+              { "_type": "UMLDecisionNodeView", "_id": "admin-v8", "model": "admin-d3", "x": 105, "y": 490, "width": 40, "height": 40 },
+              { "_type": "UMLActionView", "_id": "admin-v9", "model": "admin-a6", "x": 10, "y": 550, "width": 220, "height": 40 },
+              { "_type": "UMLFinalNodeView", "_id": "admin-v10", "model": "admin-f1", "x": 105, "y": 610, "width": 30, "height": 30 },
+
+              { "_type": "UMLControlFlowView", "_id": "admin-cf01", "model": "admin-f01", "source": "admin-v0", "target": "admin-v1", "points": [{"x": 35, "y": 50}, {"x": 35, "y": 70}] },
+              { "_type": "UMLControlFlowView", "_id": "admin-cf02", "model": "admin-f02", "source": "admin-v1", "target": "admin-v2", "points": [{"x": 35, "y": 110}, {"x": 35, "y": 130}] },
+              { "_type": "UMLControlFlowView", "_id": "admin-cf03", "model": "admin-f03", "source": "admin-v2", "target": "admin-v3", "points": [{"x": 35, "y": 170}, {"x": 125, "y": 190}] },
+              { "_type": "UMLControlFlowView", "_id": "admin-cf04", "model": "admin-f04", "source": "admin-v3", "target": "admin-v4", "points": [{"x": 125, "y": 230}, {"x": 35, "y": 250}] },
+              { "_type": "UMLControlFlowView", "_id": "admin-cf05", "model": "admin-f05", "source": "admin-v4", "target": "admin-v2", "points": [{"x": 35, "y": 290}, {"x": 35, "y": 150}] },
+              { "_type": "UMLControlFlowView", "_id": "admin-cf06", "model": "admin-f06", "source": "admin-v3", "target": "admin-v5", "points": [{"x": 145, "y": 230}, {"x": 125, "y": 310}] },
+              { "_type": "UMLControlFlowView", "_id": "admin-cf07", "model": "admin-f07", "source": "admin-v5", "target": "admin-v6", "points": [{"x": 125, "y": 350}, {"x": 35, "y": 370}] },
+              { "_type": "UMLControlFlowView", "_id": "admin-cf08", "model": "admin-f08", "source": "admin-v6", "target": "admin-v7", "points": [{"x": 35, "y": 410}, {"x": 35, "y": 430}] },
+              { "_type": "UMLControlFlowView", "_id": "admin-cf09", "model": "admin-f09", "source": "admin-v7", "target": "admin-v2", "points": [{"x": 35, "y": 470}, {"x": 35, "y": 150}] },
+              { "_type": "UMLControlFlowView", "_id": "admin-cf10", "model": "admin-f10", "source": "admin-v5", "target": "admin-v8", "points": [{"x": 145, "y": 350}, {"x": 125, "y": 490}] },
+              { "_type": "UMLControlFlowView", "_id": "admin-cf11", "model": "admin-f11", "source": "admin-v8", "target": "admin-v9", "points": [{"x": 125, "y": 530}, {"x": 35, "y": 550}] },
+              { "_type": "UMLControlFlowView", "_id": "admin-cf12", "model": "admin-f12", "source": "admin-v9", "target": "admin-v2", "points": [{"x": 35, "y": 590}, {"x": 35, "y": 150}] },
+              { "_type": "UMLControlFlowView", "_id": "admin-cf13", "model": "admin-f13", "source": "admin-v8", "target": "admin-v10", "points": [{"x": 145, "y": 530}, {"x": 125, "y": 610}] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

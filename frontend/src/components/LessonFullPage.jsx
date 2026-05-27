@@ -58,7 +58,10 @@ const LessonFullPage = ({
   isLoading,
   onCompleteLesson,
   canComplete,
-  isCompleted
+  isCompleted,
+  api,
+  currentUser,
+  currentRole
 }) => {
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false)
   const [hasVideoEnded, setHasVideoEnded] = useState(false)
@@ -307,13 +310,13 @@ const LessonFullPage = ({
         hls = null
       }
       if (dashPlayer) {
-        try { dashPlayer.reset() } catch (e) {}
+        try { dashPlayer.reset() } catch (err) { console.warn('dash reset error', err) }
         dashPlayer = null
       }
       // clear src for cleanup
-      try { video.removeAttribute('src'); video.load() } catch (e) {}
+      try { video.removeAttribute('src'); video.load() } catch (err) { console.warn('video cleanup error', err) }
     }
-  }, [isDirectVideo, isHls, isDash, lesson?._id])
+  }, [isDirectVideo, isHls, isDash, lesson?._id, lesson?.videoUrl])
 
   const videoSatisfied =
     !requiresVideo ||
@@ -321,6 +324,29 @@ const LessonFullPage = ({
     (isDirectVideo && videoReady && hasVideoEnded && !hasSeeked)
 
   const canMarkComplete = canComplete && !isCompleted && hasScrolledToEnd && videoSatisfied
+
+  // Comments state
+  const [comments, setComments] = useState([])
+  const [newComment, setNewComment] = useState('')
+  const [posting, setPosting] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      if (!lesson?._id) {
+        setComments([])
+        return
+      }
+      try {
+        const res = await api.get(`/api/lessons/${lesson._id}/comments`)
+        if (!cancelled) setComments(res.data.comments || [])
+      } catch (err) {
+        console.error('Error loading comments', err)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [api, lesson?._id])
 
   return (
     <div className="lesson-full-page">
@@ -383,7 +409,7 @@ const LessonFullPage = ({
         {isLoading && <p>Dang tai bai hoc...</p>}
 
         {!isLoading && lesson && (
-          <div className="lesson-content">
+          <div className="lesson-content card-panel">
             {lesson.videoUrl ? (
               <div className="lesson-video">
                 {videoId ? (
@@ -427,7 +453,7 @@ const LessonFullPage = ({
 
             <div
               ref={contentRef}
-              className="lesson-text rich-text"
+              className="lesson-text rich-text card-panel"
               dangerouslySetInnerHTML={{ __html: lesson.content || '' }}
             ></div>
 
@@ -453,6 +479,71 @@ const LessonFullPage = ({
                 )}
               </div>
             )}
+
+            <div className="lesson-comments">
+              <h4>Bình luận / Hỏi đáp</h4>
+              {comments.length === 0 && <p>Chưa có bình luận nào.</p>}
+              {comments.map(c => (
+                <div key={c._id} className="comment-item">
+                  <div className="comment-meta">
+                    <strong>{c.authorName || 'Khách'}</strong>
+                    <span className="comment-time">{new Date(c.createdAt).toLocaleString()}</span>
+                    {(currentRole === 'admin' || currentRole === 'teacher' || c.authorName === currentUser) && (
+                      <button
+                        className="btn-ghost btn-delete-comment"
+                        onClick={async () => {
+                          if (!confirm('Xác nhận xóa bình luận này?')) return
+                          try {
+                            await api.delete(`/api/comments/${c._id}`)
+                            setComments(prev => prev.filter(x => x._id !== c._id))
+                          } catch (err) {
+                            console.error('Delete comment error', err)
+                            alert(err?.response?.data?.message || 'Không xóa được bình luận.')
+                          }
+                        }}
+                      >
+                        Xóa
+                      </button>
+                    )}
+                  </div>
+                  <div className="comment-content">{c.content}</div>
+                </div>
+              ))}
+
+              {currentUser ? (
+                <div className="comment-form">
+                  <textarea
+                    value={newComment}
+                    onChange={e => setNewComment(e.target.value)}
+                    placeholder="Viết câu hỏi hoặc bình luận..."
+                  />
+                  <div className="comment-actions">
+                    <button
+                      className="btn-post"
+                      onClick={async () => {
+                        if (!newComment.trim()) return
+                        setPosting(true)
+                        try {
+                          const res = await api.post(`/api/lessons/${lesson._id}/comments`, { content: newComment })
+                          setNewComment('')
+                          setComments(prev => [...prev, res.data.comment])
+                        } catch (err) {
+                          console.error('Post comment error', err)
+                          alert(err?.response?.data?.message || 'Không gửi được bình luận.')
+                        } finally {
+                          setPosting(false)
+                        }
+                      }}
+                      disabled={posting}
+                    >
+                      Gửi
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p>Vui lòng đăng nhập để tham gia thảo luận.</p>
+              )}
+            </div>
           </div>
         )}
 

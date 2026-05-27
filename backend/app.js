@@ -12,6 +12,8 @@ const courseRoutes = require('./routes/courseRoutes');
 const lessonRoutes = require('./routes/lessonRoutes');
 const enrollmentRoutes = require('./routes/enrollmentRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
+const lessonCommentsRoutes = require('./routes/lessonCommentsRoutes');
 
 const app = express();
 
@@ -29,5 +31,7 @@ app.use('/api', courseRoutes);
 app.use('/api', lessonRoutes);
 app.use('/api', enrollmentRoutes);
 app.use('/api', uploadRoutes);
+app.use('/api', analyticsRoutes);
+app.use('/api', lessonCommentsRoutes);
 
 module.exports = app;

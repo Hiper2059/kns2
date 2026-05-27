@@ -1,0 +1,77 @@
+{
+  "version": "2.0",
+  "extensions": [],
+  "model": {
+    "_type": "Project",
+    "_id": "auth-project",
+    "name": "Activity-Auth",
+    "ownedElements": [
+      {
+        "_type": "UMLModel",
+        "_id": "auth-model",
+        "name": "Model",
+        "ownedElements": [
+          {
+            "_type": "UMLActivity",
+            "_id": "auth-activity",
+            "name": "AuthActivity",
+            "ownedElements": [
+              { "_type": "UMLInitialNode", "_id": "auth-n0" },
+              { "_type": "UMLAction", "_id": "auth-a1", "name": "Open auth modal" },
+              { "_type": "UMLAction", "_id": "auth-a2", "name": "Enter credentials" },
+              { "_type": "UMLDecisionNode", "_id": "auth-d1", "name": "Login or register" },
+              { "_type": "UMLAction", "_id": "auth-a3", "name": "Send login request" },
+              { "_type": "UMLAction", "_id": "auth-a4", "name": "Send register request" },
+              { "_type": "UMLDecisionNode", "_id": "auth-d2", "name": "Auth success?" },
+              { "_type": "UMLAction", "_id": "auth-a5", "name": "Save tokens and close" },
+              { "_type": "UMLAction", "_id": "auth-a6", "name": "Show error" },
+              { "_type": "UMLFinalNode", "_id": "auth-f1" },
+
+              { "_type": "UMLControlFlow", "_id": "auth-f01", "source": "auth-n0", "target": "auth-a1" },
+              { "_type": "UMLControlFlow", "_id": "auth-f02", "source": "auth-a1", "target": "auth-a2" },
+              { "_type": "UMLControlFlow", "_id": "auth-f03", "source": "auth-a2", "target": "auth-d1" },
+              { "_type": "UMLControlFlow", "_id": "auth-f04", "source": "auth-d1", "target": "auth-a3" },
+              { "_type": "UMLControlFlow", "_id": "auth-f05", "source": "auth-d1", "target": "auth-a4" },
+              { "_type": "UMLControlFlow", "_id": "auth-f06", "source": "auth-a3", "target": "auth-d2" },
+              { "_type": "UMLControlFlow", "_id": "auth-f07", "source": "auth-a4", "target": "auth-d2" },
+              { "_type": "UMLControlFlow", "_id": "auth-f08", "source": "auth-d2", "target": "auth-a5" },
+              { "_type": "UMLControlFlow", "_id": "auth-f09", "source": "auth-d2", "target": "auth-a6" },
+              { "_type": "UMLControlFlow", "_id": "auth-f10", "source": "auth-a6", "target": "auth-a2" },
+              { "_type": "UMLControlFlow", "_id": "auth-f11", "source": "auth-a5", "target": "auth-f1" }
+            ]
+          },
+          {
+            "_type": "UMLActivityDiagram",
+            "_id": "auth-diagram",
+            "name": "AuthActivityDiagram",
+            "diagramType": "ActivityDiagram",
+            "ownedViews": [
+              { "_type": "UMLInitialNodeView", "_id": "auth-v0", "model": "auth-n0", "x": 20, "y": 20, "width": 30, "height": 30 },
+              { "_type": "UMLActionView", "_id": "auth-v1", "model": "auth-a1", "x": 10, "y": 70, "width": 160, "height": 40 },
+              { "_type": "UMLActionView", "_id": "auth-v2", "model": "auth-a2", "x": 10, "y": 130, "width": 160, "height": 40 },
+              { "_type": "UMLDecisionNodeView", "_id": "auth-v3", "model": "auth-d1", "x": 70, "y": 190, "width": 40, "height": 40 },
+              { "_type": "UMLActionView", "_id": "auth-v4", "model": "auth-a3", "x": 10, "y": 250, "width": 160, "height": 40 },
+              { "_type": "UMLActionView", "_id": "auth-v5", "model": "auth-a4", "x": 200, "y": 250, "width": 160, "height": 40 },
+              { "_type": "UMLDecisionNodeView", "_id": "auth-v6", "model": "auth-d2", "x": 70, "y": 310, "width": 40, "height": 40 },
+              { "_type": "UMLActionView", "_id": "auth-v7", "model": "auth-a5", "x": 10, "y": 370, "width": 160, "height": 40 },
+              { "_type": "UMLActionView", "_id": "auth-v8", "model": "auth-a6", "x": 200, "y": 370, "width": 160, "height": 40 },
+              { "_type": "UMLFinalNodeView", "_id": "auth-v9", "model": "auth-f1", "x": 70, "y": 430, "width": 30, "height": 30 },
+
+              { "_type": "UMLControlFlowView", "_id": "auth-cf01", "model": "auth-f01", "source": "auth-v0", "target": "auth-v1", "points": [{"x": 35, "y": 50}, {"x": 35, "y": 70}] },
+              { "_type": "UMLControlFlowView", "_id": "auth-cf02", "model": "auth-f02", "source": "auth-v1", "target": "auth-v2", "points": [{"x": 35, "y": 110}, {"x": 35, "y": 130}] },
+              { "_type": "UMLControlFlowView", "_id": "auth-cf03", "model": "auth-f03", "source": "auth-v2", "target": "auth-v3", "points": [{"x": 35, "y": 170}, {"x": 90, "y": 190}] },
+              { "_type": "UMLControlFlowView", "_id": "auth-cf04", "model": "auth-f04", "source": "auth-v3", "target": "auth-v4", "points": [{"x": 90, "y": 230}, {"x": 35, "y": 250}] },
+              { "_type": "UMLControlFlowView", "_id": "auth-cf05", "model": "auth-f05", "source": "auth-v3", "target": "auth-v5", "points": [{"x": 110, "y": 230}, {"x": 230, "y": 250}] },
+              { "_type": "UMLControlFlowView", "_id": "auth-cf06", "model": "auth-f06", "source": "auth-v4", "target": "auth-v6", "points": [{"x": 35, "y": 290}, {"x": 90, "y": 310}] },
+              { "_type": "UMLControlFlowView", "_id": "auth-cf07", "model": "auth-f07", "source": "auth-v5", "target": "auth-v6", "points": [{"x": 230, "y": 290}, {"x": 110, "y": 310}] },
+              { "_type": "UMLControlFlowView", "_id": "auth-cf08", "model": "auth-f08", "source": "auth-v6", "target": "auth-v7", "points": [{"x": 90, "y": 350}, {"x": 35, "y": 370}] },
+              { "_type": "UMLControlFlowView", "_id": "auth-cf09", "model": "auth-f09", "source": "auth-v6", "target": "auth-v8", "points": [{"x": 110, "y": 350}, {"x": 230, "y": 370}] },
+              { "_type": "UMLControlFlowView", "_id": "auth-cf10", "model": "auth-f10", "source": "auth-v8", "target": "auth-v2", "points": [{"x": 230, "y": 410}, {"x": 35, "y": 150}] },
+              { "_type": "UMLControlFlowView", "_id": "auth-cf11", "model": "auth-f11", "source": "auth-v7", "target": "auth-v9", "points": [{"x": 35, "y": 410}, {"x": 85, "y": 430}] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

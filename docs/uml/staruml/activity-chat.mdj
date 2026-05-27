@@ -1,0 +1,67 @@
+{
+  "version": "2.0",
+  "extensions": [],
+  "model": {
+    "_type": "Project",
+    "_id": "chat-project",
+    "name": "Activity-Chat",
+    "ownedElements": [
+      {
+        "_type": "UMLModel",
+        "_id": "chat-model",
+        "name": "Model",
+        "ownedElements": [
+          {
+            "_type": "UMLActivity",
+            "_id": "chat-activity",
+            "name": "ChatActivity",
+            "ownedElements": [
+              { "_type": "UMLInitialNode", "_id": "chat-n0" },
+              { "_type": "UMLAction", "_id": "chat-a1", "name": "Open chat" },
+              { "_type": "UMLAction", "_id": "chat-a2", "name": "Type question" },
+              { "_type": "UMLAction", "_id": "chat-a3", "name": "Send to backend" },
+              { "_type": "UMLAction", "_id": "chat-a4", "name": "Receive AI response" },
+              { "_type": "UMLDecisionNode", "_id": "chat-d1", "name": "Action button?" },
+              { "_type": "UMLAction", "_id": "chat-a5", "name": "Trigger action" },
+              { "_type": "UMLFinalNode", "_id": "chat-f1" },
+
+              { "_type": "UMLControlFlow", "_id": "chat-f01", "source": "chat-n0", "target": "chat-a1" },
+              { "_type": "UMLControlFlow", "_id": "chat-f02", "source": "chat-a1", "target": "chat-a2" },
+              { "_type": "UMLControlFlow", "_id": "chat-f03", "source": "chat-a2", "target": "chat-a3" },
+              { "_type": "UMLControlFlow", "_id": "chat-f04", "source": "chat-a3", "target": "chat-a4" },
+              { "_type": "UMLControlFlow", "_id": "chat-f05", "source": "chat-a4", "target": "chat-d1" },
+              { "_type": "UMLControlFlow", "_id": "chat-f06", "source": "chat-d1", "target": "chat-a5" },
+              { "_type": "UMLControlFlow", "_id": "chat-f07", "source": "chat-a5", "target": "chat-f1" },
+              { "_type": "UMLControlFlow", "_id": "chat-f08", "source": "chat-d1", "target": "chat-f1" }
+            ]
+          },
+          {
+            "_type": "UMLActivityDiagram",
+            "_id": "chat-diagram",
+            "name": "ChatActivityDiagram",
+            "diagramType": "ActivityDiagram",
+            "ownedViews": [
+              { "_type": "UMLInitialNodeView", "_id": "chat-v0", "model": "chat-n0", "x": 20, "y": 20, "width": 30, "height": 30 },
+              { "_type": "UMLActionView", "_id": "chat-v1", "model": "chat-a1", "x": 10, "y": 70, "width": 200, "height": 40 },
+              { "_type": "UMLActionView", "_id": "chat-v2", "model": "chat-a2", "x": 10, "y": 130, "width": 200, "height": 40 },
+              { "_type": "UMLActionView", "_id": "chat-v3", "model": "chat-a3", "x": 10, "y": 190, "width": 200, "height": 40 },
+              { "_type": "UMLActionView", "_id": "chat-v4", "model": "chat-a4", "x": 10, "y": 250, "width": 200, "height": 40 },
+              { "_type": "UMLDecisionNodeView", "_id": "chat-v5", "model": "chat-d1", "x": 90, "y": 310, "width": 40, "height": 40 },
+              { "_type": "UMLActionView", "_id": "chat-v6", "model": "chat-a5", "x": 10, "y": 370, "width": 200, "height": 40 },
+              { "_type": "UMLFinalNodeView", "_id": "chat-v7", "model": "chat-f1", "x": 90, "y": 430, "width": 30, "height": 30 },
+
+              { "_type": "UMLControlFlowView", "_id": "chat-cf01", "model": "chat-f01", "source": "chat-v0", "target": "chat-v1", "points": [{"x": 35, "y": 50}, {"x": 35, "y": 70}] },
+              { "_type": "UMLControlFlowView", "_id": "chat-cf02", "model": "chat-f02", "source": "chat-v1", "target": "chat-v2", "points": [{"x": 35, "y": 110}, {"x": 35, "y": 130}] },
+              { "_type": "UMLControlFlowView", "_id": "chat-cf03", "model": "chat-f03", "source": "chat-v2", "target": "chat-v3", "points": [{"x": 35, "y": 170}, {"x": 35, "y": 190}] },
+              { "_type": "UMLControlFlowView", "_id": "chat-cf04", "model": "chat-f04", "source": "chat-v3", "target": "chat-v4", "points": [{"x": 35, "y": 230}, {"x": 35, "y": 250}] },
+              { "_type": "UMLControlFlowView", "_id": "chat-cf05", "model": "chat-f05", "source": "chat-v4", "target": "chat-v5", "points": [{"x": 35, "y": 290}, {"x": 110, "y": 310}] },
+              { "_type": "UMLControlFlowView", "_id": "chat-cf06", "model": "chat-f06", "source": "chat-v5", "target": "chat-v6", "points": [{"x": 110, "y": 350}, {"x": 35, "y": 370}] },
+              { "_type": "UMLControlFlowView", "_id": "chat-cf07", "model": "chat-f07", "source": "chat-v6", "target": "chat-v7", "points": [{"x": 35, "y": 410}, {"x": 110, "y": 430}] },
+              { "_type": "UMLControlFlowView", "_id": "chat-cf08", "model": "chat-f08", "source": "chat-v5", "target": "chat-v7", "points": [{"x": 130, "y": 350}, {"x": 110, "y": 430}] }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

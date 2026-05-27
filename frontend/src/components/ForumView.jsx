@@ -21,7 +21,7 @@ const ForumView = ({
 }) => (
   <div className="forum-view">
     <div className="forum-layout">
-      <div className="create-post-box">
+      <div className="create-post-box card-panel">
         <h3>Tạo bài viết mới</h3>
         <input
           type="text"
@@ -58,7 +58,7 @@ const ForumView = ({
 
         {paginatedForumPosts.length ? (
           paginatedForumPosts.map(post => (
-            <div key={post.id} className="post-card">
+            <div key={post.id} className="post-card card-panel">
               <div className="post-header">
                 <span className="post-category">{post.category}</span>
                 <span className="post-author">Bởi: {post.author}</span>
@@ -121,7 +121,7 @@ const ForumView = ({
             </div>
           ))
         ) : (
-          <div className="post-card empty-state">
+          <div className="post-card empty-state card-panel">
             <h4>Không tìm thấy bài viết phù hợp</h4>
             <p>Thử đổi từ khóa tìm kiếm hoặc đăng một chủ đề mới nhé.</p>
           </div>

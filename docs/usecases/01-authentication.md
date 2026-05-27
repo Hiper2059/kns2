@@ -31,6 +31,49 @@ This group covers authentication flows: Register, Login and Refresh Token.
 - Routes: [backend/routes/authRoutes.js](backend/routes/authRoutes.js#L1-L20)
 - Controller: `backend/controllers/authController.js`
 
+## Activity Diagram — Đăng ký tài khoản
+
+Sao chép block dưới đây vào PlantUML hoặc công cụ hỗ trợ PlantUML trong StarUML để dựng activity diagram theo đúng luồng của code hiện tại.
+
+```plantuml
+@startuml
+title Activity Diagram — Đăng ký tài khoản
+
+|Người dùng|
+start
+:Mở form đăng ký;
+:Nhập username, password;
+:Nhấn "Đăng ký";
+
+|Hệ thống|
+:Nhận dữ liệu từ form;
+:Kiểm tra username và password;
+if (Thiếu dữ liệu hoặc mật khẩu < 6 ký tự?) then (Có)
+	:Trả lỗi 400;
+	|Người dùng|
+	:Hiển thị thông báo lỗi;
+	stop
+else (Không)
+	:Chuẩn hóa username;
+	:Kiểm tra tài khoản đã tồn tại;
+	if (Tài khoản đã tồn tại?) then (Có)
+		:Trả lỗi 400;
+		|Người dùng|
+		:Hiển thị thông báo "Tài khoản đã tồn tại";
+		stop
+	else (Không)
+		:Hash mật khẩu;
+		:Tạo user mới với role = student;
+		:Lưu vào cơ sở dữ liệu;
+		:Trả thông báo đăng ký thành công;
+		|Người dùng|
+		:Chuyển sang form Đăng nhập;
+		stop
+	endif
+endif
+@enduml
+```
+
 ## Server/Database Flow
 - Read operations (e.g. token verification): Client -> Server verifies token/credentials -> Server checks token store or database as needed -> Server returns `200` or `401`.
 - Mutating operations (Register/Login): Client -> Server validates input -> Server creates or looks up user records in database -> Server issues tokens and returns `201`/`200` or error codes (`400`/`409`/`401`).

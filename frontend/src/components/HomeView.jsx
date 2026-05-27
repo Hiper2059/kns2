@@ -30,7 +30,7 @@ const HomeView = ({
   <div className="home-view">
     <div className="hero-section">
       <div className="rank-board">
-        <div className="rank-progress-card">
+        <div className="rank-progress-card card-panel">
           <h3>Hệ thống rank cá nhân</h3>
           {currentUser ? (
             <>
@@ -48,7 +48,7 @@ const HomeView = ({
           )}
         </div>
 
-        <div className="rank-progress-card leaderboard-card">
+        <div className="rank-progress-card leaderboard-card card-panel">
           <h3>Bảng xếp hạng điểm</h3>
           {rankLeaderboard.length ? (
             rankLeaderboard.map(([username, points], idx) => (
@@ -63,11 +63,11 @@ const HomeView = ({
         </div>
       </div>
 
-      <div className="video-section">
+        <div className="video-section card-panel">
         <h3>Video huong dan</h3>
         <div className="video-grid">
           {(categoryVideos[categories[0]] || []).slice(0, 1).map((video, index) => (
-            <div key={video._id || `${video.url}-${index}`} className="video-card">
+            <div key={video._id || `${video.url}-${index}`} className="video-card card-panel">
               <div className="video-frame-wrap">
                 <iframe
                   src={getVideoEmbedUrl(video.url)}

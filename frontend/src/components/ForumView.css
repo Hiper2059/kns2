@@ -11,3 +11,27 @@
 	min-height: 160px;
 }
 
+.forum-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 12px;
+}
+
+.create-post-box {
+	background: linear-gradient(180deg, #fff, var(--accent-soft));
+	border: 1px solid var(--line);
+	padding: 12px;
+	border-radius: 12px;
+}
+
+.post-card {
+	background: var(--bg-main);
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	padding: 14px;
+	box-shadow: var(--card-shadow);
+	margin-bottom: 12px;
+}
+

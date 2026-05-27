@@ -18,7 +18,7 @@ const AuthModal = ({
 
   return (
     <div className="auth-overlay">
-      <div className="auth-modal">
+      <div className="auth-modal card-panel">
         <button className="close-btn" onClick={onClose}>
           ×
         </button>

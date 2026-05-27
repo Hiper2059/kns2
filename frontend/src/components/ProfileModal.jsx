@@ -37,7 +37,7 @@ const ProfileModal = ({
 
   return (
     <div className="profile-modal-backdrop" onClick={onClose}>
-      <div className="profile-modal" onClick={event => event.stopPropagation()}>
+      <div className="profile-modal card-panel" onClick={event => event.stopPropagation()}>
         <div className="profile-modal-header">
           <h3>Ho so {role === 'teacher' ? 'giao vien' : 'hoc vien'}</h3>
           <button className="btn-ghost" onClick={onClose}>Dong</button>
