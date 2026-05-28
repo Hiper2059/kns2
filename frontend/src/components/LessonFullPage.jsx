@@ -65,6 +65,7 @@ const LessonFullPage = ({
   currentUser,
   currentRole
 }) => {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false)
   const [hasVideoEnded, setHasVideoEnded] = useState(false)
   const [hasSeeked, setHasSeeked] = useState(false)
@@ -77,6 +78,8 @@ const LessonFullPage = ({
   const lastTimeRef = useRef(0)
 
   const sortedLessons = [...lessons].sort((a, b) => (a.order || 1) - (b.order || 1))
+  const sidebarTitle = 'Muc luc'
+
   const getVideoEmbedUrl = url => {
     if (!url) return ''
     
@@ -408,47 +411,63 @@ const LessonFullPage = ({
   return (
     <div className="lesson-full-page">
       <aside className="lesson-sidebar">
-        <div className="sidebar-section">
-          <h4>Danh muc ky nang</h4>
-          <ul>
-            {categories.map(category => (
-              <li key={category}>
-                <button className="sidebar-link" onClick={() => onSelectCategory?.(category)}>
-                  {category}
-                </button>
-              </li>
-            ))}
-          </ul>
+        <div className="lesson-sidebar-header">
+          <h4>{sidebarTitle}</h4>
+          <button
+            className="lesson-sidebar-toggle"
+            onClick={() => setIsSidebarCollapsed(prev => !prev)}
+            aria-expanded={!isSidebarCollapsed}
+            aria-controls="lesson-sidebar-content"
+          >
+            {isSidebarCollapsed ? 'Mo ra' : 'Thu gon'}
+          </button>
         </div>
 
-        <div className="sidebar-section">
-          <h4>Lop hoc</h4>
-          <ul>
-            {courses.map(item => (
-              <li key={item._id}>
-                <button className="sidebar-link" onClick={() => onSelectCourse?.(item)}>
-                  {item.title}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
+        {!isSidebarCollapsed && (
+          <div id="lesson-sidebar-content" className="lesson-sidebar-content">
+            <div className="sidebar-section">
+              <h4>Danh muc ky nang</h4>
+              <ul>
+                {categories.map(category => (
+                  <li key={category}>
+                    <button className="sidebar-link" onClick={() => onSelectCategory?.(category)}>
+                      {category}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-        <div className="sidebar-section">
-          <h4>Bai hoc</h4>
-          <ul>
-            {sortedLessons.map(item => (
-              <li key={item._id}>
-                <button
-                  className={String(item._id) === String(lesson?._id) ? 'sidebar-link active' : 'sidebar-link'}
-                  onClick={() => onOpenLesson?.(item)}
-                >
-                  {item.order}. {item.title}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
+            <div className="sidebar-section">
+              <h4>Lop hoc</h4>
+              <ul>
+                {courses.map(item => (
+                  <li key={item._id}>
+                    <button className="sidebar-link" onClick={() => onSelectCourse?.(item)}>
+                      {item.title}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="sidebar-section">
+              <h4>Bai hoc</h4>
+              <ul>
+                {sortedLessons.map(item => (
+                  <li key={item._id}>
+                    <button
+                      className={String(item._id) === String(lesson?._id) ? 'sidebar-link active' : 'sidebar-link'}
+                      onClick={() => onOpenLesson?.(item)}
+                    >
+                      {item.order}. {item.title}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
       </aside>
 
       <section className="lesson-body">

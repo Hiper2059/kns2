@@ -16,6 +16,35 @@
   box-shadow: var(--shadow-hard);
 }
 
+.lesson-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.lesson-sidebar-header h4 {
+  margin: 0;
+}
+
+.lesson-sidebar-toggle {
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: var(--pop);
+  color: var(--text-main);
+  padding: 8px 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-hard);
+}
+
+.lesson-sidebar-content {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
 .sidebar-section {
   margin-bottom: 18px;
 }
@@ -148,10 +177,12 @@
 
   .lesson-sidebar {
     height: auto;
+    order: 0;
   }
 
   .lesson-body {
     min-height: auto;
+    order: 1;
   }
 
   .lesson-video iframe {
@@ -160,5 +191,18 @@
 
   .lesson-video-embed {
     height: 240px;
+  }
+
+  .lesson-sidebar-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 1001px) {
+  .lesson-sidebar-toggle {
+    display: inline-flex;
   }
 }
