@@ -65,7 +65,13 @@ const LessonFullPage = ({
   currentUser,
   currentRole
 }) => {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    if (typeof window === 'undefined') {
+      return false
+    }
+
+    return window.matchMedia('(max-width: 1000px)').matches
+  })
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false)
   const [hasVideoEnded, setHasVideoEnded] = useState(false)
   const [hasSeeked, setHasSeeked] = useState(false)
@@ -79,6 +85,27 @@ const LessonFullPage = ({
 
   const sortedLessons = [...lessons].sort((a, b) => (a.order || 1) - (b.order || 1))
   const sidebarTitle = 'Muc luc'
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined
+    }
+
+    const mediaQuery = window.matchMedia('(max-width: 1000px)')
+    const syncSidebarState = event => {
+      setIsSidebarCollapsed(event.matches)
+    }
+
+    syncSidebarState(mediaQuery)
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', syncSidebarState)
+      return () => mediaQuery.removeEventListener('change', syncSidebarState)
+    }
+
+    mediaQuery.addListener(syncSidebarState)
+    return () => mediaQuery.removeListener(syncSidebarState)
+  }, [])
 
   const getVideoEmbedUrl = url => {
     if (!url) return ''
