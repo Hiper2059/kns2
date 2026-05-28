@@ -1972,6 +1972,15 @@ function App() {
         }}
         onCloseSidebar={() => setSidebarOpen(false)}
       />
+      {!sidebarOpen && (
+        <button
+          className="mobile-sidebar-handle"
+          onClick={() => setSidebarOpen(true)}
+          aria-label="Mo thanh dieu huong"
+        >
+          ☰ Menu
+        </button>
+      )}
       {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
 
       <AuthModal
