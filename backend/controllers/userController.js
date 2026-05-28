@@ -5,7 +5,7 @@ const { hashPassword } = require('../utils/password');
 
 const createUser = async (req, res) => {
   try {
-    const { username, password, role } = req.body;
+    const { username, password, role, displayName } = req.body;
 
     if (!username || !password) {
       return res.status(400).json({ message: 'Thiếu username hoặc mật khẩu.' });
@@ -25,7 +25,10 @@ const createUser = async (req, res) => {
     const created = await User.create({
       username: normalizedUsername,
       passwordHash,
-      role: normalizeRole(role)
+      role: normalizeRole(role),
+      profile: {
+        displayName: String(displayName || '').trim()
+      }
     });
 
     res.status(201).json({

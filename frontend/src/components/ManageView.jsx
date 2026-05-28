@@ -215,6 +215,12 @@ const ManageView = ({
                     onChange={e => onNewUserDataChange({ ...newUserData, username: e.target.value })}
                   />
                   <input
+                    type="text"
+                    placeholder="Tên hiển thị"
+                    value={newUserData.displayName}
+                    onChange={e => onNewUserDataChange({ ...newUserData, displayName: e.target.value })}
+                  />
+                  <input
                     type="password"
                     placeholder="Mật khẩu"
                     value={newUserData.password}
@@ -224,14 +230,13 @@ const ManageView = ({
                     value={newUserData.role}
                     onChange={e => onNewUserDataChange({ ...newUserData, role: e.target.value })}
                   >
-                    <option value="student">student</option>
                     <option value="teacher">teacher</option>
                     <option value="admin">admin</option>
                   </select>
                   <button className="btn-post" onClick={onCreateUser}>Tạo tài khoản</button>
                 </div>
                 <p className="helper-text">
-                  Tạo tài khoản giảng viên xong, vào tab "Giảng viên" để thêm lớp học, bài học và video.
+                  Tạo xong tài khoản giảng viên hoặc admin là có thể phân quyền và mở đúng khu vực quản trị.
                 </p>
               </div>
             )}

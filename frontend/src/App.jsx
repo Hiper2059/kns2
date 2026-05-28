@@ -10,6 +10,7 @@ import ManageView from './components/ManageView'
 import LmsView from './components/LmsView'
 import TeacherView from './components/TeacherView'
 import ProfileModal from './components/ProfileModal'
+import ProfilePage from './components/ProfilePage'
 import LessonFullPage from './components/LessonFullPage'
 import {
   categories,
@@ -42,6 +43,9 @@ const getAuthGateFromPath = pathname => {
   if (pathname === '/teacher') {
     return { role: 'teacher', label: 'Giảng viên' }
   }
+  if (pathname === '/profile') {
+    return { role: 'profile', label: 'Hồ sơ cá nhân' }
+  }
   if (pathname === '/student') {
     return { role: 'student', label: 'Học sinh' }
   }
@@ -66,6 +70,9 @@ function App() {
     }
     if (window.location.pathname === '/teacher') {
       return 'teacher'
+    }
+    if (window.location.pathname === '/profile') {
+      return 'profile'
     }
     return 'home'
   }
@@ -157,6 +164,7 @@ function App() {
   const [newUserData, setNewUserData] = useState({
     username: '',
     password: '',
+    displayName: '',
     role: 'teacher'
   })
   const [adminUploadUrl, setAdminUploadUrl] = useState('')
@@ -165,6 +173,8 @@ function App() {
   const [profileMode, setProfileMode] = useState('view')
   const [profileLoading, setProfileLoading] = useState(false)
   const [profileUser, setProfileUser] = useState(null)
+  const [myProfile, setMyProfile] = useState(null)
+  const [myProfileLoading, setMyProfileLoading] = useState(false)
   const [profileDraft, setProfileDraft] = useState({
     displayName: '',
     stageName: '',
@@ -207,7 +217,19 @@ function App() {
       return
     }
 
+    if (tab === 'profile') {
+      window.history.pushState({}, '', '/profile')
+      setAuthGate(getAuthGateFromPath('/profile'))
+      return
+    }
+
     if (['/admin', '/teacher', '/student'].includes(window.location.pathname)) {
+      window.history.pushState({}, '', '/')
+      setAuthGate(null)
+      return
+    }
+
+    if (window.location.pathname === '/profile') {
       window.history.pushState({}, '', '/')
       setAuthGate(null)
     }
@@ -352,7 +374,7 @@ function App() {
           localStorage.removeItem('zmate_current_role')
           setCurrentUser(null)
           setCurrentRole('student')
-          alert('Admin phải đăng nhập tại đường dẫn /admin.')
+          alert('Tài khoản hoặc mật khẩu không đúng.')
           return
         }
 
@@ -362,7 +384,7 @@ function App() {
           localStorage.removeItem('zmate_current_role')
           setCurrentUser(null)
           setCurrentRole('student')
-          alert('Giảng viên phải đăng nhập tại đường dẫn /teacher.')
+          alert('Tài khoản hoặc mật khẩu không đúng.')
           return
         }
 
@@ -881,8 +903,8 @@ function App() {
       return
     }
 
-    if (!newUserData.username.trim() || !newUserData.password.trim()) {
-      alert('Cậu nhập đủ username và mật khẩu nhé.')
+    if (!newUserData.username.trim() || !newUserData.password.trim() || !newUserData.displayName.trim()) {
+      alert('Cậu nhập đủ username, tên hiển thị và mật khẩu nhé.')
       return
     }
 
@@ -890,10 +912,11 @@ function App() {
       const response = await api.post('/api/users', {
         username: newUserData.username.trim(),
         password: newUserData.password.trim(),
+        displayName: newUserData.displayName.trim(),
         role: newUserData.role
       })
       alert(response.data.message)
-      setNewUserData({ username: '', password: '', role: newUserData.role })
+      setNewUserData({ username: '', password: '', displayName: '', role: newUserData.role })
       fetchManagedUsers()
     } catch (error) {
       alert(error.response?.data?.message || 'Không tạo được tài khoản.')
@@ -1065,6 +1088,10 @@ function App() {
         setActiveTab('teacher')
         return
       }
+      if (pathname === '/profile') {
+        setActiveTab('profile')
+        return
+      }
       setActiveTab('home')
     }
 
@@ -1143,17 +1170,17 @@ function App() {
   }, [])
 
   const fetchMyProfile = useCallback(async () => {
-    setProfileLoading(true)
+    setMyProfileLoading(true)
     try {
       const response = await api.get('/api/users/me/profile')
       const user = response.data?.user || null
-      setProfileUser(user)
+      setMyProfile(user)
       applyProfileToDraft(user)
     } catch (error) {
       alert(error.response?.data?.message || 'Không tải được hồ sơ cá nhân.')
-      setProfileUser(null)
+      setMyProfile(null)
     } finally {
-      setProfileLoading(false)
+      setMyProfileLoading(false)
     }
   }, [])
 
@@ -1167,9 +1194,42 @@ function App() {
     if (!ensureAuthenticated('cap nhat ho so')) {
       return
     }
-    setProfileMode('edit')
-    setProfileModalOpen(true)
+    setProfileMode('view')
+    setActiveTab('profile')
+    updatePathForTab('profile')
     fetchMyProfile()
+  }
+
+  const handleProfileAvatarChange = event => {
+    const file = event.target.files?.[0]
+    if (!file) {
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      const avatarUrl = String(reader.result || '')
+      setProfileDraft(current => ({
+        ...current,
+        avatarUrl
+      }))
+      setMyProfile(current => {
+        if (!current) {
+          return current
+        }
+
+        return {
+          ...current,
+          profile: {
+            ...(current.profile || {}),
+            avatarUrl
+          }
+        }
+      })
+      setProfileMode('edit')
+    }
+    reader.readAsDataURL(file)
+    event.target.value = ''
   }
 
   const handleSaveProfile = async () => {
@@ -1180,7 +1240,7 @@ function App() {
     try {
       const response = await api.patch('/api/users/me/profile', profileDraft)
       const user = response.data?.user || null
-      setProfileUser(user)
+      setMyProfile(user)
       applyProfileToDraft(user)
       alert(response.data?.message || 'Da cap nhat ho so.')
       setProfileMode('view')
@@ -1750,6 +1810,10 @@ function App() {
   const handleLogout = () => {
     setCurrentUser(null)
     setCurrentRole('student')
+    setMyProfile(null)
+    setProfileUser(null)
+    setProfileModalOpen(false)
+    setProfileMode('view')
     clearTokens()
     localStorage.removeItem('zmate_current_user')
     localStorage.removeItem('zmate_current_role')
@@ -1808,6 +1872,12 @@ function App() {
     fetchDeletedComments,
     fetchAdminAnalytics
   ])
+
+  useEffect(() => {
+    if (activeTab === 'profile' && currentUser && !myProfile && !myProfileLoading) {
+      fetchMyProfile()
+    }
+  }, [activeTab, currentUser, fetchMyProfile, myProfile, myProfileLoading])
 
   useEffect(() => {
     if (lessonRouteSlug) {
@@ -1882,6 +1952,8 @@ function App() {
         onTabChange={handleTabChange}
         currentRole={currentRole}
         currentUser={currentUser}
+        currentUserLabel={myProfile?.profile?.displayName || currentUser}
+        currentUserAvatar={myProfile?.profile?.avatarUrl || ''}
         currentRank={currentRank}
         currentUserPoints={currentUserPoints}
         onLogout={handleLogout}
@@ -1956,6 +2028,27 @@ function App() {
               categoryVideos={categoryVideos}
               currentRole={currentRole}
               onDeleteVideo={handleDeleteVideo}
+            />
+          )}
+
+          {!lessonRouteSlug && activeTab === 'profile' && (
+            <ProfilePage
+              profileUser={myProfile}
+              profileDraft={profileDraft}
+              isLoading={myProfileLoading}
+              mode={profileMode}
+              currentUser={currentUser}
+              onClose={() => {
+                setActiveTab('home')
+                updatePathForTab('home')
+              }}
+              onEdit={() => {
+                setProfileMode('edit')
+                fetchMyProfile()
+              }}
+              onSave={handleSaveProfile}
+              onChange={setProfileDraft}
+              onAvatarChange={handleProfileAvatarChange}
             />
           )}
 

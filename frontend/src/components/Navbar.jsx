@@ -36,6 +36,8 @@ const Navbar = ({
   onTabChange,
   currentRole,
   currentUser,
+  currentUserLabel,
+  currentUserAvatar,
   currentRank,
   currentUserPoints,
   onLogout,
@@ -109,8 +111,15 @@ const Navbar = ({
 
         {currentUser ? (
           <>
+            <button className="user-avatar" onClick={onOpenProfile} aria-label="Mở hồ sơ cá nhân">
+              {currentUserAvatar ? (
+                <img src={currentUserAvatar} alt={currentUserLabel || currentUser} />
+              ) : (
+                <span>{(currentUserLabel || currentUser || 'U').slice(0, 1).toUpperCase()}</span>
+              )}
+            </button>
             <button className="user-name" onClick={onOpenProfile}>
-              {currentUser}
+              {currentUserLabel || currentUser}
             </button>
             <div className="rank-pill">
               {currentRank?.name || ''} · {currentUserPoints || 0} điểm
