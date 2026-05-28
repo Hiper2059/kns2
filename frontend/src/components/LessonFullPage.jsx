@@ -437,7 +437,7 @@ const LessonFullPage = ({
 
   return (
     <div className="lesson-full-page">
-      <aside className="lesson-sidebar">
+      <aside className={isSidebarCollapsed ? 'lesson-sidebar is-collapsed' : 'lesson-sidebar'}>
         <div className="lesson-sidebar-header">
           <h4>{sidebarTitle}</h4>
           <button
@@ -446,7 +446,7 @@ const LessonFullPage = ({
             aria-expanded={!isSidebarCollapsed}
             aria-controls="lesson-sidebar-content"
           >
-            {isSidebarCollapsed ? 'Mo ra' : 'Thu gon'}
+            {isSidebarCollapsed ? 'Mở ra' : 'Thu gọn'}
           </button>
         </div>
 
@@ -496,16 +496,6 @@ const LessonFullPage = ({
           </div>
         )}
       </aside>
-
-      {isSidebarCollapsed && (
-        <button
-          className="lesson-sidebar-fab"
-          onClick={() => setIsSidebarCollapsed(false)}
-          aria-label="Mo muc luc"
-        >
-          Muc luc
-        </button>
-      )}
 
       <section className="lesson-body">
         <div className="lesson-topbar">
