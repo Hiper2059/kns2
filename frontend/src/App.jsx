@@ -40,10 +40,10 @@ const getAuthGateFromPath = pathname => {
     return { role: 'admin', label: 'Admin' }
   }
   if (pathname === '/teacher') {
-    return { role: 'teacher', label: 'Giang vien' }
+    return { role: 'teacher', label: 'Giảng viên' }
   }
   if (pathname === '/student') {
-    return { role: 'student', label: 'Hoc sinh' }
+    return { role: 'student', label: 'Học sinh' }
   }
   return null
 }
@@ -159,6 +159,8 @@ function App() {
     password: '',
     role: 'teacher'
   })
+  const [adminUploadUrl, setAdminUploadUrl] = useState('')
+  const [isAdminUploadLoading, setIsAdminUploadLoading] = useState(false)
   const [profileModalOpen, setProfileModalOpen] = useState(false)
   const [profileMode, setProfileMode] = useState('view')
   const [profileLoading, setProfileLoading] = useState(false)
@@ -350,7 +352,7 @@ function App() {
           localStorage.removeItem('zmate_current_role')
           setCurrentUser(null)
           setCurrentRole('student')
-          alert('Admin phai dang nhap tai duong dan /admin.')
+          alert('Admin phải đăng nhập tại đường dẫn /admin.')
           return
         }
 
@@ -360,7 +362,7 @@ function App() {
           localStorage.removeItem('zmate_current_role')
           setCurrentUser(null)
           setCurrentRole('student')
-          alert('Giang vien phai dang nhap tai duong dan /teacher.')
+          alert('Giảng viên phải đăng nhập tại đường dẫn /teacher.')
           return
         }
 
@@ -1223,6 +1225,26 @@ function App() {
     return response.data?.url || ''
   }
 
+  const handleAdminUploadVideo = async file => {
+    if (!file) {
+      return
+    }
+    const videoError = validateVideoFile(file)
+    if (videoError) {
+      alert(videoError)
+      return
+    }
+    setIsAdminUploadLoading(true)
+    try {
+      const url = await uploadVideoFile(file)
+      setAdminUploadUrl(url || '')
+    } catch {
+      alert('Không upload được video.')
+    } finally {
+      setIsAdminUploadLoading(false)
+    }
+  }
+
   const uploadImageFile = async file => {
     const formData = new FormData()
     formData.append('image', file)
@@ -1885,7 +1907,7 @@ function App() {
         authMode={authMode}
         authData={authData}
         isAuthLoading={isAuthLoading}
-        title={authGate ? `Dang nhap ${authGate.label}` : undefined}
+        title={authGate ? `Đăng nhập ${authGate.label}` : undefined}
         disableRegister={Boolean(authGate)}
         onClose={() => setIsAuthOpen(false)}
         onAuth={handleAuth}
@@ -2043,6 +2065,10 @@ function App() {
               onRestoreComment={handleRestoreComment}
               onPermanentDeleteComment={handlePermanentDeleteComment}
               analytics={adminAnalytics}
+              adminUploadUrl={adminUploadUrl}
+              isAdminUploadLoading={isAdminUploadLoading}
+              onAdminUploadVideo={handleAdminUploadVideo}
+              onClearAdminUploadUrl={() => setAdminUploadUrl('')}
             />
           )}
 

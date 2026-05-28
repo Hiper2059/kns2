@@ -63,7 +63,7 @@ const Navbar = ({
         }}
       >
         <div className="brand-row">
-          <h1 className="logo">Kero • Z-Mate</h1>
+          <h1 className="logo">Z-Mate</h1>
           <button className="sidebar-toggle" onClick={onToggleSidebar}>Toggle</button>
         </div>
         <p className="tagline">Kỹ năng sống</p>

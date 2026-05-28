@@ -29,6 +29,14 @@ const AuthModal = ({
           value={authData.username}
           onChange={e => onChange({ ...authData, username: e.target.value })}
         />
+        {authMode === 'register' && (
+          <input
+            type="text"
+            placeholder="Tên người dùng"
+            value={authData.displayName || ''}
+            onChange={e => onChange({ ...authData, displayName: e.target.value })}
+          />
+        )}
         <input
           type="password"
           placeholder="Mật khẩu"

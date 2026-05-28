@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Hls from 'hls.js'
 import dashjs from 'dashjs'
+import RichTextEditor from './RichTextEditor'
 import './LessonFullPage.css'
 
 const loadYouTubeApi = (() => {
@@ -541,11 +542,11 @@ const LessonFullPage = ({
                     value={editDraft.order}
                     onChange={e => setEditDraft(prev => ({ ...prev, order: Number(e.target.value) || 1 }))}
                   />
-                  <textarea
-                    placeholder="Noi dung bai hoc"
+                  <RichTextEditor
+                    toolbarId="lesson-full-editor"
                     value={editDraft.content}
-                    onChange={e => setEditDraft(prev => ({ ...prev, content: e.target.value }))}
-                    rows={6}
+                    onChange={value => setEditDraft(prev => ({ ...prev, content: value }))}
+                    placeholder="Nội dung bài học"
                   />
                   <div className="lesson-edit-actions">
                     <button className="btn-post" onClick={handleSaveLessonEdit} disabled={isSavingLesson}>
