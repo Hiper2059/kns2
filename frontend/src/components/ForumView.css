@@ -1,5 +1,5 @@
 .forum-view {
-	font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+	font-family: 'Sora', sans-serif;
 }
 
 .rich-editor .ql-container {
@@ -20,18 +20,19 @@
 }
 
 .create-post-box {
-	background: linear-gradient(180deg, #fff, var(--accent-soft));
-	border: 1px solid var(--line);
+	background: var(--accent-soft);
+	border: 2px solid var(--line);
 	padding: 12px;
-	border-radius: 12px;
+	border-radius: var(--radius-md);
+	box-shadow: var(--shadow-hard);
 }
 
 .post-card {
 	background: var(--bg-main);
-	border: 1px solid var(--line);
-	border-radius: 12px;
+	border: 2px solid var(--line);
+	border-radius: var(--radius-md);
 	padding: 14px;
-	box-shadow: var(--card-shadow);
+	box-shadow: var(--shadow-hard);
 	margin-bottom: 12px;
 }
 

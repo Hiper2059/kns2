@@ -2,7 +2,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
-  font-family: 'Be Vietnam Pro', system-ui, sans-serif;
+  font-family: 'Sora', sans-serif;
 }
 
 .teacher-panel {
@@ -12,25 +12,27 @@
 }
 
 .teacher-card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
+  background: var(--bg-main);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-lg);
   padding: 16px;
+  box-shadow: var(--shadow-hard);
 }
 
 .toggle-section-button {
   width: 100%;
-  border: 1px solid #d1d5db;
-  background: #f9fafb;
-  color: #111827;
-  border-radius: 12px;
+  border: 2px solid var(--line);
+  background: var(--pop);
+  color: var(--text-main);
+  border-radius: var(--radius-md);
   padding: 12px 14px;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
+  box-shadow: var(--shadow-hard);
 }
 
 .toggle-section-button:hover {
-  background: #f3f4f6;
+  background: #ffd900;
 }
 
 .teacher-view input,
@@ -77,13 +79,14 @@
 .teacher-course-detail {
   margin-top: 16px;
   padding: 14px;
-  border-radius: 14px;
-  border: 1px solid #e5e7eb;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--line);
   display: grid;
   grid-template-columns: 1fr 120px;
   gap: 12px;
   align-items: center;
-  background: #f9fafb;
+  background: var(--bg-main);
+  box-shadow: var(--shadow-hard);
 }
 
 .teacher-course-detail img {
@@ -97,7 +100,7 @@
   width: 120px;
   height: 120px;
   border-radius: 12px;
-  background: #e5e7eb;
+  background: var(--accent-soft);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -109,21 +112,22 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px 16px;
-  color: #374151;
+  color: var(--text-muted);
   font-size: 13px;
 }
 
 .course-pill {
-  background: #f3f4f6;
+  background: var(--bg-main);
   border-radius: 999px;
   padding: 8px 14px;
-  border: none;
+  border: 2px solid var(--line);
   cursor: pointer;
+  box-shadow: var(--shadow-hard);
 }
 
 .course-pill.active {
-  background: #111827;
-  color: #fff;
+  background: var(--brand);
+  color: #fffdf7;
 }
 
 .lesson-row {
@@ -131,7 +135,7 @@
   grid-template-columns: 1fr 160px;
   gap: 12px;
   padding: 12px 0;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 2px solid var(--line);
   align-items: center;
 }
 
@@ -142,10 +146,11 @@
 .lesson-edit-form {
   grid-column: 1 / -1;
   margin-top: 10px;
-  border: 1px dashed #e5e7eb;
-  border-radius: 12px;
+  border: 2px dashed var(--line);
+  border-radius: var(--radius-md);
   padding: 12px;
-  background: #fafafa;
+  background: var(--bg-main);
+  box-shadow: var(--shadow-hard);
 }
 
 .lesson-edit-form .rich-editor .ql-container,
@@ -161,7 +166,7 @@
 
 .lesson-meta p {
   margin: 6px 0 0;
-  color: #4b5563;
+  color: var(--text-muted);
   font-size: 13px;
   white-space: pre-wrap;
   text-transform: none;
@@ -190,12 +195,12 @@
   width: 160px;
   height: 90px;
   border-radius: 10px;
-  background: #e5e7eb;
+  background: var(--accent-soft);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-muted);
 }
 
 .enrollment-row {

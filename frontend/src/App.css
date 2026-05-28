@@ -1,17 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap');
 
 :root {
-  /* Kero-inspired palette */
-  --bg-soft: #fbfbfb;
-  --bg-main: #ffffff;
-  --text-main: #0f1724;
-  --text-muted: #6b7280;
-  --brand: #FF6B3D; /* warm orange */
-  --brand-dark: #D9532A;
-  --accent: #18A999; /* teal accent */
-  --accent-soft: #E7F9F6;
-  --line: #eef2f1;
-  --card-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+  --bg-soft: #f7f3ea;
+  --bg-main: #fffdf7;
+  --text-main: #161616;
+  --text-muted: #3b3b3b;
+  --brand: #ff4d2d;
+  --brand-dark: #d63a20;
+  --accent: #00c2b3;
+  --accent-soft: #e7fffb;
+  --pop: #ffe600;
+  --line: #161616;
+  --shadow-hard: 6px 6px 0 #161616;
+  --shadow-soft: 10px 10px 0 rgba(22, 22, 22, 0.9);
+  --radius-lg: 16px;
+  --radius-md: 12px;
 }
 
 * {
@@ -26,11 +29,18 @@
   overflow-x: hidden;
   display: flex;
   background:
-    radial-gradient(circle at 90% 10%, #ffe8c6 0, rgba(255, 232, 198, 0) 28%),
-    radial-gradient(circle at 5% 75%, #d9f8f0 0, rgba(217, 248, 240, 0) 30%),
+    radial-gradient(circle at 85% 12%, rgba(255, 230, 0, 0.4) 0, rgba(255, 230, 0, 0) 28%),
+    radial-gradient(circle at 6% 78%, rgba(0, 194, 179, 0.2) 0, rgba(0, 194, 179, 0) 30%),
+    repeating-linear-gradient(0deg, rgba(22, 22, 22, 0.04) 0 1px, transparent 1px 32px),
+    repeating-linear-gradient(90deg, rgba(22, 22, 22, 0.04) 0 1px, transparent 1px 32px),
     var(--bg-soft);
   color: var(--text-main);
-  font-family: 'Be Vietnam Pro', sans-serif;
+  font-family: 'Sora', sans-serif;
+}
+
+h1, h2, h3, h4, h5 {
+  font-family: 'Space Grotesk', sans-serif;
+  letter-spacing: 0.2px;
 }
 
 /* top horizontal navbar replaced by vertical sidebar */
@@ -50,6 +60,7 @@
   font-size: 26px;
   line-height: 1.2;
   color: var(--brand);
+  text-transform: uppercase;
 }
 
 .tagline {
@@ -91,8 +102,8 @@
 }
 
 .user-name {
-  background: var(--mint-soft);
-  color: #117468;
+  background: var(--accent-soft);
+  color: var(--text-main);
   border-radius: 999px;
   padding: 10px 14px;
   font-weight: 600;
@@ -100,8 +111,8 @@
 }
 
 .rank-pill {
-  background: #fff3cf;
-  color: #8a5600;
+  background: var(--pop);
+  color: var(--text-main);
   border-radius: 999px;
   padding: 10px 14px;
   font-weight: 700;
@@ -112,66 +123,68 @@
 .btn-register,
 .btn-search,
 .btn-post {
-  border: none;
-  border-radius: 12px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-md);
   padding: 10px 16px;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+  box-shadow: var(--shadow-hard);
+  background: var(--bg-main);
 }
 
 .btn-login {
-  border: 1px solid var(--line);
-  background: #fff;
   color: var(--text-main);
 }
 
 .btn-register,
 .btn-search,
 .btn-post {
-  background: linear-gradient(130deg, var(--brand), #ff8a5b);
-  color: #fff;
+  background: var(--pop);
+  color: var(--text-main);
 }
 
 .btn-login:hover,
 .btn-register:hover,
 .btn-search:hover,
 .btn-post:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 18px rgba(217, 68, 31, 0.2);
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow-soft);
 }
 
 .btn-post:disabled,
 .btn-search:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .btn-danger,
 .btn-report {
-  border: none;
+  border: 2px solid var(--line);
   border-radius: 10px;
   padding: 8px 12px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
+  box-shadow: var(--shadow-hard);
 }
 
 .btn-danger {
-  background: #f04438;
-  color: #fff;
+  background: #ff5a49;
+  color: #0b0b0b;
 }
 
 .btn-danger:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .btn-report {
   margin-top: 8px;
-  background: #fff3eb;
-  color: #a83f20;
-  border: 1px solid #ffd8c6;
+  background: var(--accent-soft);
+  color: #0b5f57;
 }
 
 .rich-text {
@@ -188,14 +201,28 @@
   margin: 8px 0 8px 20px;
 }
 
-.main-content {
+.page-column {
   flex: 1 1 auto;
   margin-left: 260px; /* space for sidebar */
-  padding: 26px 28px 90px;
+  padding: 26px 28px 20px;
   max-width: 1200px;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
-.sidebar-collapsed .main-content {
+.main-content {
+  flex: 1 1 auto;
+  padding: 0 0 60px;
+  max-width: 100%;
+}
+
+.main-content > * {
+  animation: rise-in 0.35s ease both;
+}
+
+.sidebar-collapsed .page-column {
   margin-left: 88px;
 }
 
@@ -207,25 +234,41 @@
   z-index: 50;
 }
 
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 900px) {
-  .main-content { margin-left: 0; }
+  .page-column {
+    margin-left: 0;
+    padding: 20px 18px 16px;
+  }
 }
 
 
 .hero-section {
   background: var(--bg-main);
-  border-radius: 22px;
+  border-radius: var(--radius-lg);
   padding: 28px;
-  box-shadow: var(--card-shadow);
+  border: 2px solid var(--line);
+  box-shadow: var(--shadow-hard);
 }
 
 .search-bar {
   display: flex;
   gap: 10px;
-  background: #fff7ef;
-  border: 1px solid #ffe6d6;
-  border-radius: 16px;
+  background: var(--bg-main);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-lg);
   padding: 8px;
+  box-shadow: var(--shadow-hard);
 }
 
 .search-bar input,
@@ -238,12 +281,14 @@
 .auth-modal input,
 .input-area input {
   width: 100%;
-  border-radius: 10px;
-  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  border: 2px solid var(--line);
   padding: 12px;
   font-size: 14px;
   font-family: inherit;
   color: var(--text-main);
+  background: var(--bg-main);
+  box-shadow: var(--shadow-hard);
 }
 
 .search-bar input,
@@ -405,10 +450,10 @@
 .category-detail,
 .create-post-box,
 .post-card {
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  box-shadow: var(--card-shadow);
+  background: var(--bg-main);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-hard);
 }
 
 .category-detail {

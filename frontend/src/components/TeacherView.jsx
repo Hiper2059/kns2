@@ -20,6 +20,7 @@ const TeacherView = ({
   onEditLessonChange,
   onEditLessonCancel,
   onUpdateLesson,
+  onDeleteLesson,
   onUploadCourseEditorVideo,
   onUploadLessonEditorVideo,
   onUploadEditLessonEditorVideo
@@ -193,6 +194,9 @@ const TeacherView = ({
                   <div className="lesson-actions">
                     <button className="btn-ghost" onClick={() => onEditLessonStart?.(lesson)}>
                       Sua bai
+                    </button>
+                    <button className="btn-danger" onClick={() => onDeleteLesson?.(lesson._id)}>
+                      Xoa bai
                     </button>
                   </div>
                 </div>

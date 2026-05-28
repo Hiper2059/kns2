@@ -1,7 +1,7 @@
 .profile-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(22, 22, 22, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -13,10 +13,11 @@
   width: min(720px, 100%);
   max-height: 90vh;
   overflow-y: auto;
-  background: linear-gradient(180deg, var(--bg-main), var(--accent-soft));
-  border-radius: 16px;
+  background: var(--bg-main);
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--line);
   padding: 18px;
-  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.22);
+  box-shadow: var(--shadow-soft);
 }
 
 .profile-modal-header {
@@ -40,24 +41,26 @@
   height: 72px;
   border-radius: 50%;
   object-fit: cover;
+  border: 2px solid var(--line);
 }
 
 .profile-avatar {
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  background: #e2e8f0;
+  background: var(--accent-soft);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-main);
+  border: 2px solid var(--line);
 }
 
 .profile-section {
   margin-top: 14px;
   padding-top: 12px;
-  border-top: 1px solid var(--line);
+  border-top: 2px solid var(--line);
 }
 
 .profile-section h5 {
@@ -82,11 +85,12 @@
 }
 
 .btn-ghost {
-  border: 1px solid var(--line);
-  background: transparent;
+  border: 2px solid var(--line);
+  background: var(--bg-main);
   border-radius: 999px;
   padding: 6px 12px;
   cursor: pointer;
+  box-shadow: var(--shadow-hard);
 }
 
 @media (max-width: 640px) {

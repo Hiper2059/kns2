@@ -17,7 +17,8 @@ const LmsView = ({
   currentUser,
   onOpenProfile,
   onOpenLesson,
-  onLoadEnrollments
+  onLoadEnrollments,
+  onDeleteLesson
 }) => {
   const isTeacherView = currentRole === 'teacher' || currentRole === 'admin'
   const coursePool = isTeacherView ? teacherCourses : courses
@@ -201,20 +202,41 @@ const LmsView = ({
                 {sortedLessons.length ? (
                   <div className="lesson-list-grid">
                     {sortedLessons.map(lesson => (
-                      <button
+                      <div
                         key={lesson._id}
                         className="lesson-row"
                         onClick={() => onOpenLesson?.(lesson)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={event => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault()
+                            onOpenLesson?.(lesson)
+                          }
+                        }}
                       >
                         <span>{lesson.order}. {lesson.title}</span>
-                        <span
-                          className={`lesson-chip ${
-                            completedLessonIds.has(String(lesson._id)) ? 'done' : 'todo'
-                          }`}
-                        >
-                          {completedLessonIds.has(String(lesson._id)) ? 'Da hoan thanh' : 'Chua hoan thanh'}
-                        </span>
-                      </button>
+                        <div className="lesson-actions">
+                          <span
+                            className={`lesson-chip ${
+                              completedLessonIds.has(String(lesson._id)) ? 'done' : 'todo'
+                            }`}
+                          >
+                            {completedLessonIds.has(String(lesson._id)) ? 'Da hoan thanh' : 'Chua hoan thanh'}
+                          </span>
+                          {isTeacherView && (
+                            <button
+                              className="btn-danger"
+                              onClick={event => {
+                                event.stopPropagation()
+                                onDeleteLesson?.(lesson._id)
+                              }}
+                            >
+                              Xoa
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 ) : (

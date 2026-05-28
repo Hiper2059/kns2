@@ -211,13 +211,20 @@ function App() {
     }
   }
 
+  const resetLessonRoute = useCallback(() => {
+    setLessonRouteSlug(null)
+    setLessonRouteLesson(null)
+    setLessonRouteCourse(null)
+    setLessonRouteLessons([])
+  }, [])
+
   const handleTabChange = tab => {
     // Always close lesson route when changing tabs, except when already on that tab
     if (lessonRouteSlug && activeTab !== tab) {
-      setLessonRouteSlug(null)
-      setLessonRouteLesson(null)
-      setLessonRouteCourse(null)
-      setLessonRouteLessons([])
+      resetLessonRoute()
+      if (tab !== 'lms') {
+        window.history.pushState({}, '', '/')
+      }
     }
 
     setActiveTab(tab)
@@ -230,12 +237,24 @@ function App() {
       window.history.pushState({}, '', '/teacher')
       setAuthGate(getAuthGateFromPath('/teacher'))
     } else {
-      if (['/admin', '/teacher'].includes(window.location.pathname)) {
+      if (window.location.pathname.startsWith('/lesson/')) {
+        window.history.pushState({}, '', '/')
+      } else if (['/admin', '/teacher'].includes(window.location.pathname)) {
         window.history.pushState({}, '', '/')
       }
       setAuthGate(null)
     }
   }
+
+  useEffect(() => {
+    if (activeTab === 'lms' || !lessonRouteSlug) {
+      return
+    }
+    resetLessonRoute()
+    if (window.location.pathname.startsWith('/lesson/')) {
+      window.history.pushState({}, '', '/')
+    }
+  }, [activeTab, lessonRouteSlug, resetLessonRoute])
 
   useEffect(() => {
     localStorage.setItem('zmate_points_by_user', JSON.stringify(pointsByUser))
@@ -1064,10 +1083,7 @@ function App() {
   }
 
   const closeLessonRoute = () => {
-    setLessonRouteSlug(null)
-    setLessonRouteLesson(null)
-    setLessonRouteCourse(null)
-    setLessonRouteLessons([])
+    resetLessonRoute()
     window.history.pushState({}, '', '/')
     // Stay on LMS tab when closing lesson, don't force change
     if (activeTab !== 'lms') {
@@ -1383,6 +1399,50 @@ function App() {
     } catch (error) {
       alert(error.response?.data?.message || 'Không cập nhật được bài học.')
     }
+  }
+
+  const handleDeleteLesson = async lessonId => {
+    if (!lessonId) {
+      return
+    }
+
+    if (!window.confirm('Xóa bài học này?')) {
+      return
+    }
+
+    try {
+      const response = await api.delete(`/api/lessons/${lessonId}`)
+      alert(response.data.message || 'Đã xóa bài học.')
+
+      if (lessonRouteLesson && String(lessonRouteLesson._id) === String(lessonId)) {
+        closeLessonRoute()
+      }
+
+      const refreshCourseId =
+        selectedTeacherCourseId || selectedCourse?._id || lessonRouteCourse?._id || null
+      if (refreshCourseId) {
+        fetchCourseLessons(refreshCourseId)
+      }
+    } catch (error) {
+      alert(error.response?.data?.message || 'Không xóa được bài học.')
+    }
+  }
+
+  const handleLessonUpdated = updatedLesson => {
+    if (!updatedLesson) {
+      return
+    }
+
+    if (lessonRouteLesson && String(lessonRouteLesson._id) === String(updatedLesson._id)) {
+      setLessonRouteLesson(updatedLesson)
+    }
+
+    setLessonRouteLessons(prev =>
+      prev.map(item => (String(item._id) === String(updatedLesson._id) ? updatedLesson : item))
+    )
+    setCourseLessons(prev =>
+      prev.map(item => (String(item._id) === String(updatedLesson._id) ? updatedLesson : item))
+    )
   }
 
   const handleUploadCourseEditorVideo = async file => {
@@ -1766,6 +1826,11 @@ function App() {
       .slice(0, 5)
   }, [pointsByUser])
 
+  const canCompleteLesson = Boolean(currentUser) && (currentRole === 'student' || currentRole === 'user')
+  const isLessonCompleted = lessonRouteLesson
+    ? lessonRouteCompletedIds.has(String(lessonRouteLesson._id || lessonRouteLesson.id))
+    : false
+
   const goToForumTab = () => {
     handleTabChange('forum')
   }
@@ -1833,165 +1898,161 @@ function App() {
         onChange={setAuthData}
       />
 
-      <main className="main-content">
-        {lessonRouteSlug && (
-          <LessonFullPage
-            lesson={lessonRouteLesson}
-            course={lessonRouteCourse}
-            lessons={lessonRouteLessons}
-            courses={courses}
-            categories={categories}
-            onClose={closeLessonRoute}
-            onOpenLesson={openLessonRoute}
-            onSelectCourse={course => {
-              closeLessonRoute()
-              handleSelectCourse(course)
-            }}
-            onSelectCategory={category => {
-              closeLessonRoute()
-              handleSelectLmsCategory(category)
-              handleTabChange('lms')
-            }}
-            onCompleteLesson={handleCompleteLesson}
-            canComplete={Boolean(lessonRouteEnrollment)}
-            isCompleted={lessonRouteCompletedIds.has(String(lessonRouteLesson?._id))}
-            isLoading={lessonRouteLoading}
-            api={api}
-            currentUser={currentUser}
-            currentRole={currentRole}
-          />
-        )}
+      <div className="page-column">
+        <main className="main-content">
+          {lessonRouteSlug && activeTab === 'lms' && (
+            <LessonFullPage
+              lesson={lessonRouteLesson}
+              course={lessonRouteCourse}
+              lessons={lessonRouteLessons}
+              courses={courses}
+              categories={categories}
+              isLoading={lessonRouteLoading}
+              onClose={closeLessonRoute}
+              onOpenLesson={openLessonRoute}
+              onSelectCourse={handleSelectCourse}
+              onSelectCategory={handleSelectLmsCategory}
+              onCompleteLesson={handleCompleteLesson}
+              canComplete={canCompleteLesson}
+              isCompleted={isLessonCompleted}
+              onLessonUpdated={handleLessonUpdated}
+              api={api}
+              currentUser={currentUser}
+              currentRole={currentRole}
+            />
+          )}
 
-        {!lessonRouteSlug && activeTab === 'home' && (
-          <HomeView
-            categories={categories}
-            currentUser={currentUser}
-            currentRank={currentRank}
-            currentUserPoints={currentUserPoints}
-            nextRank={nextRank}
-            pointsToNext={pointsToNext}
-            rankLeaderboard={rankLeaderboard}
-            categoryVideos={categoryVideos}
-            currentRole={currentRole}
-            onDeleteVideo={handleDeleteVideo}
-          />
-        )}
+          {!lessonRouteSlug && activeTab === 'home' && (
+            <HomeView
+              categories={categories}
+              currentUser={currentUser}
+              currentRank={currentRank}
+              currentUserPoints={currentUserPoints}
+              nextRank={nextRank}
+              pointsToNext={pointsToNext}
+              rankLeaderboard={rankLeaderboard}
+              categoryVideos={categoryVideos}
+              currentRole={currentRole}
+              onDeleteVideo={handleDeleteVideo}
+            />
+          )}
 
-        {!lessonRouteSlug && activeTab === 'forum' && (
-          <ForumView
-            newPost={newPost}
-            onNewPostChange={setNewPost}
-            categories={categories}
-            onPostSubmit={handlePostSubmit}
-            paginatedForumPosts={paginatedForumPosts}
-            commentsByPost={commentsByPost}
-            commentDrafts={commentDrafts}
-            onCommentDraftChange={handleCommentDraftChange}
-            onAddComment={handleAddComment}
-            onReportContent={handleReportContent}
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            forumPage={forumPage}
-            forumTotalPages={forumTotalPages}
-            onPageChange={setForumPage}
-            filteredForumPosts={filteredForumPosts}
-          />
-        )}
+          {!lessonRouteSlug && activeTab === 'forum' && (
+            <ForumView
+              newPost={newPost}
+              onNewPostChange={setNewPost}
+              categories={categories}
+              onPostSubmit={handlePostSubmit}
+              paginatedForumPosts={paginatedForumPosts}
+              commentsByPost={commentsByPost}
+              commentDrafts={commentDrafts}
+              onCommentDraftChange={handleCommentDraftChange}
+              onAddComment={handleAddComment}
+              onReportContent={handleReportContent}
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              forumPage={forumPage}
+              forumTotalPages={forumTotalPages}
+              onPageChange={setForumPage}
+              filteredForumPosts={filteredForumPosts}
+            />
+          )}
 
-        {!lessonRouteSlug && activeTab === 'lms' && (
-          <LmsView
-            categories={categories}
-            selectedCategory={lmsCategory}
-            onSelectCategory={handleSelectLmsCategory}
-            courses={courses}
-            teacherCourses={teacherCourses}
-            selectedCourse={selectedCourse}
-            onSelectCourse={handleSelectCourse}
-            lessons={courseLessons}
-            enrollmentByCourse={enrollmentByCourse}
-            teacherEnrollments={teacherEnrollments}
-            onEnroll={handleEnroll}
-            currentRole={currentRole}
-            currentUser={currentUser}
-            onOpenProfile={handleOpenProfile}
-            onOpenLesson={openLessonRoute}
-            onLoadEnrollments={fetchTeacherEnrollments}
-          />
-        )}
+          {!lessonRouteSlug && activeTab === 'lms' && (
+            <LmsView
+              categories={categories}
+              selectedCategory={lmsCategory}
+              onSelectCategory={handleSelectLmsCategory}
+              courses={courses}
+              teacherCourses={teacherCourses}
+              selectedCourse={selectedCourse}
+              onSelectCourse={handleSelectCourse}
+              lessons={courseLessons}
+              enrollmentByCourse={enrollmentByCourse}
+              teacherEnrollments={teacherEnrollments}
+              onEnroll={handleEnroll}
+              currentRole={currentRole}
+              currentUser={currentUser}
+              onOpenProfile={handleOpenProfile}
+              onOpenLesson={openLessonRoute}
+              onLoadEnrollments={fetchTeacherEnrollments}
+              onDeleteLesson={handleDeleteLesson}
+            />
+          )}
 
-        {!lessonRouteSlug && activeTab === 'teacher' && (currentRole === 'teacher' || currentRole === 'admin') && (
-          <TeacherView
-            categories={categories}
-            courses={teacherCourses}
-            lessons={courseLessons}
-            selectedCourseId={selectedTeacherCourseId}
-            onSelectCourseId={handleSelectTeacherCourse}
-            newCourseData={newCourseData}
-            onNewCourseDataChange={setNewCourseData}
-            onCreateCourse={handleCreateCourse}
-            newLessonData={newLessonData}
-            onNewLessonDataChange={setNewLessonData}
-            onCreateLesson={handleCreateLesson}
-            editLessonId={editLessonId}
-            editLessonData={editLessonData}
-            onEditLessonStart={handleStartEditLesson}
-            onEditLessonChange={setEditLessonData}
-            onEditLessonCancel={handleCancelEditLesson}
-            onUpdateLesson={handleUpdateLesson}
-            onUploadCourseEditorVideo={handleUploadCourseEditorVideo}
-            onUploadLessonEditorVideo={handleUploadLessonEditorVideo}
-            onUploadEditLessonEditorVideo={handleUploadEditLessonEditorVideo}
-          />
-        )}
+          {!lessonRouteSlug && activeTab === 'teacher' && (
+            <TeacherView
+              categories={categories}
+              courses={teacherCourses}
+              lessons={courseLessons}
+              selectedCourseId={selectedTeacherCourseId}
+              onSelectCourseId={handleSelectTeacherCourse}
+              newCourseData={newCourseData}
+              onNewCourseDataChange={setNewCourseData}
+              onCreateCourse={handleCreateCourse}
+              newLessonData={newLessonData}
+              onNewLessonDataChange={setNewLessonData}
+              onCreateLesson={handleCreateLesson}
+              editLessonId={editLessonId}
+              editLessonData={editLessonData}
+              onEditLessonStart={handleStartEditLesson}
+              onEditLessonChange={setEditLessonData}
+              onEditLessonCancel={handleCancelEditLesson}
+              onUpdateLesson={handleUpdateLesson}
+              onDeleteLesson={handleDeleteLesson}
+              onUploadCourseEditorVideo={handleUploadCourseEditorVideo}
+              onUploadLessonEditorVideo={handleUploadLessonEditorVideo}
+              onUploadEditLessonEditorVideo={handleUploadEditLessonEditorVideo}
+            />
+          )}
 
-        {!lessonRouteSlug && activeTab === 'teacher' && currentRole !== 'teacher' && currentRole !== 'admin' && (
-          <div className="empty-state">Cậu cần đăng nhập bằng tài khoản giảng viên để vào khu vực này.</div>
-        )}
+          {!lessonRouteSlug && activeTab === 'manage' && currentRole === 'admin' && (
+            <ManageView
+              isLoadingUsers={isLoadingUsers}
+              isLoadingReports={isLoadingReports}
+              isLoadingDeletedPosts={isLoadingDeletedPosts}
+              isLoadingDeletedComments={isLoadingDeletedComments}
+              isLoadingAnalytics={isLoadingAnalytics}
+              onFetchUsers={fetchManagedUsers}
+              onFetchReports={fetchModerationReports}
+              onFetchDeletedPosts={fetchDeletedPosts}
+              onFetchDeletedComments={fetchDeletedComments}
+              deletedReasonFilter={deletedReasonFilter}
+              onReasonChange={setDeletedReasonFilter}
+              newUserData={newUserData}
+              onNewUserDataChange={setNewUserData}
+              onCreateUser={handleCreateUser}
+              newVideoData={newVideoData}
+              onVideoDataChange={setNewVideoData}
+              onAddVideo={handleAddVideo}
+              categories={categories}
+              managedUsers={managedUsers}
+              currentUser={currentUser}
+              onRoleChange={handleRoleChange}
+              onStatusChange={handleStatusChange}
+              onDeleteUser={handleDeleteUser}
+              moderationReports={moderationReports}
+              onDeleteModerationReport={handleDeleteModerationReport}
+              onClearModerationReports={handleClearModerationReports}
+              forumPosts={forumPosts}
+              onAdminDeletePost={handleAdminDeletePost}
+              deletedPosts={deletedPosts}
+              onRestorePost={handleRestorePost}
+              onPermanentDeletePost={handlePermanentDeletePost}
+              deletedComments={deletedComments}
+              onRestoreComment={handleRestoreComment}
+              onPermanentDeleteComment={handlePermanentDeleteComment}
+              analytics={adminAnalytics}
+            />
+          )}
 
-        {!lessonRouteSlug && activeTab === 'manage' && currentRole === 'admin' && (
-          <ManageView
-            isLoadingUsers={isLoadingUsers}
-            isLoadingReports={isLoadingReports}
-            isLoadingDeletedPosts={isLoadingDeletedPosts}
-            isLoadingDeletedComments={isLoadingDeletedComments}
-            isLoadingAnalytics={isLoadingAnalytics}
-            onFetchUsers={fetchManagedUsers}
-            onFetchReports={fetchModerationReports}
-            onFetchDeletedPosts={fetchDeletedPosts}
-            onFetchDeletedComments={fetchDeletedComments}
-            deletedReasonFilter={deletedReasonFilter}
-            onReasonChange={setDeletedReasonFilter}
-            newUserData={newUserData}
-            onNewUserDataChange={setNewUserData}
-            onCreateUser={handleCreateUser}
-            newVideoData={newVideoData}
-            onVideoDataChange={setNewVideoData}
-            onAddVideo={handleAddVideo}
-            categories={categories}
-            managedUsers={managedUsers}
-            currentUser={currentUser}
-            onRoleChange={handleRoleChange}
-            onStatusChange={handleStatusChange}
-            onDeleteUser={handleDeleteUser}
-            moderationReports={moderationReports}
-            onDeleteModerationReport={handleDeleteModerationReport}
-            onClearModerationReports={handleClearModerationReports}
-            forumPosts={forumPosts}
-            onAdminDeletePost={handleAdminDeletePost}
-            deletedPosts={deletedPosts}
-            onRestorePost={handleRestorePost}
-            onPermanentDeletePost={handlePermanentDeletePost}
-            deletedComments={deletedComments}
-            onRestoreComment={handleRestoreComment}
-            onPermanentDeleteComment={handlePermanentDeleteComment}
-            analytics={adminAnalytics}
-          />
-        )}
+          {!lessonRouteSlug && activeTab === 'manage' && currentRole !== 'admin' && (
+            <div className="empty-state">Cậu cần đăng nhập bằng tài khoản admin để vào trang /admin.</div>
+          )}
+        </main>
 
-        {!lessonRouteSlug && activeTab === 'manage' && currentRole !== 'admin' && (
-          <div className="empty-state">Cậu cần đăng nhập bằng tài khoản admin để vào trang /admin.</div>
-        )}
-      </main>
+        <Footer />
+      </div>
 
       <ChatWidget
         isOpen={isChatOpen}
@@ -2020,8 +2081,6 @@ function App() {
         onChange={setProfileDraft}
         isOwnProfile={profileUser?.username === currentUser}
       />
-
-      <Footer />
     </div>
   )
 }

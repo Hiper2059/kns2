@@ -59,6 +59,7 @@ const LessonFullPage = ({
   onCompleteLesson,
   canComplete,
   isCompleted,
+  onLessonUpdated,
   api,
   currentUser,
   currentRole
@@ -324,6 +325,17 @@ const LessonFullPage = ({
     (isDirectVideo && videoReady && hasVideoEnded && !hasSeeked)
 
   const canMarkComplete = canComplete && !isCompleted && hasScrolledToEnd && videoSatisfied
+  const canEditLesson = currentRole === 'teacher' || currentRole === 'admin'
+
+  const [editMode, setEditMode] = useState(false)
+  const [editDraft, setEditDraft] = useState({
+    title: '',
+    content: '',
+    videoUrl: '',
+    imageUrl: '',
+    order: 1
+  })
+  const [isSavingLesson, setIsSavingLesson] = useState(false)
 
   // Comments state
   const [comments, setComments] = useState([])
@@ -347,6 +359,50 @@ const LessonFullPage = ({
     load()
     return () => { cancelled = true }
   }, [api, lesson?._id])
+
+  useEffect(() => {
+    if (!lesson?._id) {
+      return
+    }
+    setEditDraft({
+      title: lesson.title || '',
+      content: lesson.content || '',
+      videoUrl: lesson.videoUrl || '',
+      imageUrl: lesson.imageUrl || '',
+      order: lesson.order || 1
+    })
+    setEditMode(false)
+  }, [lesson?._id, lesson?.title, lesson?.content, lesson?.videoUrl, lesson?.imageUrl, lesson?.order])
+
+  const handleSaveLessonEdit = async () => {
+    if (!lesson?._id) {
+      return
+    }
+
+    if (!editDraft.title.trim()) {
+      alert('Cậu điền tiêu đề bài học trước nhé.')
+      return
+    }
+
+    setIsSavingLesson(true)
+    try {
+      const payload = {
+        title: editDraft.title.trim(),
+        content: editDraft.content || '',
+        videoUrl: editDraft.videoUrl || '',
+        imageUrl: editDraft.imageUrl || '',
+        order: editDraft.order
+      }
+      const response = await api.patch(`/api/lessons/${lesson._id}`, payload)
+      const updated = response.data?.lesson || { ...lesson, ...payload }
+      onLessonUpdated?.(updated)
+      setEditMode(false)
+    } catch (err) {
+      alert(err?.response?.data?.message || 'Không cập nhật được bài học.')
+    } finally {
+      setIsSavingLesson(false)
+    }
+  }
 
   return (
     <div className="lesson-full-page">
@@ -403,7 +459,14 @@ const LessonFullPage = ({
               dangerouslySetInnerHTML={{ __html: course?.description || '' }}
             ></div>
           </div>
-          <button className="btn-ghost" onClick={onClose}>Quay lai lop hoc</button>
+          <div className="lesson-topbar-actions">
+            {canEditLesson && lesson && (
+              <button className="btn-ghost" onClick={() => setEditMode(prev => !prev)}>
+                {editMode ? 'Dong sua bai' : 'Sua bai hoc'}
+              </button>
+            )}
+            <button className="btn-ghost" onClick={onClose}>Quay lai lop hoc</button>
+          </div>
         </div>
 
         {isLoading && <p>Dang tai bai hoc...</p>}
@@ -450,6 +513,51 @@ const LessonFullPage = ({
             )}
 
             <h3>{lesson.title}</h3>
+
+            {canEditLesson && editMode && (
+              <div className="card-panel lesson-edit-panel">
+                <div className="form-grid">
+                  <input
+                    type="text"
+                    placeholder="Tieu de bai hoc"
+                    value={editDraft.title}
+                    onChange={e => setEditDraft(prev => ({ ...prev, title: e.target.value }))}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Video URL"
+                    value={editDraft.videoUrl}
+                    onChange={e => setEditDraft(prev => ({ ...prev, videoUrl: e.target.value }))}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Anh minh hoa (URL - tuy chon)"
+                    value={editDraft.imageUrl}
+                    onChange={e => setEditDraft(prev => ({ ...prev, imageUrl: e.target.value }))}
+                  />
+                  <input
+                    type="number"
+                    placeholder="Thu tu bai"
+                    value={editDraft.order}
+                    onChange={e => setEditDraft(prev => ({ ...prev, order: Number(e.target.value) || 1 }))}
+                  />
+                  <textarea
+                    placeholder="Noi dung bai hoc"
+                    value={editDraft.content}
+                    onChange={e => setEditDraft(prev => ({ ...prev, content: e.target.value }))}
+                    rows={6}
+                  />
+                  <div className="lesson-edit-actions">
+                    <button className="btn-post" onClick={handleSaveLessonEdit} disabled={isSavingLesson}>
+                      {isSavingLesson ? 'Dang luu...' : 'Luu bai hoc'}
+                    </button>
+                    <button className="btn-ghost" onClick={() => setEditMode(false)}>
+                      Huy
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div
               ref={contentRef}

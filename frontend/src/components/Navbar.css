@@ -8,10 +8,10 @@
 	display: flex;
 	flex-direction: column;
 	justify-content: space-between;
-	background: linear-gradient(180deg, #fff, #fffaf7);
-	border-right: 1px solid rgba(236,232,227,0.9);
-	padding: 22px 16px;
-	box-shadow: 0 6px 30px rgba(25,16,7,0.04);
+	background: linear-gradient(180deg, #ffffff, #fffdf0);
+	border-right: 2px solid var(--line);
+	padding: 24px 18px;
+	box-shadow: var(--shadow-soft);
 	transition: width 200ms ease, transform 220ms ease;
 }
 
@@ -29,9 +29,9 @@
 
 .sidebar .icon {
 	display: inline-block;
-	width: 28px;
+	width: 30px;
 	text-align: center;
-	margin-right: 8px;
+	margin-right: 10px;
 }
 
 .sidebar.collapsed .sidebar-nav button {
@@ -44,6 +44,7 @@
 	padding: 6px 8px;
 	font-size: 14px;
 	cursor: pointer;
+	color: var(--text-muted);
 }
 
 /* overlay behavior for small screens */
@@ -67,18 +68,19 @@
 .sidebar-brand {
 	display: flex;
 	flex-direction: column;
-	gap: 6px;
+	gap: 8px;
 }
 
 .sidebar .logo {
 	font-family: 'Space Grotesk', sans-serif;
-	color: #ff5c35;
-	font-size: 20px;
+	color: var(--brand);
+	font-size: 21px;
+	letter-spacing: 0.2px;
 }
 
 .sidebar .tagline {
 	font-size: 12px;
-	color: #6b6f74;
+	color: var(--text-muted);
 }
 
 .label {
@@ -93,8 +95,8 @@
 .sidebar-nav {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
-	margin-top: 18px;
+	gap: 10px;
+	margin-top: 20px;
 }
 
 .sidebar-nav button {
@@ -103,25 +105,41 @@
 	border-radius: 10px;
 	border: none;
 	background: transparent;
-	color: #394047;
+	color: var(--text-main);
 	font-weight: 700;
 	cursor: pointer;
-}
-
-.sidebar-nav button {
 	display: flex;
 	align-items: center;
+	transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.sidebar-nav .label {
+	font-size: 14px;
+	letter-spacing: 0.1px;
+}
+
+.sidebar-nav button:hover {
+	background: var(--pop);
+	color: var(--text-main);
 }
 
 .sidebar-nav button.active {
-	background: linear-gradient(130deg, var(--brand), #ff865f);
-	color: #fff;
+	background: var(--brand);
+	color: #fffdf7;
+}
+
+.sidebar-nav button.active .icon {
+	transform: rotate(-6deg);
+}
+
+.sidebar-nav button:active {
+	transform: translateY(1px);
 }
 
 .sidebar-bottom {
 	display: flex;
 	flex-direction: column;
-	gap: 10px;
+	gap: 12px;
 }
 
 .sidebar .user-name {
@@ -131,11 +149,15 @@
 	cursor: pointer;
 	font-weight: 700;
 	text-align: left;
+	font-size: 14px;
 }
 
 .sidebar .rank-pill {
 	font-size: 13px;
-	color: #8a5600;
+	color: var(--text-main);
+	border: 2px solid var(--line);
+	box-shadow: var(--shadow-hard);
+	background: #fff;
 }
 
 .sidebar .auth-actions {
@@ -144,9 +166,14 @@
 }
 
 .btn-ghost {
-	border: 1px solid var(--line);
+	border: 2px solid var(--line);
 	background: #fff;
 	padding: 8px 10px;
 	border-radius: 8px;
 	cursor: pointer;
+	box-shadow: var(--shadow-hard);
+}
+
+.sidebar .btn-ghost {
+	background: #fffdf0;
 }

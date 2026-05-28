@@ -6,11 +6,12 @@
 }
 
 .home-hero {
-	background: linear-gradient(135deg, var(--accent), var(--brand));
-	color: #fff;
+	background: var(--pop);
+	color: var(--text-main);
 	padding: 28px;
-	border-radius: 16px;
-	box-shadow: var(--card-shadow);
+	border-radius: var(--radius-lg);
+	border: 2px solid var(--line);
+	box-shadow: var(--shadow-soft);
 }
 
 .home-grid {
@@ -21,8 +22,8 @@
 
 .card-panel {
 	background: var(--bg-main);
-	border: 1px solid var(--line);
-	border-radius: 14px;
+	border: 2px solid var(--line);
+	border-radius: var(--radius-lg);
 	padding: 16px;
-	box-shadow: var(--card-shadow);
+	box-shadow: var(--shadow-hard);
 }
