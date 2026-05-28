@@ -1974,11 +1974,12 @@ function App() {
       />
       {!sidebarOpen && (
         <button
-          className="mobile-sidebar-handle"
+          className="mobile-sidebar-dock"
           onClick={() => setSidebarOpen(true)}
-          aria-label="Mo thanh dieu huong"
+          aria-label="Mo muc luc va thanh dieu huong"
         >
-          ☰ Menu
+          <span className="mobile-sidebar-dock__title">Mục lục</span>
+          <span className="mobile-sidebar-dock__hint">Bấm để mở menu</span>
         </button>
       )}
       {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
