@@ -45,6 +45,10 @@
   gap: 18px;
 }
 
+.lesson-sidebar-fab {
+  display: none;
+}
+
 .sidebar-section {
   margin-bottom: 18px;
 }
@@ -199,10 +203,32 @@
     justify-content: center;
     white-space: nowrap;
   }
+
+  .lesson-sidebar-fab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    left: 16px;
+    bottom: 92px;
+    z-index: 45;
+    border: 2px solid var(--line);
+    border-radius: 999px;
+    background: var(--brand);
+    color: #fffdf7;
+    padding: 12px 16px;
+    font-weight: 800;
+    box-shadow: var(--shadow-hard);
+    cursor: pointer;
+  }
 }
 
 @media (min-width: 1001px) {
   .lesson-sidebar-toggle {
     display: inline-flex;
+  }
+
+  .lesson-sidebar-fab {
+    display: none !important;
   }
 }

@@ -497,6 +497,16 @@ const LessonFullPage = ({
         )}
       </aside>
 
+      {isSidebarCollapsed && (
+        <button
+          className="lesson-sidebar-fab"
+          onClick={() => setIsSidebarCollapsed(false)}
+          aria-label="Mo muc luc"
+        >
+          Muc luc
+        </button>
+      )}
+
       <section className="lesson-body">
         <div className="lesson-topbar">
           <div>
