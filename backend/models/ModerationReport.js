@@ -4,7 +4,7 @@ const moderationReportSchema = new mongoose.Schema(
   {
     targetType: {
       type: String,
-      enum: ['post', 'comment'],
+      enum: ['post', 'comment', 'lesson_comment'],
       required: true
     },
     targetId: {

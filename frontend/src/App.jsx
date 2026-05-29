@@ -58,6 +58,9 @@ const isCoursePath = pathname => pathname === '/courses' || pathname === '/lms'
 function App() {
   const [isAuthOpen, setIsAuthOpen] = useState(false)
   const [authMode, setAuthMode] = useState('login')
+  const [authNotifications, setAuthNotifications] = useState([
+    { type: 'info', title: 'Mẹo', message: 'Đăng nhập đúng vai trò để tránh lỗi truy cập.' }
+  ])
   const [currentUser, setCurrentUser] = useState(() => {
     const storedUser = localStorage.getItem('zmate_current_user')
     return storedUser || null
@@ -87,6 +90,10 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('')
   const [forumPage, setForumPage] = useState(1)
   const [isAuthLoading, setIsAuthLoading] = useState(false)
+
+  const pushAuthNotice = useCallback((message, type = 'info', title = 'Thông báo') => {
+    setAuthNotifications([{ type, title, message }])
+  }, [])
 
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState([
@@ -338,12 +345,12 @@ function App() {
 
   const handleAuth = async () => {
     if (!authData.username.trim() || !authData.password.trim()) {
-      alert('Cậu điền đầy đủ tên đăng nhập và mật khẩu nhé!')
+      pushAuthNotice('Cậu điền đầy đủ tên đăng nhập và mật khẩu nhé!', 'error', 'Thiếu dữ liệu')
       return
     }
 
     if (authGate && authMode === 'register') {
-      alert('Trang nay chi ho tro dang nhap theo vai tro.')
+      pushAuthNotice('Trang này chỉ hỗ trợ đăng nhập theo vai trò.', 'warning', 'Không hỗ trợ')
       return
     }
 
@@ -361,7 +368,7 @@ function App() {
 
       const res = await api.post(endpoint, payload)
 
-      alert(res.data.message)
+      pushAuthNotice(res.data.message || 'Xử lý xong.', 'success', 'Thành công')
       if (authMode === 'login') {
         setCurrentUser(res.data.username)
         const normalizedRole = normalizeClientRole(res.data.role || 'student')
@@ -371,7 +378,7 @@ function App() {
           localStorage.removeItem('zmate_current_role')
           setCurrentUser(null)
           setCurrentRole('student')
-          alert(`Tai khoan khong thuoc vai tro ${authGate.label}.`)
+          pushAuthNotice(`Tài khoản không thuộc vai trò ${authGate.label}.`, 'error', 'Sai vai trò')
           return
         }
 
@@ -381,7 +388,7 @@ function App() {
           localStorage.removeItem('zmate_current_role')
           setCurrentUser(null)
           setCurrentRole('student')
-          alert('Tài khoản hoặc mật khẩu không đúng.')
+          pushAuthNotice('Tài khoản hoặc mật khẩu không đúng.', 'error', 'Không đăng nhập được')
           return
         }
 
@@ -391,7 +398,7 @@ function App() {
           localStorage.removeItem('zmate_current_role')
           setCurrentUser(null)
           setCurrentRole('student')
-          alert('Tài khoản hoặc mật khẩu không đúng.')
+          pushAuthNotice('Tài khoản hoặc mật khẩu không đúng.', 'error', 'Không đăng nhập được')
           return
         }
 
@@ -419,9 +426,10 @@ function App() {
         setAuthData({ username: '', password: '' })
       } else {
         setAuthMode('login')
+        pushAuthNotice('Đăng ký thành công. Giờ cậu có thể đăng nhập.', 'success', 'Hoàn tất')
       }
     } catch (err) {
-      alert(err.response?.data?.message || 'Có lỗi xảy ra!')
+      pushAuthNotice(err.response?.data?.message || 'Có lỗi xảy ra!', 'error', 'Lỗi')
     } finally {
       setIsAuthLoading(false)
     }
@@ -2007,13 +2015,24 @@ function App() {
         isAuthLoading={isAuthLoading}
         title={authGate ? `Đăng nhập ${authGate.label}` : undefined}
         disableRegister={Boolean(authGate)}
+        notifications={authNotifications}
         onClose={() => setIsAuthOpen(false)}
         onAuth={handleAuth}
         onSwitchMode={() => {
           if (authGate) {
             return
           }
-          setAuthMode(authMode === 'login' ? 'register' : 'login')
+          setAuthMode(prev => {
+            const next = prev === 'login' ? 'register' : 'login'
+            pushAuthNotice(
+              next === 'register'
+                ? 'Nhập thông tin để tạo tài khoản mới.'
+                : 'Đăng nhập nếu cậu đã có tài khoản.',
+              'info',
+              'Hướng dẫn'
+            )
+            return next
+          })
         }}
         onChange={setAuthData}
       />
@@ -2039,6 +2058,7 @@ function App() {
               api={api}
               currentUser={currentUser}
               currentRole={currentRole}
+              onReportContent={handleReportContent}
             />
           )}
 

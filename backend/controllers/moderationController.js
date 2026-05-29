@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const ModerationReport = require('../models/ModerationReport');
 const ForumPost = require('../models/ForumPost');
 const ForumComment = require('../models/ForumComment');
+const LessonComment = require('../models/LessonComment');
 const User = require('../models/User');
 const { evaluateModeration } = require('../services/moderationService');
 
@@ -14,7 +15,7 @@ const createReport = async (req, res) => {
       return res.status(400).json({ message: 'Thiếu dữ liệu report.' });
     }
 
-    if (!['post', 'comment'].includes(targetType)) {
+    if (!['post', 'comment', 'lesson_comment'].includes(targetType)) {
       return res.status(400).json({ message: 'targetType không hợp lệ.' });
     }
 
@@ -58,7 +59,7 @@ const createReport = async (req, res) => {
             }
           );
         }
-      } else {
+      } else if (targetType === 'comment') {
         if (hasValidObjectId) {
           await ForumComment.updateOne(
             { _id: targetId },
@@ -72,6 +73,18 @@ const createReport = async (req, res) => {
             }
           );
         }
+      } else if (hasValidObjectId) {
+        await LessonComment.updateMany(
+          { $or: [{ _id: targetId }, { parentComment: targetId }], isDeleted: false },
+          {
+            $set: {
+              isDeleted: true,
+              deletedAt: new Date(),
+              deletedBy: 'ai_moderation',
+              deletionReason: 'ai_moderation'
+            }
+          }
+        );
       }
     }
 

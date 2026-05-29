@@ -63,7 +63,8 @@ const LessonFullPage = ({
   onLessonUpdated,
   api,
   currentUser,
-  currentRole
+  currentRole,
+  onReportContent
 }) => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     if (typeof window === 'undefined') {
@@ -372,6 +373,45 @@ const LessonFullPage = ({
   const [comments, setComments] = useState([])
   const [newComment, setNewComment] = useState('')
   const [posting, setPosting] = useState(false)
+  const [replyDrafts, setReplyDrafts] = useState({})
+  const [replyingTo, setReplyingTo] = useState(null)
+
+  const commentsTree = useMemo(() => {
+    const roots = []
+    const childrenByParent = new Map()
+
+    comments.forEach(comment => {
+      const parentKey = comment.parentComment ? String(comment.parentComment) : ''
+      if (!parentKey) {
+        roots.push(comment)
+        return
+      }
+
+      if (!childrenByParent.has(parentKey)) {
+        childrenByParent.set(parentKey, [])
+      }
+
+      childrenByParent.get(parentKey).push(comment)
+    })
+
+    const attachReplies = comment => ({
+      ...comment,
+      replies: (childrenByParent.get(String(comment._id)) || [])
+        .slice()
+        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+        .map(attachReplies)
+    })
+
+    return roots
+      .slice()
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+      .map(attachReplies)
+  }, [comments])
+
+  const removeCommentBranch = commentId => {
+    const targetId = String(commentId)
+    setComments(prev => prev.filter(item => String(item._id) !== targetId && String(item.parentComment || '') !== targetId))
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -404,6 +444,36 @@ const LessonFullPage = ({
     })
     setEditMode(false)
   }, [lesson?._id, lesson?.title, lesson?.content, lesson?.videoUrl, lesson?.imageUrl, lesson?.order])
+
+  const handleSubmitComment = async parentCommentId => {
+    const text = parentCommentId ? (replyDrafts[parentCommentId] || '').trim() : newComment.trim()
+    if (!text) {
+      return
+    }
+
+    setPosting(true)
+    try {
+      const payload = { content: text }
+      if (parentCommentId) {
+        payload.parentCommentId = parentCommentId
+      }
+
+      const res = await api.post(`/api/lessons/${lesson._id}/comments`, payload)
+      setComments(prev => [...prev, res.data.comment])
+
+      if (parentCommentId) {
+        setReplyDrafts(prev => ({ ...prev, [parentCommentId]: '' }))
+        setReplyingTo(null)
+      } else {
+        setNewComment('')
+      }
+    } catch (err) {
+      console.error('Post comment error', err)
+      alert(err?.response?.data?.message || 'Không gửi được bình luận.')
+    } finally {
+      setPosting(false)
+    }
+  }
 
   const handleSaveLessonEdit = async () => {
     if (!lesson?._id) {
@@ -637,33 +707,94 @@ const LessonFullPage = ({
 
             <div className="lesson-comments">
               <h4>Bình luận / Hỏi đáp</h4>
-              {comments.length === 0 && <p>Chưa có bình luận nào.</p>}
-              {comments.map(c => (
-                <div key={c._id} className="comment-item">
-                  <div className="comment-meta">
-                    <strong>{c.authorName || 'Khách'}</strong>
-                    <span className="comment-time">{new Date(c.createdAt).toLocaleString()}</span>
-                    {(currentRole === 'admin' || currentRole === 'teacher' || c.authorName === currentUser) && (
-                      <button
-                        className="btn-ghost btn-delete-comment"
-                        onClick={async () => {
-                          if (!confirm('Xác nhận xóa bình luận này?')) return
-                          try {
-                            await api.delete(`/api/comments/${c._id}`)
-                            setComments(prev => prev.filter(x => x._id !== c._id))
-                          } catch (err) {
-                            console.error('Delete comment error', err)
-                            alert(err?.response?.data?.message || 'Không xóa được bình luận.')
-                          }
-                        }}
-                      >
-                        Xóa
-                      </button>
-                    )}
-                  </div>
-                  <div className="comment-content">{c.content}</div>
-                </div>
-              ))}
+              {commentsTree.length === 0 && <p>Chưa có bình luận nào.</p>}
+
+              {commentsTree.map(comment => {
+                const renderComment = (item, depth = 0) => {
+                  const canManage = currentRole === 'admin' || currentRole === 'teacher' || item.authorName === currentUser
+                  const isReplyOpen = replyingTo === item._id
+                  const replyValue = replyDrafts[item._id] || ''
+
+                  return (
+                    <div key={item._id} className={`comment-item ${depth > 0 ? 'is-reply' : ''}`}>
+                      <div className="comment-meta">
+                        <strong>{item.authorName || 'Khách'}</strong>
+                        <span className="comment-time">{new Date(item.createdAt).toLocaleString()}</span>
+                        {currentUser && (
+                          <button
+                            className="btn-ghost btn-reply-comment"
+                            onClick={() => {
+                              setReplyingTo(prev => (prev === item._id ? null : item._id))
+                              setReplyDrafts(prev => ({ ...prev, [item._id]: prev[item._id] || '' }))
+                            }}
+                          >
+                            Trả lời
+                          </button>
+                        )}
+                        {currentUser && onReportContent && (
+                          <button
+                            className="btn-ghost btn-report-comment"
+                            onClick={() =>
+                              onReportContent({
+                                targetType: 'lesson_comment',
+                                targetId: item._id,
+                                targetAuthor: item.authorName,
+                                content: item.content
+                              })
+                            }
+                          >
+                            Báo cáo
+                          </button>
+                        )}
+                        {canManage && (
+                          <button
+                            className="btn-ghost btn-delete-comment"
+                            onClick={async () => {
+                              if (!confirm('Xác nhận xóa bình luận này?')) return
+                              try {
+                                await api.delete(`/api/comments/${item._id}`)
+                                removeCommentBranch(item._id)
+                              } catch (err) {
+                                console.error('Delete comment error', err)
+                                alert(err?.response?.data?.message || 'Không xóa được bình luận.')
+                              }
+                            }}
+                          >
+                            Xóa
+                          </button>
+                        )}
+                      </div>
+                      <div className="comment-content">{item.content}</div>
+
+                      {isReplyOpen && (
+                        <div className="comment-reply-box">
+                          <textarea
+                            value={replyValue}
+                            onChange={e => setReplyDrafts(prev => ({ ...prev, [item._id]: e.target.value }))}
+                            placeholder="Viết trả lời..."
+                          />
+                          <div className="comment-actions">
+                            <button className="btn-post" onClick={() => handleSubmitComment(item._id)} disabled={posting}>
+                              Gửi trả lời
+                            </button>
+                            <button className="btn-ghost" onClick={() => setReplyingTo(null)}>
+                              Hủy
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {Array.isArray(item.replies) && item.replies.length > 0 && (
+                        <div className="comment-replies">
+                          {item.replies.map(reply => renderComment(reply, depth + 1))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                }
+
+                return renderComment(comment)
+              })}
 
               {currentUser ? (
                 <div className="comment-form">
@@ -673,24 +804,7 @@ const LessonFullPage = ({
                     placeholder="Viết câu hỏi hoặc bình luận..."
                   />
                   <div className="comment-actions">
-                    <button
-                      className="btn-post"
-                      onClick={async () => {
-                        if (!newComment.trim()) return
-                        setPosting(true)
-                        try {
-                          const res = await api.post(`/api/lessons/${lesson._id}/comments`, { content: newComment })
-                          setNewComment('')
-                          setComments(prev => [...prev, res.data.comment])
-                        } catch (err) {
-                          console.error('Post comment error', err)
-                          alert(err?.response?.data?.message || 'Không gửi được bình luận.')
-                        } finally {
-                          setPosting(false)
-                        }
-                      }}
-                      disabled={posting}
-                    >
+                    <button className="btn-post" onClick={() => handleSubmitComment(null)} disabled={posting}>
                       Gửi
                     </button>
                   </div>

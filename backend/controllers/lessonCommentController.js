@@ -31,7 +31,7 @@ const listComments = async (req, res) => {
 const createComment = async (req, res) => {
   try {
     const { lessonId } = req.params;
-    const { content } = req.body;
+    const { content, parentCommentId } = req.body;
 
     if (!content || !String(content).trim()) {
       return res.status(400).json({ message: 'Nội dung bình luận không được rỗng.' });
@@ -55,10 +55,28 @@ const createComment = async (req, res) => {
     }
 
     const course = await Course.findById(lesson.course).lean();
+    let parentComment = null;
+
+    if (parentCommentId) {
+      if (!mongoose.Types.ObjectId.isValid(parentCommentId)) {
+        return res.status(400).json({ message: 'parentCommentId không hợp lệ.' });
+      }
+
+      parentComment = await LessonComment.findOne({
+        _id: parentCommentId,
+        lesson: lesson._id,
+        isDeleted: false
+      }).lean();
+
+      if (!parentComment) {
+        return res.status(404).json({ message: 'Không tìm thấy bình luận gốc để trả lời.' });
+      }
+    }
 
     const created = await LessonComment.create({
       lesson: lesson._id,
       course: course ? course._id : null,
+      parentComment: parentComment ? parentComment._id : null,
       author: req.currentUser?._id || null,
       authorName: req.currentUser?.username || req.currentUser?.profile?.displayName || 'Khách',
       content: String(content).trim()
@@ -86,15 +104,27 @@ const deleteComment = async (req, res) => {
     const requester = req.currentUser;
     // allow if admin or teacher
     if (requester.role === 'admin' || requester.role === 'teacher') {
-      comment.isDeleted = true;
-      await comment.save();
+      await LessonComment.updateMany(
+        { $or: [{ _id: comment._id }, { parentComment: comment._id }], isDeleted: false },
+        {
+          $set: {
+            isDeleted: true
+          }
+        }
+      );
       return res.json({ message: 'Đã xóa bình luận.' });
     }
 
     // allow if owner
     if (String(comment.author) === String(requester._id) || comment.authorName === requester.username) {
-      comment.isDeleted = true;
-      await comment.save();
+      await LessonComment.updateMany(
+        { $or: [{ _id: comment._id }, { parentComment: comment._id }], isDeleted: false },
+        {
+          $set: {
+            isDeleted: true
+          }
+        }
+      );
       return res.json({ message: 'Đã xóa bình luận.' });
     }
 

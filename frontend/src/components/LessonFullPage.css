@@ -136,6 +136,74 @@
   text-transform: none;
 }
 
+.lesson-comments {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.comment-item {
+  border: 2px solid var(--line);
+  background: var(--accent-soft);
+  color: var(--text-main);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  box-shadow: var(--shadow-hard);
+}
+
+.comment-item.is-reply {
+  margin-left: 24px;
+  background: #f9f4ea;
+}
+
+.comment-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.comment-time {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.btn-reply-comment,
+.btn-report-comment,
+.btn-delete-comment {
+  padding: 6px 10px;
+  border-radius: 999px;
+}
+
+.comment-content {
+  line-height: 1.55;
+}
+
+.comment-replies {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.comment-reply-box {
+  margin-top: 12px;
+}
+
+.comment-form textarea,
+.comment-reply-box textarea {
+  width: 100%;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--line);
+  padding: 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--text-main);
+  min-height: 120px;
+  box-shadow: var(--shadow-hard);
+}
+
 .lesson-edit-panel {
   margin: 12px 0 16px;
 }
