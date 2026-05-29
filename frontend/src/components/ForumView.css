@@ -36,3 +36,51 @@
 	margin-bottom: 12px;
 }
 
+/* Defensive responsive fixes to avoid clipping on mobile/landscape */
+.post-card .rich-text img,
+.post-card img {
+	max-width: 100%;
+	height: auto;
+	display: block;
+}
+
+.post-card {
+	word-break: break-word;
+	overflow-wrap: anywhere;
+}
+
+.forum-layout {
+	align-items: start;
+}
+
+@media (max-width: 1080px) {
+	.forum-layout {
+		grid-template-columns: 1fr;
+		gap: 12px;
+	}
+
+	.create-post-box {
+		position: static;
+		top: auto;
+		width: 100%;
+		padding: 14px;
+	}
+
+	.post-list {
+		width: 100%;
+	}
+
+	.forum-head {
+		position: sticky;
+		top: 72px; /* leave room for mobile dock/header */
+		z-index: 30;
+		background: transparent;
+	}
+}
+
+@media (max-width: 760px) {
+	.forum-head {
+		top: 96px; /* extra space for small screens */
+	}
+}
+
