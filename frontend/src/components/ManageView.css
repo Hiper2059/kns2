@@ -1,3 +1,25 @@
+.link-button {
+	border: 0;
+	background: transparent;
+	padding: 0;
+	margin: 0;
+	color: var(--brand);
+	font: inherit;
+	cursor: pointer;
+	text-align: left;
+}
+
+.admin-lesson-comments {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-top: 12px;
+}
+
+.admin-lesson-comment-item {
+	background: #fffdf8;
+}
+
 .admin-dashboard {
 	display: grid;
 	grid-template-columns: 240px minmax(0, 1fr);

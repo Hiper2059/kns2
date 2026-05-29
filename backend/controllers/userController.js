@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Course = require('../models/Course');
 const { normalizeRole, allowedStatuses } = require('../utils/userUtils');
@@ -148,7 +149,9 @@ const buildPublicProfile = async user => {
 const getPublicProfile = async (req, res) => {
   try {
     const { userId } = req.params;
-    const user = await User.findById(userId).lean();
+    const user = mongoose.Types.ObjectId.isValid(userId)
+      ? await User.findById(userId).lean()
+      : await User.findOne({ username: String(userId).trim() }).lean();
     if (!user) {
       return res.status(404).json({ message: 'Không tìm thấy người dùng.' });
     }

@@ -2174,6 +2174,12 @@ function App() {
               isLoadingDeletedPosts={isLoadingDeletedPosts}
               isLoadingDeletedComments={isLoadingDeletedComments}
               isLoadingAnalytics={isLoadingAnalytics}
+              courses={courses}
+              selectedCourse={selectedCourse}
+              onSelectCourse={handleSelectCourse}
+              courseLessons={courseLessons}
+              onOpenLesson={openLessonRoute}
+              onDeleteLesson={handleDeleteLesson}
               onFetchUsers={fetchManagedUsers}
               onFetchReports={fetchModerationReports}
               onFetchDeletedPosts={fetchDeletedPosts}
@@ -2208,6 +2214,8 @@ function App() {
               isAdminUploadLoading={isAdminUploadLoading}
               onAdminUploadVideo={handleAdminUploadVideo}
               onClearAdminUploadUrl={() => setAdminUploadUrl('')}
+              onOpenProfile={handleOpenProfile}
+              api={api}
             />
           )}
 

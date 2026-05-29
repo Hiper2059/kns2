@@ -7,6 +7,12 @@ const ManageView = ({
   isLoadingDeletedPosts,
   isLoadingDeletedComments,
   isLoadingAnalytics,
+  courses,
+  selectedCourse,
+  onSelectCourse,
+  courseLessons,
+  onOpenLesson,
+  onDeleteLesson,
   onFetchUsers,
   onFetchReports,
   onFetchDeletedPosts,
@@ -40,9 +46,14 @@ const ManageView = ({
   adminUploadUrl,
   isAdminUploadLoading,
   onAdminUploadVideo,
-  onClearAdminUploadUrl
+  onClearAdminUploadUrl,
+  onOpenProfile,
+  api
 }) => {
   const [activeSection, setActiveSection] = useState('overview')
+  const [lessonCommentsById, setLessonCommentsById] = useState({})
+  const [expandedLessonId, setExpandedLessonId] = useState('')
+  const [loadingLessonCommentsId, setLoadingLessonCommentsId] = useState('')
   const formatCount = value => new Intl.NumberFormat('vi-VN').format(value || 0)
   const getReportTargetLabel = targetType => {
     if (targetType === 'post') return 'Bài viết'
@@ -71,6 +82,58 @@ const ManageView = ({
     }
   }
 
+  const handleOpenLessonComments = async lessonId => {
+    if (!lessonId || !api) {
+      return
+    }
+
+    if (expandedLessonId === lessonId) {
+      setExpandedLessonId('')
+      return
+    }
+
+    setExpandedLessonId(lessonId)
+    if (lessonCommentsById[lessonId]) {
+      return
+    }
+
+    setLoadingLessonCommentsId(lessonId)
+    try {
+      const response = await api.get(`/api/lessons/${lessonId}/comments`)
+      setLessonCommentsById(prev => ({
+        ...prev,
+        [lessonId]: response.data.comments || []
+      }))
+    } catch (error) {
+      alert(error.response?.data?.message || 'Không tải được bình luận bài học.')
+    } finally {
+      setLoadingLessonCommentsId('')
+    }
+  }
+
+  const handleDeleteLessonComment = async lessonCommentId => {
+    if (!lessonCommentId || !api) {
+      return
+    }
+
+    if (!window.confirm('Xóa bình luận bài học này?')) {
+      return
+    }
+
+    try {
+      await api.delete(`/api/comments/${lessonCommentId}`)
+      setLessonCommentsById(prev => {
+        const next = { ...prev }
+        Object.keys(next).forEach(lessonId => {
+          next[lessonId] = (next[lessonId] || []).filter(comment => String(comment._id) !== String(lessonCommentId))
+        })
+        return next
+      })
+    } catch (error) {
+      alert(error.response?.data?.message || 'Không xóa được bình luận.')
+    }
+  }
+
   return (
     <div className="forum-view">
       <div className="admin-dashboard card-panel">
@@ -83,6 +146,7 @@ const ManageView = ({
             {[
               { id: 'overview', label: 'Tổng quan' },
               { id: 'users', label: 'Người dùng' },
+              { id: 'lessons', label: 'Bài học' },
               { id: 'moderation', label: 'Kiểm duyệt' },
               { id: 'content', label: 'Nội dung' },
               { id: 'reports', label: 'Báo cáo' },
@@ -372,6 +436,100 @@ const ManageView = ({
               </div>
             )}
 
+            {activeSection === 'lessons' && (
+              <div className="admin-card admin-card--span card-panel">
+                <div className="admin-card__header">
+                  <h4>Quản lý bài học</h4>
+                  <span>{formatCount(courses.length)} lớp</span>
+                </div>
+                <div className="management-actions">
+                  <select
+                    value={selectedCourse?._id || ''}
+                    onChange={e => {
+                      const selected = courses.find(course => String(course._id) === String(e.target.value)) || null
+                      onSelectCourse?.(selected)
+                    }}
+                  >
+                    <option value="">Chọn lớp học</option>
+                    {courses.map(course => (
+                      <option key={course._id} value={course._id}>
+                        {course.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {selectedCourse ? (
+                  <div className="report-list">
+                    <div className="report-item">
+                      <p>
+                        <strong>{selectedCourse.title}</strong> · {selectedCourse.category}
+                      </p>
+                      <p>{selectedCourse.description || 'Chưa có mô tả lớp học.'}</p>
+                    </div>
+
+                    {courseLessons.length ? (
+                      courseLessons.map(lesson => (
+                        <div key={lesson._id} className="report-item">
+                          <p>
+                            <strong>{lesson.order}. {lesson.title}</strong>
+                          </p>
+                          <p>{lesson.slug || lesson._id}</p>
+                          <p>{lesson.content ? 'Có nội dung bài học.' : 'Chưa có nội dung.'}</p>
+                          <div className="management-actions">
+                            <button className="btn-post" onClick={() => onOpenLesson?.(lesson)}>
+                              Xem bài học
+                            </button>
+                            <button className="btn-ghost" onClick={() => handleOpenLessonComments(lesson._id)}>
+                              {expandedLessonId === lesson._id ? 'Ẩn bình luận' : 'Xem bình luận'}
+                            </button>
+                            <button className="btn-danger" onClick={() => onDeleteLesson?.(lesson._id)}>
+                              Xóa bài học
+                            </button>
+                          </div>
+
+                          {expandedLessonId === lesson._id && (
+                            <div className="admin-lesson-comments">
+                              {loadingLessonCommentsId === lesson._id ? (
+                                <p>Đang tải bình luận bài học...</p>
+                              ) : (lessonCommentsById[lesson._id] || []).length ? (
+                                (lessonCommentsById[lesson._id] || []).map(comment => (
+                                  <div key={comment._id} className="report-item admin-lesson-comment-item">
+                                    <p>
+                                      <button
+                                        type="button"
+                                        className="link-button"
+                                        onClick={() => onOpenProfile?.(comment.author || comment.authorName)}
+                                      >
+                                        {comment.authorName || 'Khách'}
+                                      </button>
+                                      {' '}· {new Date(comment.createdAt).toLocaleString('vi-VN')}
+                                    </p>
+                                    <p>{comment.content}</p>
+                                    <div className="management-actions">
+                                      <button className="btn-danger" onClick={() => handleDeleteLessonComment(comment._id)}>
+                                        Xóa bình luận
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <p>Chưa có bình luận nào trong bài học này.</p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <p>Chưa có bài học nào trong lớp này.</p>
+                    )}
+                  </div>
+                ) : (
+                  <p>Chọn một lớp để xem và quản lý bài học.</p>
+                )}
+              </div>
+            )}
+
             {activeSection === 'moderation' && (
               <div className="admin-card card-panel">
                 <div className="admin-card__header">
@@ -471,7 +629,14 @@ const ManageView = ({
                     {moderationReports.map(report => (
                       <div key={report._id} className="report-item">
                         <p>
-                          <strong>{report.targetAuthor || 'Không rõ người đăng'}</strong> · {getReportTargetLabel(report.targetType)} · {report.createdAt ? new Date(report.createdAt).toLocaleString('vi-VN') : ''}
+                          <button
+                            type="button"
+                            className="link-button"
+                            onClick={() => onOpenProfile?.(report.targetAuthor)}
+                          >
+                            {report.targetAuthor || 'Không rõ người đăng'}
+                          </button>
+                          {' '}· {getReportTargetLabel(report.targetType)} · {report.createdAt ? new Date(report.createdAt).toLocaleString('vi-VN') : ''}
                         </p>
                         <p>Mã nội dung: {report.targetId}</p>
                         <p>Nội dung: {report.content}</p>
