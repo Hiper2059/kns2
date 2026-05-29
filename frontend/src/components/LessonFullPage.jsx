@@ -512,7 +512,7 @@ const LessonFullPage = ({
                 {editMode ? 'Dong sua bai' : 'Sua bai hoc'}
               </button>
             )}
-            <button className="btn-ghost" onClick={onClose}>Quay lai lop hoc</button>
+            <button className="btn-ghost" onClick={onClose}>Quay lai trang khoa hoc</button>
           </div>
         </div>
 

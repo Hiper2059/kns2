@@ -52,6 +52,8 @@ const getAuthGateFromPath = pathname => {
   return null
 }
 
+const isCoursePath = pathname => pathname === '/courses' || pathname === '/lms'
+
 
 function App() {
   const [isAuthOpen, setIsAuthOpen] = useState(false)
@@ -73,6 +75,9 @@ function App() {
     }
     if (window.location.pathname === '/profile') {
       return 'profile'
+    }
+    if (isCoursePath(window.location.pathname)) {
+      return 'lms'
     }
     return 'home'
   }
@@ -260,6 +265,8 @@ function App() {
     } else if (tab === 'teacher') {
       window.history.pushState({}, '', '/teacher')
       setAuthGate(getAuthGateFromPath('/teacher'))
+    } else if (tab === 'lms') {
+      window.history.pushState({}, '', '/courses')
     } else {
       if (window.location.pathname.startsWith('/lesson/')) {
         window.history.pushState({}, '', '/')
@@ -1073,6 +1080,18 @@ function App() {
         return
       }
 
+      if (isCoursePath(pathname)) {
+        if (lessonRouteSlug) {
+          setLessonRouteSlug(null)
+          setLessonRouteLesson(null)
+          setLessonRouteCourse(null)
+          setLessonRouteLessons([])
+        }
+        setAuthGate(getAuthGateFromPath(pathname))
+        setActiveTab('lms')
+        return
+      }
+
       if (lessonRouteSlug) {
         setLessonRouteSlug(null)
         setLessonRouteLesson(null)
@@ -1113,11 +1132,8 @@ function App() {
 
   const closeLessonRoute = () => {
     resetLessonRoute()
-    window.history.pushState({}, '', '/')
-    // Stay on LMS tab when closing lesson, don't force change
-    if (activeTab !== 'lms') {
-      setActiveTab('lms')
-    }
+    window.history.pushState({}, '', '/courses')
+    setActiveTab('lms')
   }
 
   const applyProfileToDraft = user => {
