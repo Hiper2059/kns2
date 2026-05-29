@@ -44,6 +44,12 @@ const ManageView = ({
 }) => {
   const [activeSection, setActiveSection] = useState('overview')
   const formatCount = value => new Intl.NumberFormat('vi-VN').format(value || 0)
+  const getReportTargetLabel = targetType => {
+    if (targetType === 'post') return 'Bài viết'
+    if (targetType === 'comment') return 'Bình luận diễn đàn'
+    if (targetType === 'lesson_comment') return 'Bình luận bài học'
+    return targetType || 'Không rõ'
+  }
   const analyticsData = analytics || {}
   const last30Days = Array.isArray(analyticsData.viewsLast30Days)
     ? analyticsData.viewsLast30Days.map((item, index) => ({
@@ -465,8 +471,9 @@ const ManageView = ({
                     {moderationReports.map(report => (
                       <div key={report._id} className="report-item">
                         <p>
-                          <strong>{report.targetAuthor}</strong> · {report.targetType} · {report.createdAt ? new Date(report.createdAt).toLocaleString('vi-VN') : ''}
+                          <strong>{report.targetAuthor || 'Không rõ người đăng'}</strong> · {getReportTargetLabel(report.targetType)} · {report.createdAt ? new Date(report.createdAt).toLocaleString('vi-VN') : ''}
                         </p>
+                        <p>Mã nội dung: {report.targetId}</p>
                         <p>Nội dung: {report.content}</p>
                         <p>Lý do: {report.reason || 'Không rõ'}</p>
                         <button className="btn-ghost" onClick={() => onDeleteModerationReport(report._id)}>
