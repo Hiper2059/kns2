@@ -43,3 +43,10 @@ export const normalizeText = value =>
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .trim()
+
+export const normalizeClientRole = role => {
+  if (!role) {
+    return 'student'
+  }
+  return role === 'user' ? 'student' : role
+}

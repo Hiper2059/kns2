@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Course = require('../models/Course');
 const Lesson = require('../models/Lesson');
 const Enrollment = require('../models/Enrollment');
+const LessonComment = require('../models/LessonComment');
 const LessonView = require('../models/LessonView');
 const { isStudentRole } = require('../utils/userUtils');
 
@@ -203,26 +204,52 @@ const deleteLesson = async (req, res) => {
       return res.status(403).json({ message: 'Ban khong co quyen xoa bai hoc nay.' });
     }
 
-    await lesson.deleteOne();
+    await Promise.all([
+      lesson.deleteOne(),
+      LessonComment.deleteMany({ lesson: lesson._id }),
+      LessonView.deleteMany({ lesson: lesson._id })
+    ]);
 
     const totalLessons = await Lesson.countDocuments({ course: course._id });
-    const enrollments = await Enrollment.find({ course: course._id });
 
-    for (const enrollment of enrollments) {
-      const beforeCount = enrollment.completedLessons.length;
-      enrollment.completedLessons = enrollment.completedLessons.filter(
-        item => String(item) !== String(lessonId)
+    if (totalLessons === 0) {
+      await Enrollment.updateMany(
+        { course: course._id },
+        {
+          $set: {
+            completedLessons: [],
+            progressPercent: 0,
+            status: 'enrolled'
+          }
+        }
       );
-      const completedCount = enrollment.completedLessons.length;
-      if (beforeCount !== completedCount) {
-        enrollment.progressPercent = totalLessons
-          ? Math.round((completedCount / totalLessons) * 100)
-          : 0;
+    } else {
+      const affectedEnrollments = await Enrollment.find(
+        { course: course._id, completedLessons: lesson._id },
+        { completedLessons: 1 }
+      ).lean();
+
+      if (affectedEnrollments.length) {
+        await Enrollment.bulkWrite(
+          affectedEnrollments.map(enrollment => {
+            const completedCount = (enrollment.completedLessons || []).filter(
+              item => String(item) !== String(lessonId)
+            ).length;
+
+            return {
+              updateOne: {
+                filter: { _id: enrollment._id },
+                update: {
+                  $pull: { completedLessons: lesson._id },
+                  $set: {
+                    progressPercent: Math.round((completedCount / totalLessons) * 100)
+                  }
+                }
+              }
+            };
+          })
+        );
       }
-      if (totalLessons === 0) {
-        enrollment.status = 'enrolled';
-      }
-      await enrollment.save();
     }
 
     res.json({ message: 'Da xoa bai hoc.' });

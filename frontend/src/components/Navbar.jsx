@@ -1,4 +1,5 @@
 import React from 'react'
+import { NavLink } from 'react-router-dom'
 import './Navbar.css'
 
 const IconHome = ({ width = 18, height = 18 }) => (
@@ -32,8 +33,6 @@ const IconManage = ({ width = 18, height = 18 }) => (
 )
 
 const Navbar = ({
-  activeTab,
-  onTabChange,
   currentRole,
   currentUser,
   currentUserLabel,
@@ -43,7 +42,6 @@ const Navbar = ({
   onLogout,
   onOpenAuth,
   onBrandClick,
-  onForumClick,
   onOpenProfile,
   sidebarCollapsed,
   onToggleSidebar,
@@ -51,7 +49,7 @@ const Navbar = ({
   onCloseSidebar
 }) => {
   return (
-    <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''} ${sidebarOpen ? 'overlay-open' : ''}`}>
+    <aside className={`sidebar glass-nav ${sidebarCollapsed ? 'collapsed' : ''} ${sidebarOpen ? 'overlay-open' : ''}`}>
       <div
         className="sidebar-brand clickable-brand"
         onClick={onBrandClick}
@@ -72,33 +70,33 @@ const Navbar = ({
       </div>
 
       <nav className="sidebar-nav">
-        <button className={activeTab === 'home' ? 'active' : ''} onClick={() => onTabChange('home')}>
+        <NavLink to="/" className={({ isActive }) => (isActive ? 'active' : '')}>
           <span className="icon"><IconHome/></span>
           <span className="label">Trang chủ</span>
-        </button>
+        </NavLink>
 
-        <button className={activeTab === 'forum' ? 'active' : ''} onClick={onForumClick}>
+        <NavLink to="/forum" className={({ isActive }) => (isActive ? 'active' : '')}>
           <span className="icon"><IconForum/></span>
           <span className="label">Diễn đàn</span>
-        </button>
+        </NavLink>
 
-        <button className={activeTab === 'lms' ? 'active' : ''} onClick={() => onTabChange('lms')}>
+        <NavLink to="/courses" className={({ isActive }) => (isActive ? 'active' : '')}>
           <span className="icon"><IconLms/></span>
           <span className="label">Lớp học</span>
-        </button>
+        </NavLink>
 
         {(currentRole === 'teacher' || currentRole === 'admin') && (
-          <button className={activeTab === 'teacher' ? 'active' : ''} onClick={() => onTabChange('teacher')}>
+          <NavLink to="/teacher" className={({ isActive }) => (isActive ? 'active' : '')}>
             <span className="icon"><IconTeacher/></span>
             <span className="label">Giảng viên</span>
-          </button>
+          </NavLink>
         )}
 
         {currentRole === 'admin' && (
-          <button className={activeTab === 'manage' ? 'active' : ''} onClick={() => onTabChange('manage')}>
+          <NavLink to="/admin" className={({ isActive }) => (isActive ? 'active' : '')}>
             <span className="icon"><IconManage/></span>
             <span className="label">Quản lý</span>
-          </button>
+          </NavLink>
         )}
       </nav>
 

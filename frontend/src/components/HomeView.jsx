@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react'
+import gsap from 'gsap'
 import './HomeView.css'
 
 const HomeView = ({
@@ -12,6 +14,21 @@ const HomeView = ({
   currentRole,
   onDeleteVideo
 }) => {
+  const containerRef = useRef(null)
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      gsap.from('.gsap-animate', {
+        y: 30,
+        opacity: 0,
+        duration: 0.6,
+        stagger: 0.1,
+        ease: 'power3.out',
+      })
+    }, containerRef)
+    return () => ctx.revert()
+  }, [])
+
   const getVideoEmbedUrl = url => {
     if (!url) return ''
     if (url.includes('embed/')) return url
@@ -27,73 +44,120 @@ const HomeView = ({
   }
 
   return (
-  <div className="home-view">
-    <div className="hero-section">
-      <div className="rank-board">
-        <div className="rank-progress-card card-panel">
-          <h3>Hệ thống rank cá nhân</h3>
+    <div ref={containerRef} className="flex flex-col gap-6 w-full mx-auto pb-10">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* Rank Progress Card */}
+        <div className="gsap-animate glass-card p-8 flex flex-col justify-center bg-white/80 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-xl hover:shadow-2xl transition-shadow duration-300">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="p-3 bg-teal-100 text-teal-700 rounded-2xl">
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">Hệ thống Rank</h3>
+          </div>
+
           {currentUser ? (
-            <>
-              <p>
-                Cấp hiện tại: <strong>{currentRank.name}</strong> với <strong>{currentUserPoints}</strong> điểm.
-              </p>
-              <p>
+            <div className="space-y-4">
+              <div className="p-4 rounded-2xl bg-teal-50/50 border border-teal-100/50">
+                <p className="text-lg text-zinc-700">
+                  Cấp hiện tại: <span className="font-extrabold text-teal-700 text-xl">{currentRank.name}</span>
+                </p>
+                <p className="text-zinc-500 font-medium">Bạn có {currentUserPoints} điểm.</p>
+              </div>
+              <p className="text-zinc-500 text-sm font-medium pl-1">
                 {nextRank
-                  ? `Cần thêm ${pointsToNext} điểm để lên ${nextRank.name}.`
-                  : 'Cậu đã chạm cấp cao nhất, quá đỉnh!'}
+                  ? `🚀 Cần thêm ${pointsToNext} điểm để lên ${nextRank.name}.`
+                  : '🏆 Bạn đã đạt cấp bậc cao nhất!'}
               </p>
-            </>
+            </div>
           ) : (
-            <p>Đăng nhập để theo dõi điểm và rank của cậu.</p>
+            <div className="p-4 rounded-2xl bg-amber-50/50 border border-amber-100/50 text-amber-800">
+              Vui lòng đăng nhập để theo dõi điểm và rank của bạn.
+            </div>
           )}
         </div>
 
-        <div className="rank-progress-card leaderboard-card card-panel">
-          <h3>Bảng xếp hạng điểm</h3>
-          {rankLeaderboard.length ? (
-            rankLeaderboard.map(([username, points], idx) => (
-              <div key={username} className="leaderboard-row">
-                <span>#{idx + 1} {username}</span>
-                <strong>{points} điểm</strong>
+        {/* Leaderboard Card */}
+        <div className="gsap-animate glass-card p-8 flex flex-col bg-white/80 border border-zinc-200 rounded-3xl shadow-xl hover:shadow-2xl transition-shadow duration-300">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="p-3 bg-orange-100 text-orange-600 rounded-2xl">
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-bold text-zinc-800">Bảng vàng xếp hạng</h3>
+          </div>
+
+          <div className="space-y-3 flex-1">
+            {rankLeaderboard.length ? (
+              rankLeaderboard.map(([username, points], idx) => (
+                <div key={username} className="flex justify-between items-center p-4 rounded-2xl bg-zinc-50/50 border border-zinc-100 hover:bg-zinc-100/80 transition-colors duration-200">
+                  <div className="flex items-center gap-3">
+                    <span className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${idx === 0 ? 'bg-yellow-400 text-yellow-900' : idx === 1 ? 'bg-zinc-300 text-zinc-700' : idx === 2 ? 'bg-amber-600 text-amber-100' : 'bg-zinc-200 text-zinc-600'}`}>
+                      {idx + 1}
+                    </span>
+                    <span className="font-semibold text-zinc-700">{username}</span>
+                  </div>
+                  <strong className="text-teal-700 font-bold bg-teal-50 px-3 py-1 rounded-full text-sm">{points} điểm</strong>
+                </div>
+              ))
+            ) : (
+              <div className="p-8 text-center text-zinc-400 border-2 border-dashed border-zinc-200 rounded-2xl">
+                Chưa có dữ liệu xếp hạng.
               </div>
-            ))
-          ) : (
-            <p>Chưa có dữ liệu xếp hạng.</p>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
-        <div className="video-section card-panel">
-        <h3>Video huong dan</h3>
-        <div className="video-grid">
-          {(categoryVideos[categories[0]] || []).slice(0, 1).map((video, index) => (
-            <div key={video._id || `${video.url}-${index}`} className="video-card card-panel">
-              <div className="video-frame-wrap">
+      {/* Video Section */}
+      <div className="gsap-animate glass-card p-8 bg-white/80 border border-zinc-200 rounded-3xl shadow-xl mt-4">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="p-3 bg-rose-100 text-rose-600 rounded-2xl">
+             <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+             </svg>
+          </div>
+          <h3 className="text-2xl font-bold text-zinc-800">Video hướng dẫn tiêu biểu</h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {(categoryVideos[categories[0]] || []).slice(0, 2).map((video, index) => (
+            <div key={video._id || `${video.url}-${index}`} className="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 shadow-sm hover:shadow-lg transition-all duration-300">
+              <div className="aspect-w-16 aspect-h-9 w-full">
                 <iframe
                   src={getVideoEmbedUrl(video.url)}
                   title="Video huong dan"
-                  className="video-frame"
+                  className="w-full h-full object-cover"
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 ></iframe>
               </div>
               {currentRole === 'admin' && (
-                <button
-                  className="btn-danger"
-                  onClick={() => onDeleteVideo(video._id)}
-                  disabled={!video._id || String(video._id).startsWith('default-')}
-                >
-                  Xóa video
-                </button>
+                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <button
+                    className="px-4 py-2 bg-red-500/90 hover:bg-red-600 text-white text-sm font-bold rounded-xl backdrop-blur-sm shadow-md"
+                    onClick={() => onDeleteVideo(video._id)}
+                    disabled={!video._id || String(video._id).startsWith('default-')}
+                  >
+                    Xóa video
+                  </button>
+                </div>
               )}
             </div>
           ))}
-          {!(categoryVideos[categories[0]] || []).length && <p>Chưa có video nào.</p>}
+          {!(categoryVideos[categories[0]] || []).length && (
+            <div className="col-span-full p-12 text-center text-zinc-400 border-2 border-dashed border-zinc-200 rounded-2xl">
+              Chưa có video nào trong danh mục này.
+            </div>
+          )}
         </div>
       </div>
     </div>
-  </div>
   )
 }
 
