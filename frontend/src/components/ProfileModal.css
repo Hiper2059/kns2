@@ -7,6 +7,7 @@
   justify-content: center;
   padding: 20px;
   z-index: 50;
+  overscroll-behavior: contain;
 }
 
 .profile-modal {
@@ -18,6 +19,7 @@
   border: 1px solid var(--line);
   padding: 18px;
   box-shadow: var(--shadow-soft);
+  min-width: 0;
 }
 
 .profile-modal-header {
@@ -28,6 +30,8 @@
   margin-bottom: 14px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--line);
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .profile-hero {
@@ -36,6 +40,16 @@
   gap: 12px;
   align-items: center;
   margin-bottom: 16px;
+  min-width: 0;
+}
+
+.profile-modal h3,
+.profile-modal h4,
+.profile-modal h5,
+.profile-modal p,
+.profile-modal span,
+.profile-modal strong {
+  overflow-wrap: anywhere;
 }
 
 .profile-hero img,
@@ -85,6 +99,7 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 @media (max-width: 640px) {

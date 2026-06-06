@@ -1,5 +1,6 @@
 .profile-page {
   width: 100%;
+  min-width: 0;
 }
 
 .profile-page__shell {
@@ -7,6 +8,7 @@
   grid-template-columns: 300px minmax(0, 1fr);
   gap: 18px;
   align-items: start;
+  min-width: 0;
 }
 
 .profile-page__rail,
@@ -19,6 +21,8 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-hard);
+  min-width: 0;
+  overflow: clip;
 }
 
 .profile-page__rail {
@@ -28,6 +32,17 @@
   flex-direction: column;
   gap: 18px;
   padding: 18px;
+  min-width: 0;
+}
+
+.profile-page h1,
+.profile-page h2,
+.profile-page h3,
+.profile-page h4,
+.profile-page p,
+.profile-page span,
+.profile-page strong {
+  overflow-wrap: anywhere;
 }
 
 .profile-page__back {

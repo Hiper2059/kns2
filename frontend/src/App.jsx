@@ -141,6 +141,19 @@ function App() {
   const [deletedReasonFilter, setDeletedReasonFilter] = useState('all')
   const [lmsCategory, setLmsCategory] = useState(categories[0])
   const [courses, setCourses] = useState([])
+  const [customCategories, setCustomCategories] = useState(() => {
+    const saved = localStorage.getItem('zmate_custom_categories')
+    if (!saved) {
+      return []
+    }
+
+    try {
+      const parsed = JSON.parse(saved)
+      return Array.isArray(parsed) ? parsed.filter(Boolean) : []
+    } catch {
+      return []
+    }
+  })
   const [selectedCourse, setSelectedCourse] = useState(null)
   const [courseLessons, setCourseLessons] = useState([])
   const [courseAssignments, setCourseAssignments] = useState([])
@@ -238,6 +251,29 @@ function App() {
     }
   })
 
+  const allCategories = useMemo(() => {
+    const courseCategories = courses
+      .map(course => String(course.category || '').trim())
+      .filter(Boolean)
+
+    return Array.from(new Set([...categories, ...customCategories, ...courseCategories]))
+  }, [courses, customCategories])
+
+  const fetchCategories = useCallback(async () => {
+    try {
+      const response = await api.get('/api/categories')
+      const loadedCategories = Array.isArray(response.data?.categories)
+        ? response.data.categories.map(category => String(category || '').trim()).filter(Boolean)
+        : []
+      const removableCategories = Array.isArray(response.data?.customCategories)
+        ? response.data.customCategories.map(category => String(category || '').trim()).filter(Boolean)
+        : loadedCategories.filter(category => !categories.includes(category))
+      setCustomCategories(removableCategories)
+    } catch {
+      // Keep local fallback categories when the backend is unavailable.
+    }
+  }, [])
+
   const updatePathForTab = tab => {
     if (tab === 'manage') {
       window.history.pushState({}, '', '/admin')
@@ -319,6 +355,17 @@ function App() {
   useEffect(() => {
     localStorage.setItem('zmate_points_by_user', JSON.stringify(pointsByUser))
   }, [pointsByUser])
+
+  useEffect(() => {
+    localStorage.setItem('zmate_custom_categories', JSON.stringify(customCategories))
+  }, [customCategories])
+
+  useEffect(() => {
+    if (!allCategories.length || allCategories.includes(lmsCategory)) {
+      return
+    }
+    setLmsCategory(allCategories[0])
+  }, [allCategories, lmsCategory])
 
 
   useEffect(() => {
@@ -566,7 +613,7 @@ function App() {
       normalizedInput.includes('co gi de hoc')
     ) {
       addSuggestion({ id: 'go-lms', label: 'Xem lớp học' })
-      categories.forEach(category => {
+      allCategories.forEach(category => {
         addSuggestion({ id: `open-category:${category}`, label: `Học ${category}` })
       })
     }
@@ -589,7 +636,7 @@ function App() {
       addSuggestion({ id: 'go-home', label: 'Trang chủ' })
       addSuggestion({ id: 'go-forum', label: 'Diễn đàn' })
       addSuggestion({ id: 'login', label: 'Đăng nhập' })
-      categories.forEach(category => {
+      allCategories.forEach(category => {
         addSuggestion({ id: `open-category:${category}`, label: `Học ${category}` })
       })
     }
@@ -615,7 +662,7 @@ function App() {
 
     if (actionId === 'go-lms') {
       handleTabChange('lms')
-      handleSelectLmsCategory(categories[0])
+      handleSelectLmsCategory(allCategories[0] || categories[0])
       return
     }
 
@@ -633,7 +680,7 @@ function App() {
 
     if (actionId.startsWith('open-category:')) {
       const category = actionId.split(':')[1]
-      if (category && categories.includes(category)) {
+      if (category && allCategories.includes(category)) {
         handleTabChange('lms')
         handleSelectLmsCategory(category)
       }
@@ -756,7 +803,7 @@ function App() {
         },
         ...prevPosts
       ])
-      setNewPost({ title: '', content: '', category: categories[0] })
+      setNewPost({ title: '', content: '', category: allCategories[0] || categories[0] })
     } catch (error) {
       alert(error.response?.data?.message || 'Không đăng được bài viết.')
     }
@@ -1191,6 +1238,63 @@ function App() {
     if (selectedCourse && category && selectedCourse.category !== category) {
       setSelectedCourse(null)
       setCourseLessons([])
+    }
+  }
+
+  const handleAddCategory = async categoryName => {
+    if (currentRole !== 'admin') {
+      return
+    }
+
+    const normalized = String(categoryName || '').trim()
+    if (!normalized) {
+      alert('Nhập tên danh mục trước nhé.')
+      return
+    }
+
+    if (allCategories.some(category => category.toLowerCase() === normalized.toLowerCase())) {
+      alert('Danh mục này đã tồn tại.')
+      return
+    }
+
+    try {
+      await api.post('/api/categories', { name: normalized })
+      setCustomCategories(prev => [...prev, normalized])
+      setLmsCategory(normalized)
+      setNewCourseData(prev => ({ ...prev, category: normalized }))
+      setNewVideoData(prev => ({ ...prev, category: normalized }))
+    } catch (error) {
+      alert(error.response?.data?.message || 'Khong them duoc danh muc.')
+    }
+  }
+
+  const handleRemoveCategory = async categoryName => {
+    if (currentRole !== 'admin') {
+      return
+    }
+
+    const category = String(categoryName || '').trim()
+    if (!category || !customCategories.includes(category)) {
+      return
+    }
+
+    try {
+      await api.delete(`/api/categories/${encodeURIComponent(category)}`)
+      setCustomCategories(prev => prev.filter(item => item !== category))
+      if (lmsCategory === category) {
+        setLmsCategory(categories[0])
+      }
+      setNewCourseData(prev => ({
+        ...prev,
+        category: prev.category === category ? categories[0] : prev.category
+      }))
+      setNewVideoData(prev => ({
+        ...prev,
+        category: prev.category === category ? categories[0] : prev.category
+      }))
+      fetchCategories()
+    } catch (error) {
+      alert(error.response?.data?.message || 'Khong xoa duoc danh muc.')
     }
   }
 
@@ -1690,7 +1794,7 @@ function App() {
         imageUrl
       })
       alert(response.data.message || 'Đã tạo lớp học.')
-      setNewCourseData({ title: '', category: categories[0], description: '', imageUrl: '', imageFile: null })
+      setNewCourseData({ title: '', category: allCategories[0] || categories[0], description: '', imageUrl: '', imageFile: null })
       fetchTeacherCourses()
       fetchCourses()
     } catch (error) {
@@ -2195,6 +2299,10 @@ function App() {
   }, [courses, currentRole, currentUser, myEnrollments, teacherCourses])
 
   useEffect(() => {
+    fetchCategories()
+  }, [fetchCategories])
+
+  useEffect(() => {
     fetchVideos()
   }, [fetchVideos])
 
@@ -2384,7 +2492,7 @@ function App() {
         <Routes>
           <Route path='/' element={
             <HomeView
-              categories={categories}
+              categories={allCategories}
               currentUser={currentUser}
               currentRank={currentRank}
               currentUserPoints={currentUserPoints}
@@ -2399,7 +2507,7 @@ function App() {
 
           <Route path='/courses' element={
             <LmsView
-              categories={categories}
+              categories={allCategories}
               selectedCategory={lmsCategory}
               onSelectCategory={handleSelectLmsCategory}
               courses={courses}
@@ -2428,7 +2536,7 @@ function App() {
             <ForumView
               newPost={newPost}
               onNewPostChange={setNewPost}
-              categories={categories}
+              categories={allCategories}
               onPostSubmit={handlePostSubmit}
               paginatedForumPosts={paginatedForumPosts}
               commentsByPost={commentsByPost}
@@ -2453,7 +2561,7 @@ function App() {
 
           <Route path='/teacher' element={
             <TeacherView
-              categories={categories}
+              categories={allCategories}
               courses={teacherCourses}
               lessons={courseLessons}
               selectedCourseId={selectedTeacherCourseId}
@@ -2517,7 +2625,10 @@ function App() {
                 newVideoData={newVideoData}
                 onVideoDataChange={setNewVideoData}
                 onAddVideo={handleAddVideo}
-                categories={categories}
+                categories={allCategories}
+                customCategories={customCategories}
+                onAddCategory={handleAddCategory}
+                onRemoveCategory={handleRemoveCategory}
                 managedUsers={managedUsers}
                 currentUser={currentUser}
                 onRoleChange={handleRoleChange}
@@ -2573,7 +2684,7 @@ function App() {
               course={lessonRouteCourse}
               lessons={lessonRouteLessons}
               courses={courses}
-              categories={categories}
+              categories={allCategories}
               isLoading={lessonRouteLoading}
               onClose={closeLessonRoute}
               onOpenLesson={openLessonRoute}

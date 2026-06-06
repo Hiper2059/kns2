@@ -28,7 +28,7 @@ body {
     @apply bg-white/70 backdrop-blur-lg border border-white/40 shadow-sm rounded-2xl;
   }
   .glass-card {
-    @apply bg-white/60 backdrop-blur-md border border-white/30 shadow-md rounded-xl hover:shadow-lg transition-all duration-300;
+    @apply bg-white/60 backdrop-blur-md border border-white/30 shadow-md rounded-xl hover:shadow-lg transition-[box-shadow,border-color,background-color,transform] duration-300;
   }
   .glass-nav {
     @apply bg-white/80 backdrop-blur-xl border-b border-zinc-200/50 shadow-sm;

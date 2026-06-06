@@ -1,8 +1,5 @@
 import { useEffect, useRef } from 'react'
 import { gsap } from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
-
-gsap.registerPlugin(ScrollTrigger)
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' &&
@@ -22,24 +19,12 @@ export function useGsapPageTransitions(dependency) {
       gsap.fromTo(
         scope,
         { autoAlpha: 0, y: 16 },
-        { autoAlpha: 1, y: 0, duration: 0.45, ease: 'power3.out' }
-      )
-
-      gsap.fromTo(
-        '[data-animate-item], .card-panel, .post-card, .lms-course-card, .teacher-card, .admin-card',
-        { autoAlpha: 0, y: 18 },
         {
           autoAlpha: 1,
           y: 0,
-          duration: 0.5,
+          duration: 0.35,
           ease: 'power3.out',
-          stagger: 0.05,
-          delay: 0.08,
-          scrollTrigger: {
-            trigger: scope,
-            start: 'top 88%',
-            once: true
-          }
+          clearProps: 'opacity,visibility,transform'
         }
       )
 
@@ -62,6 +47,8 @@ export function useGsapPageTransitions(dependency) {
 
     return () => {
       hoverCleanups.forEach(cleanup => cleanup())
+      gsap.killTweensOf(scope)
+      gsap.set(scope, { clearProps: 'opacity,visibility,transform' })
       ctx.revert()
     }
   }, [dependency])

@@ -3,12 +3,14 @@
 	grid-template-columns: minmax(280px, 1fr) minmax(240px, 0.8fr);
 	gap: 18px;
 	max-width: 860px;
+	min-width: 0;
 }
 
 .auth-form-panel {
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
+	min-width: 0;
 }
 
 .auth-notice-panel {
@@ -20,6 +22,8 @@
 	flex-direction: column;
 	gap: 12px;
 	min-height: 220px;
+	min-width: 0;
+	overflow: clip;
 }
 
 .auth-notice-header {
@@ -27,6 +31,16 @@
 	align-items: center;
 	justify-content: space-between;
 	gap: 10px;
+	min-width: 0;
+	flex-wrap: wrap;
+}
+
+.auth-modal-split h2,
+.auth-modal-split h3,
+.auth-modal-split p,
+.auth-modal-split span,
+.auth-modal-split strong {
+	overflow-wrap: anywhere;
 }
 
 .auth-notice-header h3 {

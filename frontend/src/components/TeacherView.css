@@ -3,12 +3,14 @@
   grid-template-columns: 1fr;
   gap: 18px;
   font-family: 'Sora', sans-serif;
+  min-width: 0;
 }
 
 .teacher-panel {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-width: 0;
 }
 
 .teacher-view > .teacher-panel.card-panel,
@@ -25,6 +27,8 @@
   border: 1px solid var(--line);
   border-radius: 16px;
   box-shadow: var(--shadow-hard);
+  min-width: 0;
+  overflow: clip;
 }
 
 .teacher-hero {
@@ -84,11 +88,13 @@
   align-items: center;
   justify-content: space-between;
   gap: 14px;
+  min-width: 0;
 }
 
 .create-panel-toggle > span:first-child {
   display: grid;
   gap: 3px;
+  min-width: 0;
 }
 
 .create-panel-toggle strong {
@@ -117,6 +123,23 @@
   gap: 16px;
   padding: 16px 18px 18px;
   background: #fbfcfe;
+}
+
+.teacher-view h2,
+.teacher-view h3,
+.teacher-view h4,
+.teacher-view p,
+.teacher-view span,
+.teacher-view strong {
+  overflow-wrap: anywhere;
+}
+
+.teacher-view :where(.teacher-grid, .teacher-split, .teacher-course-row, .lesson-row, .assignment-row, .submission-row, .form-grid) {
+  min-width: 0;
+}
+
+.teacher-view :where(.lesson-actions, .lesson-edit-actions, .teacher-actions, .assignment-actions, .form-actions) {
+  flex-wrap: wrap;
 }
 
 .form-section {

@@ -45,17 +45,34 @@ const LmsView = ({
   const containerRef = useRef(null)
 
   useEffect(() => {
+    const scope = containerRef.current
+    if (!scope || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return undefined
+    }
+
     const ctx = gsap.context(() => {
-      gsap.from('.gsap-animate', {
-        y: 20,
-        opacity: 0,
-        duration: 0.5,
-        stagger: 0.05,
-        ease: 'power2.out',
-      })
-    }, containerRef)
-    return () => ctx.revert()
-  }, [selectedCourse, selectedCategory]) // Re-run animation when course or category changes
+      const items = gsap.utils.toArray('.gsap-animate')
+      gsap.fromTo(
+        items,
+        { autoAlpha: 0, y: 14 },
+        {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.36,
+          stagger: 0.04,
+          ease: 'power2.out',
+          clearProps: 'opacity,visibility,transform'
+        }
+      )
+    }, scope)
+
+    return () => {
+      const items = gsap.utils.toArray('.gsap-animate', scope)
+      gsap.killTweensOf(items)
+      gsap.set(items, { clearProps: 'opacity,visibility,transform' })
+      ctx.revert()
+    }
+  }, [selectedCourse?._id, selectedCategory])
 
   const getProgressLabel = value => {
     const percent = Number(value) || 0
@@ -72,7 +89,7 @@ const LmsView = ({
   }, [isTeacherView, onLoadEnrollments, selectedCourse?._id])
 
   return (
-    <div ref={containerRef} className="flex flex-col lg:flex-row gap-6 w-full max-w-[1600px] mx-auto pb-10">
+    <div ref={containerRef} className="flex min-w-0 flex-col gap-6 w-full max-w-[1600px] mx-auto pb-10 lg:flex-row">
       {/* Sidebar - Categories */}
       <div className="w-full lg:w-64 flex-shrink-0">
         <div className="gsap-animate glass-card p-5 sticky top-24 bg-white/80 border border-zinc-200 rounded-3xl shadow-lg">
@@ -81,7 +98,7 @@ const LmsView = ({
             {categories.map(category => (
               <li key={category}>
                 <button
-                  className={`w-full text-left px-4 py-3 rounded-2xl font-medium transition-all duration-200 ${
+                  className={`w-full min-w-0 text-left px-4 py-3 rounded-2xl font-medium leading-snug transition-[background-color,color,box-shadow,transform] duration-200 ${
                     selectedCategory === category
                       ? 'bg-teal-600 text-white shadow-md shadow-teal-600/20'
                       : 'text-zinc-600 hover:bg-zinc-100/80 hover:text-zinc-900'
@@ -97,17 +114,17 @@ const LmsView = ({
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col xl:flex-row gap-6">
+      <div className="flex min-w-0 flex-1 flex-col gap-6 xl:flex-row">
 
         {/* Course List */}
-        <div className="w-full xl:w-1/3 flex flex-col gap-4">
+        <div className="w-full min-w-0 xl:w-1/3 flex flex-col gap-4">
           <h3 className="gsap-animate text-xl font-bold text-zinc-800 px-1">Lớp học hiện có</h3>
           <div className="flex flex-col gap-4 max-h-[800px] overflow-y-auto pr-2 pb-4 scrollbar-hide">
             {visibleCourses.length ? (
               visibleCourses.map(course => (
                 <button
                   key={course._id}
-                  className={`gsap-animate group relative flex flex-col gap-3 p-4 rounded-3xl border transition-all duration-300 text-left ${
+                  className={`gsap-animate group relative flex min-w-0 flex-col gap-3 p-4 rounded-3xl border text-left transition-[background-color,border-color,box-shadow,transform] duration-300 ${
                     selectedCourse?._id === course._id
                       ? 'bg-white border-teal-500 shadow-lg shadow-teal-500/10 ring-2 ring-teal-500/20'
                       : 'bg-white/60 border-zinc-200 hover:bg-white hover:border-zinc-300 hover:shadow-md'
@@ -121,9 +138,9 @@ const LmsView = ({
                       <div className="w-full h-full flex items-center justify-center text-zinc-400 font-medium bg-zinc-200/50">Ảnh lớp</div>
                     )}
                   </div>
-                  <div className="flex flex-col gap-1 w-full">
-                    <h4 className="font-bold text-lg text-zinc-800 leading-tight line-clamp-2 group-hover:text-teal-700 transition-colors">{course.title}</h4>
-                    <p className="text-sm text-zinc-500 font-medium">
+                  <div className="flex min-w-0 flex-col gap-1 w-full">
+                    <h4 className="font-bold text-lg text-zinc-800 leading-tight line-clamp-2 break-words group-hover:text-teal-700 transition-colors">{course.title}</h4>
+                    <p className="text-sm text-zinc-500 font-medium break-words">
                       Giảng viên: <span
                         className="text-orange-600 hover:underline cursor-pointer"
                         onClick={e => { e.stopPropagation(); onOpenProfile?.(course.teacher); }}
@@ -142,14 +159,14 @@ const LmsView = ({
 
         {/* Course Details */}
         <div className="flex-1">
-          <div className="gsap-animate glass-card p-6 md:p-8 bg-white/90 border border-zinc-200 rounded-3xl shadow-xl min-h-[600px]">
+          <div className="gsap-animate glass-card min-w-0 p-5 md:p-8 bg-white/90 border border-zinc-200 rounded-3xl shadow-xl min-h-[600px]">
             {selectedCourse ? (
               <div className="flex flex-col gap-8">
                 {/* Header */}
-                <div className="flex flex-col md:flex-row gap-6 justify-between items-start border-b border-zinc-100 pb-8">
-                  <div className="flex-1">
+                <div className="flex min-w-0 flex-col gap-6 justify-between border-b border-zinc-100 pb-8 md:flex-row md:items-start">
+                  <div className="min-w-0 flex-1">
                     <div className="inline-block px-3 py-1 bg-zinc-100 text-zinc-600 rounded-full text-xs font-bold mb-3 uppercase tracking-wider">{selectedCourse.category}</div>
-                    <h2 className="text-3xl md:text-4xl font-extrabold text-zinc-900 mb-4 leading-tight">{selectedCourse.title}</h2>
+                    <h2 className="mb-4 text-2xl font-extrabold leading-tight text-zinc-900 break-words sm:text-3xl md:text-4xl">{selectedCourse.title}</h2>
                     <div
                       className="prose prose-zinc max-w-none text-zinc-600 text-sm md:text-base mb-6"
                       dangerouslySetInnerHTML={{ __html: selectedCourse.description || 'Chưa có mô tả chi tiết.' }}
@@ -157,15 +174,15 @@ const LmsView = ({
 
                     {enrollment && (
                       <div className="bg-teal-50 border border-teal-100 rounded-2xl p-5 mb-4">
-                        <div className="flex justify-between items-end mb-2">
+                        <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                           <span className="font-bold text-teal-900">Tiến độ của bạn</span>
-                          <span className="text-teal-700 font-medium bg-teal-100 px-3 py-1 rounded-full text-sm">
+                          <span className="text-teal-700 font-medium bg-teal-100 px-3 py-1 rounded-full text-sm break-words">
                             {enrollment.progressPercent || 0}% - {getProgressLabel(enrollment.progressPercent)}
                           </span>
                         </div>
                         <div className="w-full bg-teal-200/50 rounded-full h-3 mb-3 overflow-hidden">
                           <div
-                            className="bg-teal-500 h-3 rounded-full transition-all duration-1000 ease-out"
+                            className="bg-teal-500 h-3 rounded-full transition-[width] duration-1000 ease-out"
                             style={{ width: `${Math.min(100, enrollment.progressPercent || 0)}%` }}
                           ></div>
                         </div>
@@ -177,7 +194,7 @@ const LmsView = ({
                     )}
                   </div>
 
-                  <div className="flex flex-col gap-3 shrink-0 w-full md:w-auto">
+                  <div className="flex min-w-0 flex-col gap-3 shrink-0 w-full md:w-auto">
                     {!currentUser && !isTeacherView && <div className="text-sm text-orange-600 bg-orange-50 p-3 rounded-xl border border-orange-100 font-medium text-center">Đăng nhập để tham gia</div>}
 
                     {canEnroll && !isEnrolled && (
@@ -229,17 +246,17 @@ const LmsView = ({
                       sortedLessons.map(lesson => (
                         <div
                           key={lesson._id}
-                          className="group flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border border-zinc-200 bg-white hover:border-blue-300 hover:shadow-md cursor-pointer transition-all duration-200"
+                          className="group flex min-w-0 flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl border border-zinc-200 bg-white hover:border-blue-300 hover:shadow-md cursor-pointer transition-[border-color,box-shadow,background-color,transform] duration-200"
                           onClick={() => onOpenLesson?.(lesson)}
                         >
-                          <div className="flex items-center gap-4">
+                          <div className="flex min-w-0 items-center gap-4">
                             <div className="flex items-center justify-center w-10 h-10 rounded-full bg-zinc-100 text-zinc-500 font-bold group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
                               {lesson.order}
                             </div>
-                            <span className="font-semibold text-zinc-800 text-lg group-hover:text-blue-700 transition-colors">{lesson.title}</span>
+                            <span className="font-semibold text-zinc-800 text-lg break-words group-hover:text-blue-700 transition-colors">{lesson.title}</span>
                           </div>
 
-                          <div className="flex items-center gap-3 self-end sm:self-auto">
+                          <div className="flex min-w-0 flex-wrap items-center gap-3 self-end sm:self-auto">
                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                               completedLessonIds.has(String(lesson._id))
                                 ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
@@ -275,9 +292,9 @@ const LmsView = ({
                   <div className="flex flex-col gap-4">
                     {visibleAssignments.length ? (
                       visibleAssignments.map(assignment => (
-                        <div key={assignment._id} className="flex flex-col gap-4 p-5 rounded-2xl border border-zinc-200 bg-white">
-                          <div className="flex flex-col gap-2">
-                            <h4 className="text-lg font-bold text-zinc-800">{assignment.title}</h4>
+                        <div key={assignment._id} className="flex min-w-0 flex-col gap-4 p-5 rounded-2xl border border-zinc-200 bg-white">
+                          <div className="flex min-w-0 flex-col gap-2">
+                            <h4 className="text-lg font-bold text-zinc-800 break-words">{assignment.title}</h4>
                             <p className="text-zinc-600 text-sm">{assignment.description || 'Không có mô tả.'}</p>
                             {assignment.dueAt && (
                               <div className="inline-flex items-center gap-2 text-xs font-semibold text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg w-fit mt-1">
@@ -288,7 +305,7 @@ const LmsView = ({
 
                           {assignment.mySubmission && (
                             <div className="mt-2 p-4 bg-zinc-50 border border-zinc-200 rounded-xl flex flex-col gap-3">
-                              <div className="flex justify-between items-center">
+                              <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <span className="font-bold text-zinc-700 text-sm">Trạng thái bài làm:</span>
                                 <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                                   assignment.mySubmission.status === 'graded' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
@@ -297,12 +314,12 @@ const LmsView = ({
                                 </span>
                               </div>
                               {assignment.mySubmission.content && (
-                                <div className="text-sm text-zinc-600 bg-white p-3 rounded-lg border border-zinc-100">
+                                <div className="text-sm text-zinc-600 bg-white p-3 rounded-lg border border-zinc-100 break-words">
                                   {assignment.mySubmission.content}
                                 </div>
                               )}
                               {assignment.mySubmission.status === 'graded' && assignment.mySubmission.feedback && (
-                                <div className="text-sm font-medium text-amber-800 bg-amber-50/50 p-3 rounded-lg border border-amber-100 border-l-4 border-l-amber-400">
+                                <div className="text-sm font-medium text-amber-800 bg-amber-50/50 p-3 rounded-lg border border-amber-100 border-l-4 border-l-amber-400 break-words">
                                   Giáo viên: {assignment.mySubmission.feedback}
                                 </div>
                               )}
@@ -312,7 +329,7 @@ const LmsView = ({
                           {currentUser && !isTeacherView && (
                             <div className="mt-2 flex flex-col gap-3">
                               <textarea
-                                className="w-full p-4 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none text-sm transition-all min-h-[100px] resize-y"
+                                className="w-full p-4 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 text-sm transition-[border-color,box-shadow,background-color] min-h-[100px] resize-y"
                                 value={assignmentDrafts?.[assignment._id] || ''}
                                 onChange={e => onAssignmentDraftChange?.(assignment._id, e.target.value)}
                                 placeholder="Nhập nội dung bài làm của bạn..."

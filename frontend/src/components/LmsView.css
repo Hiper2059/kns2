@@ -1,6 +1,7 @@
 .lms-view {
   display: grid;
-  gap: 16px;
+  gap: 18px;
+  min-width: 0;
 }
 
 .lms-sidebar {
@@ -10,6 +11,7 @@
   border-radius: var(--radius-lg);
   border: 1px solid var(--line);
   box-shadow: var(--shadow-hard);
+  min-width: 0;
 }
 
 .lms-sidebar ul {
@@ -29,12 +31,15 @@
   border: 1px solid var(--line);
   font-size: 13px;
   font-weight: 650;
-  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+  line-height: 1.25;
+  transition: background-color 0.16s ease, color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
+  max-width: 100%;
 }
 
 .lms-sidebar li:hover {
   border-color: var(--brand);
   color: var(--brand-dark);
+  transform: translateY(-1px);
 }
 
 .lms-sidebar li.active {
@@ -46,6 +51,7 @@
 .lms-content {
   display: grid;
   gap: 18px;
+  min-width: 0;
 }
 
 .lms-course-list {
@@ -66,6 +72,8 @@
   cursor: pointer;
   box-shadow: var(--shadow-hard);
   transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .course-card:hover {
@@ -106,12 +114,14 @@
 .course-info h4 {
   margin: 0 0 6px;
   line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .course-preview {
   margin-top: 8px;
   color: var(--text-muted);
   font-size: 13px;
+  line-height: 1.45;
 }
 
 .course-info p,
@@ -126,6 +136,8 @@
   padding: 22px;
   border: 1px solid var(--line);
   box-shadow: var(--shadow-hard);
+  min-width: 0;
+  overflow: clip;
 }
 
 .course-header {
@@ -134,6 +146,7 @@
   gap: 18px;
   align-items: flex-start;
   margin-bottom: 18px;
+  min-width: 0;
 }
 
 .progress-block {
@@ -168,6 +181,7 @@
   align-items: flex-end;
   gap: 8px;
   min-width: 160px;
+  max-width: 100%;
 }
 
 .enrolled-pill {
@@ -194,6 +208,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .lesson-list-grid,
@@ -214,10 +230,14 @@
   text-align: left;
   gap: 10px;
   cursor: pointer;
+  min-width: 0;
+  overflow: hidden;
+  transition: background-color 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
 }
 
 .lesson-row:hover {
   border-color: var(--brand);
+  transform: translateY(-1px);
 }
 
 .lesson-row.active {
@@ -232,6 +252,9 @@
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
+  line-height: 1.2;
+  white-space: normal;
+  text-align: center;
 }
 
 .lesson-chip.done {
@@ -248,6 +271,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
 }
 
 .lesson-actions .btn-danger {
@@ -262,6 +288,8 @@
   padding: 12px;
   display: grid;
   gap: 12px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .assignment-meta h4 {
@@ -290,6 +318,7 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--bg-main);
+  overflow-wrap: anywhere;
 }
 
 .assignment-submit textarea {
@@ -334,6 +363,11 @@
     min-width: 0;
     align-items: stretch;
   }
+
+  .syllabus-header,
+  .lesson-actions {
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 640px) {
@@ -344,6 +378,7 @@
   .course-card {
     grid-template-columns: 64px minmax(0, 1fr);
     padding: 12px;
+    border-radius: 14px;
   }
 
   .course-thumb img,
@@ -360,5 +395,10 @@
   .lesson-actions {
     width: 100%;
     flex-wrap: wrap;
+    justify-content: stretch;
+  }
+
+  .lesson-actions > * {
+    flex: 1 1 140px;
   }
 }

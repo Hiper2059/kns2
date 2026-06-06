@@ -15,6 +15,7 @@ const assignmentRoutes = require('./routes/assignmentRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const lessonCommentsRoutes = require('./routes/lessonCommentsRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
 const { friendlyMessages } = require('./middleware/friendlyMessages');
 
 const app = express();
@@ -37,5 +38,6 @@ app.use('/api', assignmentRoutes);
 app.use('/api', uploadRoutes);
 app.use('/api', analyticsRoutes);
 app.use('/api', lessonCommentsRoutes);
+app.use('/api', categoryRoutes);
 
 module.exports = app;

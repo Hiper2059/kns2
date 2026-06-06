@@ -7,7 +7,7 @@ const AppShell = ({ sidebarCollapsed, pageKey, navigation, mobileControls, float
   return (
     <div
       className={[
-        'app-container min-h-screen w-full overflow-x-hidden bg-[linear-gradient(180deg,#fafafa_0%,#f4f4f5_48%,#ffffff_100%)] text-zinc-950 antialiased',
+        'app-container min-h-screen w-full overflow-x-hidden bg-transparent text-zinc-950 antialiased',
         sidebarCollapsed ? 'sidebar-collapsed' : ''
       ].join(' ')}
     >
@@ -16,7 +16,7 @@ const AppShell = ({ sidebarCollapsed, pageKey, navigation, mobileControls, float
 
       <div className="page-column relative z-10 flex min-h-screen w-full flex-1 flex-col px-3 pb-5 pt-20 sm:px-5 lg:px-7 lg:pt-6">
         <main ref={pageRef} className="main-content flex-1 pb-16">
-          <div className="mx-auto min-h-[80vh] w-full max-w-[1440px] rounded-lg border border-zinc-200/70 bg-white/90 p-4 shadow-[0_18px_70px_rgba(24,24,27,0.08)] transition-[opacity,transform] duration-300 sm:p-6 lg:p-8">
+          <div className="mx-auto min-h-[80vh] w-full max-w-[1440px] overflow-clip rounded-xl border border-white/70 bg-white/88 p-4 shadow-[0_22px_80px_rgba(15,23,42,0.10)] backdrop-blur-xl transition-[opacity,transform,box-shadow] duration-300 sm:p-6 lg:p-8">
             {children}
           </div>
         </main>

@@ -2,6 +2,7 @@
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
   gap: 18px;
+  min-width: 0;
 }
 
 .lesson-sidebar {
@@ -15,6 +16,7 @@
   box-shadow: var(--shadow-hard);
   position: sticky;
   top: 24px;
+  min-width: 0;
 }
 
 .lesson-sidebar-header {
@@ -23,6 +25,8 @@
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 12px;
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .lesson-sidebar-header h4 {
@@ -77,6 +81,8 @@
   border-radius: var(--radius-md);
   cursor: pointer;
   text-align: left;
+  min-height: 40px;
+  overflow-wrap: anywhere;
 }
 
 .sidebar-link:hover {
@@ -97,6 +103,8 @@
   padding: 22px;
   min-height: calc(100vh - 120px);
   box-shadow: var(--shadow-hard);
+  min-width: 0;
+  overflow: clip;
 }
 
 .lesson-topbar {
@@ -107,6 +115,17 @@
   margin-bottom: 18px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--line);
+  min-width: 0;
+}
+
+.lesson-full-page h1,
+.lesson-full-page h2,
+.lesson-full-page h3,
+.lesson-full-page h4,
+.lesson-full-page p,
+.lesson-full-page span,
+.lesson-full-page strong {
+  overflow-wrap: anywhere;
 }
 
 .lesson-topbar-actions {
