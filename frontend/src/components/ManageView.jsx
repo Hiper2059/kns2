@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getApiErrorMessage } from '../utils/apiMessages'
 import './ManageView.css'
 
 const ManageView = ({
@@ -22,10 +23,6 @@ const ManageView = ({
   newUserData,
   onNewUserDataChange,
   onCreateUser,
-  newVideoData,
-  onVideoDataChange,
-  onAddVideo,
-  categories,
   managedUsers,
   currentUser,
   onRoleChange,
@@ -105,7 +102,7 @@ const ManageView = ({
         [lessonId]: response.data.comments || []
       }))
     } catch (error) {
-      alert(error.response?.data?.message || 'Không tải được bình luận bài học.')
+      alert(getApiErrorMessage(error, 'Không tải được bình luận bài học.'))
     } finally {
       setLoadingLessonCommentsId('')
     }
@@ -130,7 +127,7 @@ const ManageView = ({
         return next
       })
     } catch (error) {
-      alert(error.response?.data?.message || 'Không xóa được bình luận.')
+      alert(getApiErrorMessage(error, 'Không xóa được bình luận.'))
     }
   }
 

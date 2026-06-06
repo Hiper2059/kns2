@@ -11,14 +11,17 @@ const chatRoutes = require('./routes/chatRoutes');
 const courseRoutes = require('./routes/courseRoutes');
 const lessonRoutes = require('./routes/lessonRoutes');
 const enrollmentRoutes = require('./routes/enrollmentRoutes');
+const assignmentRoutes = require('./routes/assignmentRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const lessonCommentsRoutes = require('./routes/lessonCommentsRoutes');
+const { friendlyMessages } = require('./middleware/friendlyMessages');
 
 const app = express();
 
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(friendlyMessages);
 
 app.use('/api', healthRoutes);
 app.use('/api', authRoutes);
@@ -30,6 +33,7 @@ app.use('/api', chatRoutes);
 app.use('/api', courseRoutes);
 app.use('/api', lessonRoutes);
 app.use('/api', enrollmentRoutes);
+app.use('/api', assignmentRoutes);
 app.use('/api', uploadRoutes);
 app.use('/api', analyticsRoutes);
 app.use('/api', lessonCommentsRoutes);

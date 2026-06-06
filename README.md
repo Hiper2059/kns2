@@ -60,3 +60,9 @@ npm run dev
 
 - Khong commit file `.env` len GitHub.
 - Neu dung MongoDB Atlas, can whitelist IP trong Network Access.
+
+## 6) Roadmap P2P
+
+- WebRTC phu hop cho chat realtime, goi nho, hoac chia se file truc tiep giua thanh vien lop.
+- IPFS/Pinata phu hop de thu nghiem luu tai lieu, anh, video, hoac file bai nop theo huong phan tan.
+- Chua nen chuyen forum, diem, danh tinh, phan quyen va moderation sang pure P2P o v1 vi cac phan nay can server lam nguon tin cay.

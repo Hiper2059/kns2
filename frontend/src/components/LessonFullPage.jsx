@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Hls from 'hls.js'
 import dashjs from 'dashjs'
 import RichTextEditor from './RichTextEditor'
+import { getApiErrorMessage } from '../utils/apiMessages'
 import './LessonFullPage.css'
 
 const loadYouTubeApi = (() => {
@@ -22,7 +23,7 @@ const loadYouTubeApi = (() => {
         const script = document.createElement('script')
         script.src = 'https://www.youtube.com/iframe_api'
         script.async = true
-        script.onerror = () => reject(new Error('Khong the tai YouTube API.'))
+        script.onerror = () => reject(new Error('Không thể tải YouTube API.'))
         document.body.appendChild(script)
       })
     }
@@ -85,7 +86,7 @@ const LessonFullPage = ({
   const lastTimeRef = useRef(0)
 
   const sortedLessons = [...lessons].sort((a, b) => (a.order || 1) - (b.order || 1))
-  const sidebarTitle = 'Muc luc'
+  const sidebarTitle = 'Mục lục'
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -368,6 +369,7 @@ const LessonFullPage = ({
     order: 1
   })
   const [isSavingLesson, setIsSavingLesson] = useState(false)
+  const [lessonHeart, setLessonHeart] = useState({ count: 0, isHearted: false })
 
   // Comments state
   const [comments, setComments] = useState([])
@@ -445,6 +447,34 @@ const LessonFullPage = ({
     setEditMode(false)
   }, [lesson?._id, lesson?.title, lesson?.content, lesson?.videoUrl, lesson?.imageUrl, lesson?.order])
 
+  useEffect(() => {
+    setLessonHeart({
+      count: lesson?.heartCount || 0,
+      isHearted: Boolean(lesson?.isHearted)
+    })
+  }, [lesson?._id, lesson?.heartCount, lesson?.isHearted])
+
+  const handleToggleHeart = async () => {
+    if (!currentUser) {
+      alert('Cậu cần đăng nhập để thả tim.')
+      return
+    }
+
+    if (!lesson?._id) {
+      return
+    }
+
+    try {
+      const response = await api.patch(`/api/lessons/${lesson._id}/reaction`)
+      setLessonHeart({
+        count: response.data?.heartCount || 0,
+        isHearted: Boolean(response.data?.isHearted)
+      })
+    } catch (err) {
+      alert(getApiErrorMessage(err, 'Không thả tim được.'))
+    }
+  }
+
   const handleSubmitComment = async parentCommentId => {
     const text = parentCommentId ? (replyDrafts[parentCommentId] || '').trim() : newComment.trim()
     if (!text) {
@@ -469,7 +499,7 @@ const LessonFullPage = ({
       }
     } catch (err) {
       console.error('Post comment error', err)
-      alert(err?.response?.data?.message || 'Không gửi được bình luận.')
+      alert(getApiErrorMessage(err, 'Không gửi được bình luận.'))
     } finally {
       setPosting(false)
     }
@@ -499,7 +529,7 @@ const LessonFullPage = ({
       onLessonUpdated?.(updated)
       setEditMode(false)
     } catch (err) {
-      alert(err?.response?.data?.message || 'Không cập nhật được bài học.')
+      alert(getApiErrorMessage(err, 'Không cập nhật được bài học.'))
     } finally {
       setIsSavingLesson(false)
     }
@@ -523,7 +553,7 @@ const LessonFullPage = ({
         {!isSidebarCollapsed && (
           <div id="lesson-sidebar-content" className="lesson-sidebar-content">
             <div className="sidebar-section">
-              <h4>Danh muc ky nang</h4>
+              <h4>Danh mục kỹ năng</h4>
               <ul>
                 {categories.map(category => (
                   <li key={category}>
@@ -536,7 +566,7 @@ const LessonFullPage = ({
             </div>
 
             <div className="sidebar-section">
-              <h4>Lop hoc</h4>
+              <h4>Lớp học</h4>
               <ul>
                 {courses.map(item => (
                   <li key={item._id}>
@@ -549,7 +579,7 @@ const LessonFullPage = ({
             </div>
 
             <div className="sidebar-section">
-              <h4>Bai hoc</h4>
+              <h4>Bài học</h4>
               <ul>
                 {sortedLessons.map(item => (
                   <li key={item._id}>
@@ -570,23 +600,29 @@ const LessonFullPage = ({
       <section className="lesson-body">
         <div className="lesson-topbar">
           <div>
-            <h2>{course?.title || 'Bai hoc'}</h2>
+            <h2>{course?.title || 'Bài học'}</h2>
             <div
               className="rich-text"
               dangerouslySetInnerHTML={{ __html: course?.description || '' }}
             ></div>
           </div>
           <div className="lesson-topbar-actions">
+            <button
+              className={lessonHeart.isHearted ? 'btn-heart active' : 'btn-heart'}
+              onClick={handleToggleHeart}
+            >
+              ❤ {lessonHeart.count}
+            </button>
             {canEditLesson && lesson && (
               <button className="btn-ghost" onClick={() => setEditMode(prev => !prev)}>
-                {editMode ? 'Dong sua bai' : 'Sua bai hoc'}
+                {editMode ? 'Đóng sửa bài' : 'Sửa bài học'}
               </button>
             )}
-            <button className="btn-ghost" onClick={onClose}>Quay lai trang khoa hoc</button>
+            <button className="btn-ghost" onClick={onClose}>Quay lại trang khóa học</button>
           </div>
         </div>
 
-        {isLoading && <p>Dang tai bai hoc...</p>}
+        {isLoading && <p>Đang tải bài học...</p>}
 
         {!isLoading && lesson && (
           <div className="lesson-content card-panel">
@@ -619,14 +655,14 @@ const LessonFullPage = ({
                       ></iframe>
                     ) : (
                       <p style={{ color: 'red' }}>
-                        Video URL khong hop le: {lesson.videoUrl}
+                        Video URL không hợp lệ: {lesson.videoUrl}
                       </p>
                     )}
                   </>
                 )}
               </div>
             ) : (
-              <p>Chua co video cho bai hoc nay.</p>
+              <p>Chưa có video cho bài học này.</p>
             )}
 
             <h3>{lesson.title}</h3>
@@ -636,7 +672,7 @@ const LessonFullPage = ({
                 <div className="form-grid">
                   <input
                     type="text"
-                    placeholder="Tieu de bai hoc"
+                    placeholder="Tiêu đề bài học"
                     value={editDraft.title}
                     onChange={e => setEditDraft(prev => ({ ...prev, title: e.target.value }))}
                   />
@@ -648,13 +684,13 @@ const LessonFullPage = ({
                   />
                   <input
                     type="text"
-                    placeholder="Anh minh hoa (URL - tuy chon)"
+                    placeholder="Ảnh minh họa (URL - tùy chọn)"
                     value={editDraft.imageUrl}
                     onChange={e => setEditDraft(prev => ({ ...prev, imageUrl: e.target.value }))}
                   />
                   <input
                     type="number"
-                    placeholder="Thu tu bai"
+                    placeholder="Thứ tự bài"
                     value={editDraft.order}
                     onChange={e => setEditDraft(prev => ({ ...prev, order: Number(e.target.value) || 1 }))}
                   />
@@ -666,10 +702,10 @@ const LessonFullPage = ({
                   />
                   <div className="lesson-edit-actions">
                     <button className="btn-post" onClick={handleSaveLessonEdit} disabled={isSavingLesson}>
-                      {isSavingLesson ? 'Dang luu...' : 'Luu bai hoc'}
+                      {isSavingLesson ? 'Đang lưu...' : 'Lưu bài học'}
                     </button>
                     <button className="btn-ghost" onClick={() => setEditMode(false)}>
-                      Huy
+                      Hủy
                     </button>
                   </div>
                 </div>
@@ -689,17 +725,17 @@ const LessonFullPage = ({
                   onClick={() => onCompleteLesson?.(lesson._id)}
                   disabled={!canMarkComplete}
                 >
-                  {isCompleted ? 'Da hoan thanh' : 'Danh dau hoan thanh'}
+                  {isCompleted ? 'Đã hoàn thành' : 'Đánh dấu hoàn thành'}
                 </button>
                 {!isCompleted && !canMarkComplete && (
                   <p className="completion-hint">
                     {requiresVideo && (!videoId || !videoReady)
-                      ? 'Khong the kiem tra video, vui long thu lai.'
+                      ? 'Không thể kiểm tra video, vui lòng thử lại.'
                       : requiresVideo && hasSeeked
-                        ? 'Vui long xem video tu dau den cuoi, khong tua.'
+                        ? 'Vui lòng xem video từ đầu đến cuối, không tua.'
                         : requiresVideo && !hasVideoEnded
-                          ? 'Hay xem het video truoc khi hoan thanh.'
-                          : 'Hay cuon het noi dung bai hoc.'}
+                          ? 'Hãy xem hết video trước khi hoàn thành.'
+                          : 'Hãy cuộn hết nội dung bài học.'}
                   </p>
                 )}
               </div>
@@ -756,7 +792,7 @@ const LessonFullPage = ({
                                 removeCommentBranch(item._id)
                               } catch (err) {
                                 console.error('Delete comment error', err)
-                                alert(err?.response?.data?.message || 'Không xóa được bình luận.')
+                                alert(getApiErrorMessage(err, 'Không xóa được bình luận.'))
                               }
                             }}
                           >
@@ -816,7 +852,7 @@ const LessonFullPage = ({
           </div>
         )}
 
-        {!isLoading && !lesson && <p>Khong tim thay bai hoc.</p>}
+        {!isLoading && !lesson && <p>Không tìm thấy bài học.</p>}
       </section>
     </div>
   )

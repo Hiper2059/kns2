@@ -1,13 +1,12 @@
 .site-footer {
 	margin-top: auto;
-	padding: 14px 0 8px;
+	padding: 18px 20px 14px;
 	text-align: center;
-	color: var(--text-main);
+	color: var(--text-muted);
 	font-size: 13px;
 	line-height: 1.4;
-	border-top: 2px solid var(--line);
-	background: var(--bg-main);
-	box-shadow: var(--shadow-hard);
+	border-top: 1px solid var(--line);
+	background: rgba(255, 255, 255, 0.82);
 }
 
 .site-footer p {

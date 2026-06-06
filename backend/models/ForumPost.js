@@ -12,6 +12,16 @@ const forumPostSchema = new mongoose.Schema(
       required: true,
       trim: true
     },
+    scope: {
+      type: String,
+      enum: ['general', 'course'],
+      default: 'general'
+    },
+    course: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Course',
+      default: null
+    },
     title: {
       type: String,
       required: true,
@@ -37,6 +47,10 @@ const forumPostSchema = new mongoose.Schema(
     deletionReason: {
       type: String,
       default: null
+    },
+    heartUserIds: {
+      type: [String],
+      default: []
     }
   },
   {

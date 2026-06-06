@@ -1,5 +1,5 @@
 const express = require('express');
-const { listLessons, createLesson, updateLesson, deleteLesson, getLessonBySlug } = require('../controllers/lessonController');
+const { listLessons, createLesson, updateLesson, deleteLesson, getLessonBySlug, toggleLessonReaction } = require('../controllers/lessonController');
 const { requireActiveUser, requireTeacherOrAdmin } = require('../middleware/auth');
 
 const router = express.Router();
@@ -10,5 +10,6 @@ router.post('/courses/:courseId/lessons', requireTeacherOrAdmin, createLesson);
 router.patch('/lessons/:lessonId', requireTeacherOrAdmin, updateLesson);
 router.delete('/lessons/:lessonId', requireTeacherOrAdmin, deleteLesson);
 router.get('/lessons/slug/:slug', requireActiveUser, getLessonBySlug);
+router.patch('/lessons/:lessonId/reaction', requireActiveUser, toggleLessonReaction);
 
 module.exports = router;

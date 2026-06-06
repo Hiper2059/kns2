@@ -1,19 +1,20 @@
 .lesson-full-page {
   display: grid;
-  grid-template-columns: 280px 1fr;
+  grid-template-columns: 280px minmax(0, 1fr);
   gap: 18px;
-  padding: 18px;
 }
 
 .lesson-sidebar {
   background: var(--bg-main);
   color: var(--text-main);
   border-radius: var(--radius-lg);
-  padding: 16px;
-  height: calc(100vh - 140px);
+  padding: 14px;
+  height: calc(100vh - 120px);
   overflow-y: auto;
-  border: 2px solid var(--line);
+  border: 1px solid var(--line);
   box-shadow: var(--shadow-hard);
+  position: sticky;
+  top: 24px;
 }
 
 .lesson-sidebar-header {
@@ -29,20 +30,19 @@
 }
 
 .lesson-sidebar-toggle {
-  border: 2px solid var(--line);
+  border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--pop);
+  background: var(--bg-raised);
   color: var(--text-main);
   padding: 8px 12px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: var(--shadow-hard);
 }
 
 .lesson-sidebar-content {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
 }
 
 .lesson-sidebar.is-collapsed {
@@ -50,11 +50,13 @@
 }
 
 .sidebar-section {
-  margin-bottom: 18px;
+  margin-bottom: 8px;
 }
 
 .sidebar-section h4 {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--text-muted);
 }
 
 .sidebar-section ul {
@@ -63,32 +65,37 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .sidebar-link {
-  border: 2px solid var(--line);
-  background: var(--accent-soft);
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
   color: var(--text-main);
   padding: 8px 10px;
   border-radius: var(--radius-md);
   cursor: pointer;
   text-align: left;
-  box-shadow: var(--shadow-hard);
+}
+
+.sidebar-link:hover {
+  background: var(--bg-raised);
+  border-color: var(--line);
 }
 
 .sidebar-link.active {
-  background: var(--pop);
-  color: var(--text-main);
-  font-weight: 600;
+  background: var(--brand);
+  color: #fff;
+  font-weight: 700;
 }
 
 .lesson-body {
   background: var(--bg-main);
-  border: 2px solid var(--line);
+  border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  padding: 18px;
-  min-height: calc(100vh - 140px);
+  padding: 22px;
+  min-height: calc(100vh - 120px);
   box-shadow: var(--shadow-hard);
 }
 
@@ -97,13 +104,31 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
 }
 
 .lesson-topbar-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.btn-heart {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 7px 12px;
+  background: var(--bg-raised);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-heart.active {
+  background: #fee2e2;
+  border-color: #fecaca;
+  color: #b91c1c;
 }
 
 .lesson-content h3 {
@@ -111,28 +136,23 @@
 }
 
 .lesson-video {
-  margin: 12px 0 16px;
+  margin: 14px 0 18px;
 }
 
-.lesson-video iframe {
-  width: 100%;
-  height: 380px;
-  border-radius: var(--radius-md);
-  border: 2px solid var(--line);
-}
-
+.lesson-video iframe,
 .lesson-video-embed {
   width: 100%;
-  height: 380px;
+  height: min(58vh, 460px);
+  min-height: 260px;
   border-radius: var(--radius-md);
+  border: 1px solid var(--line);
   overflow: hidden;
-  border: 2px solid var(--line);
 }
 
 .lesson-text {
   white-space: pre-wrap;
-  line-height: 1.6;
-  margin-bottom: 16px;
+  line-height: 1.7;
+  margin-bottom: 18px;
   text-transform: none;
 }
 
@@ -140,20 +160,20 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  margin-top: 18px;
 }
 
 .comment-item {
-  border: 2px solid var(--line);
-  background: var(--accent-soft);
+  border: 1px solid var(--line);
+  background: var(--bg-raised);
   color: var(--text-main);
   border-radius: var(--radius-md);
   padding: 12px;
-  box-shadow: var(--shadow-hard);
 }
 
 .comment-item.is-reply {
   margin-left: 24px;
-  background: #f9f4ea;
+  background: var(--bg-main);
 }
 
 .comment-meta {
@@ -192,37 +212,28 @@
 }
 
 .comment-form textarea,
-.comment-reply-box textarea {
+.comment-reply-box textarea,
+.lesson-edit-panel textarea {
   width: 100%;
   border-radius: var(--radius-md);
-  border: 2px solid var(--line);
+  border: 1px solid var(--line);
   padding: 12px;
   font-size: 14px;
   font-family: inherit;
   color: var(--text-main);
   min-height: 120px;
-  box-shadow: var(--shadow-hard);
+  resize: vertical;
 }
 
 .lesson-edit-panel {
   margin: 12px 0 16px;
 }
 
-.lesson-edit-panel textarea {
-  width: 100%;
-  border-radius: var(--radius-md);
-  border: 2px solid var(--line);
-  padding: 12px;
-  font-size: 14px;
-  font-family: inherit;
-  color: var(--text-main);
-  box-shadow: var(--shadow-hard);
-}
-
 .lesson-edit-actions {
   display: flex;
   gap: 10px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .lesson-complete-block {
@@ -248,46 +259,39 @@
   }
 
   .lesson-sidebar {
-    position: sticky;
-    top: 12px;
-    z-index: 40;
+    position: static;
     height: auto;
     order: 0;
-    padding: 12px;
-  }
-
-  .lesson-sidebar-header {
-    padding: 12px 14px;
-    border: 2px solid var(--line);
-    border-radius: var(--radius-md);
-    background: var(--bg-main);
-    box-shadow: var(--shadow-hard);
-    margin-bottom: 12px;
   }
 
   .lesson-body {
     min-height: auto;
     order: 1;
   }
-
-  .lesson-video iframe {
-    height: 240px;
-  }
-
-  .lesson-video-embed {
-    height: 240px;
-  }
-
-  .lesson-sidebar-toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    white-space: nowrap;
-  }
 }
 
-@media (min-width: 1001px) {
-  .lesson-sidebar-toggle {
-    display: inline-flex;
+@media (max-width: 640px) {
+  .lesson-body,
+  .lesson-sidebar {
+    padding: 14px;
+  }
+
+  .lesson-topbar {
+    flex-direction: column;
+  }
+
+  .lesson-topbar-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .lesson-video iframe,
+  .lesson-video-embed {
+    height: 220px;
+    min-height: 220px;
+  }
+
+  .comment-item.is-reply {
+    margin-left: 12px;
   }
 }

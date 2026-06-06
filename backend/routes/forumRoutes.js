@@ -6,6 +6,7 @@ const {
   createComment,
   deletePost,
   deleteComment,
+  togglePostReaction,
   getDeletedPosts,
   getDeletedComments,
   deleteDeletedPost,
@@ -13,15 +14,16 @@ const {
   restorePost,
   restoreComment
 } = require('../controllers/forumController');
-const { requireActiveUser, requireAdmin } = require('../middleware/auth');
+const { requireActiveUser, requireAdmin, optionalAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/forum/posts', getPosts);
+router.get('/forum/posts', optionalAuth, getPosts);
 router.post('/forum/posts', requireActiveUser, createPost);
 router.delete('/forum/posts/:id', requireActiveUser, deletePost);
+router.patch('/forum/posts/:id/reaction', requireActiveUser, togglePostReaction);
 
-router.get('/forum/comments', getComments);
+router.get('/forum/comments', optionalAuth, getComments);
 router.post('/forum/comments', requireActiveUser, createComment);
 router.delete('/forum/comments/:id', requireActiveUser, deleteComment);
 

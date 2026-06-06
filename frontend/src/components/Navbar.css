@@ -1,5 +1,5 @@
 .sidebar {
-	width: 240px;
+	width: 248px;
 	min-width: 220px;
 	height: 100vh;
 	position: fixed;
@@ -8,16 +8,17 @@
 	display: flex;
 	flex-direction: column;
 	justify-content: space-between;
-	background: linear-gradient(180deg, #ffffff, #fffdf0);
-	border-right: 2px solid var(--line);
-	padding: 24px 18px;
-	box-shadow: var(--shadow-soft);
+	background: rgba(255, 255, 255, 0.96);
+	border-right: 1px solid var(--line);
+	padding: 22px 16px;
+	box-shadow: 8px 0 30px rgba(16, 24, 40, 0.06);
+	backdrop-filter: blur(10px);
 	transition: width 200ms ease, transform 220ms ease;
 }
 
 .sidebar.collapsed {
-	width: 80px;
-	padding: 18px 8px;
+	width: 84px;
+	padding: 18px 10px;
 }
 
 .sidebar.collapsed .logo,
@@ -39,10 +40,11 @@
 }
 
 .sidebar-toggle {
-	border: none;
-	background: transparent;
-	padding: 6px 8px;
-	font-size: 14px;
+	border: 1px solid var(--line);
+	background: var(--bg-raised);
+	border-radius: 999px;
+	padding: 6px 10px;
+	font-size: 12px;
 	cursor: pointer;
 	color: var(--text-muted);
 }
@@ -74,8 +76,8 @@
 .sidebar .logo {
 	font-family: 'Space Grotesk', sans-serif;
 	color: var(--brand);
-	font-size: 21px;
-	letter-spacing: 0.2px;
+	font-size: 22px;
+	letter-spacing: 0;
 }
 
 .sidebar .tagline {
@@ -95,18 +97,18 @@
 .sidebar-nav {
 	display: flex;
 	flex-direction: column;
-	gap: 10px;
-	margin-top: 20px;
+	gap: 6px;
+	margin-top: 24px;
 }
 
 .sidebar-nav button {
 	text-align: left;
-	padding: 12px 14px;
-	border-radius: 10px;
-	border: none;
+	padding: 11px 12px;
+	border-radius: 12px;
+	border: 1px solid transparent;
 	background: transparent;
 	color: var(--text-main);
-	font-weight: 700;
+	font-weight: 650;
 	cursor: pointer;
 	display: flex;
 	align-items: center;
@@ -119,13 +121,16 @@
 }
 
 .sidebar-nav button:hover {
-	background: var(--pop);
-	color: var(--text-main);
+	background: var(--bg-raised);
+	border-color: var(--line);
+	color: var(--brand-dark);
 }
 
 .sidebar-nav button.active {
 	background: var(--brand);
-	color: #fffdf7;
+	border-color: var(--brand);
+	color: #ffffff;
+	box-shadow: 0 10px 20px rgba(15, 118, 110, 0.18);
 }
 
 .sidebar-nav button.active .icon {
@@ -146,9 +151,9 @@
 	width: 52px;
 	height: 52px;
 	border-radius: 50%;
-	border: 2px solid var(--line);
+	border: 1px solid var(--line);
 	overflow: hidden;
-	background: linear-gradient(135deg, var(--brand), var(--pop));
+	background: linear-gradient(135deg, var(--brand), #5eead4);
 	box-shadow: var(--shadow-hard);
 	cursor: pointer;
 	display: inline-flex;
@@ -184,9 +189,9 @@
 .sidebar .rank-pill {
 	font-size: 13px;
 	color: var(--text-main);
-	border: 2px solid var(--line);
-	box-shadow: var(--shadow-hard);
-	background: #fff;
+	border: 1px solid var(--line);
+	box-shadow: none;
+	background: var(--accent-soft);
 }
 
 .sidebar .auth-actions {
@@ -195,12 +200,12 @@
 }
 
 .btn-ghost {
-	border: 2px solid var(--line);
+	border: 1px solid var(--line);
 	background: #fff;
 	padding: 8px 10px;
 	border-radius: 8px;
 	cursor: pointer;
-	box-shadow: var(--shadow-hard);
+	box-shadow: none;
 }
 
 .sidebar .btn-ghost {

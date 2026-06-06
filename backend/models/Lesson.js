@@ -39,6 +39,10 @@ const lessonSchema = new mongoose.Schema(
         createdByName: {
             type: String,
             default: ''
+        },
+        heartUserIds: {
+            type: [String],
+            default: []
         }
     },
     {

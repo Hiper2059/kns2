@@ -18,6 +18,7 @@ import {
   defaultForumPosts,
   rankTiers
 } from './data/skills'
+import { getApiErrorMessage, getApiSuccessMessage } from './utils/apiMessages'
 import { getRankInfo, groupVideosByCategory, normalizeText } from './utils/appUtils'
 import './App.css'
 
@@ -109,6 +110,9 @@ function App() {
   const [newPost, setNewPost] = useState({ title: '', content: '', category: 'Võ thuật' })
   const [commentsByPost, setCommentsByPost] = useState({})
   const [commentDrafts, setCommentDrafts] = useState({})
+  const [forumScope, setForumScope] = useState('general')
+  const [forumCourseId, setForumCourseId] = useState('')
+  const [forumCourse, setForumCourse] = useState(null)
   const [pointsByUser, setPointsByUser] = useState(() => {
     const savedPoints = localStorage.getItem('zmate_points_by_user')
     return savedPoints ? JSON.parse(savedPoints) : {}
@@ -136,6 +140,8 @@ function App() {
   const [courses, setCourses] = useState([])
   const [selectedCourse, setSelectedCourse] = useState(null)
   const [courseLessons, setCourseLessons] = useState([])
+  const [courseAssignments, setCourseAssignments] = useState([])
+  const [assignmentDrafts, setAssignmentDrafts] = useState({})
   const [myEnrollments, setMyEnrollments] = useState([])
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -158,6 +164,19 @@ function App() {
     order: 1,
     imageFile: null
   })
+  const [newAssignmentData, setNewAssignmentData] = useState({
+    courseId: '',
+    title: '',
+    description: '',
+    dueAt: ''
+  })
+  const [editAssignmentId, setEditAssignmentId] = useState(null)
+  const [editAssignmentData, setEditAssignmentData] = useState({
+    title: '',
+    description: '',
+    dueAt: ''
+  })
+  const [assignmentSubmissions, setAssignmentSubmissions] = useState({})
   const [editLessonId, setEditLessonId] = useState(null)
   const [editLessonData, setEditLessonData] = useState({
     title: '',
@@ -436,10 +455,24 @@ function App() {
   }
 
   const fetchForumData = useCallback(async () => {
+    if (forumScope === 'course' && !forumCourseId) {
+      setForumPosts([])
+      setCommentsByPost({})
+      return
+    }
+
     try {
+      const params = {}
+      if (forumScope) {
+        params.scope = forumScope
+      }
+      if (forumScope === 'course' && forumCourseId) {
+        params.courseId = forumCourseId
+      }
+
       const [postsResponse, commentsResponse] = await Promise.all([
-        api.get('/api/forum/posts'),
-        api.get('/api/forum/comments')
+        api.get('/api/forum/posts', { params }),
+        api.get('/api/forum/comments', { params })
       ])
 
       const normalizedPosts = (postsResponse.data.posts || []).map(post => ({
@@ -447,7 +480,11 @@ function App() {
         author: post.author,
         category: post.category,
         title: post.title,
-        content: post.content
+        content: post.content,
+        scope: post.scope || 'general',
+        courseId: post.course || null,
+        heartCount: post.heartCount || 0,
+        isHearted: Boolean(post.isHearted)
       }))
 
       const groupedComments = (commentsResponse.data.comments || []).reduce((acc, comment) => {
@@ -466,10 +503,10 @@ function App() {
       setForumPosts(normalizedPosts)
       setCommentsByPost(groupedComments)
     } catch {
-      setForumPosts(defaultForumPosts)
+      setForumPosts(forumScope === 'general' ? defaultForumPosts : [])
       setCommentsByPost({})
     }
-  }, [])
+  }, [forumCourseId, forumScope])
 
   const getChatActionSuggestions = userText => {
     const normalizedInput = normalizeText(userText)
@@ -644,8 +681,33 @@ function App() {
     return false
   }
 
+  const handleForumScopeChange = scope => {
+    const nextScope = scope === 'course' ? 'course' : 'general'
+    setForumScope(nextScope)
+    if (nextScope !== 'course') {
+      setForumCourseId('')
+      setForumCourse(null)
+    }
+  }
 
-  const handlePostSubmit = async (overrideCategory = null) => {
+  const handleForumCourseChange = courseId => {
+    setForumCourseId(courseId)
+    const course = courses.find(item => String(item._id) === String(courseId))
+    setForumCourse(course || null)
+  }
+
+  const handleOpenCourseForum = course => {
+    if (!course?._id) {
+      return
+    }
+    setForumScope('course')
+    setForumCourseId(course._id)
+    setForumCourse(course)
+    handleTabChange('forum')
+  }
+
+
+  const handlePostSubmit = async (options = {}) => {
     if (!ensureAuthenticated('đăng bài')) {
       return
     }
@@ -655,13 +717,25 @@ function App() {
       return
     }
 
-    const postCategory = overrideCategory || newPost.category
+    const postScope = options.scope || forumScope
+    const postCourseId = options.courseId || forumCourseId
+
+    if (postScope === 'course' && !postCourseId) {
+      alert('Cậu chọn lớp trước khi đăng bài nhé!')
+      return
+    }
+
+    const postCategory =
+      options.category ||
+      (postScope === 'course' ? forumCourse?.title || 'Lớp học' : newPost.category)
 
     try {
       const response = await api.post('/api/forum/posts', {
         title: newPost.title.trim(),
         content: newPost.content.trim(),
-        category: postCategory
+        category: postCategory,
+        scope: postScope,
+        courseId: postScope === 'course' ? postCourseId : null
       })
 
       const createdPost = response.data.post
@@ -671,13 +745,38 @@ function App() {
           author: createdPost.author,
           title: createdPost.title,
           content: createdPost.content,
-          category: createdPost.category
+          category: createdPost.category,
+          scope: createdPost.scope || postScope,
+          courseId: createdPost.course || postCourseId || null,
+          heartCount: createdPost.heartCount || 0,
+          isHearted: Boolean(createdPost.isHearted)
         },
         ...prevPosts
       ])
       setNewPost({ title: '', content: '', category: categories[0] })
     } catch (error) {
       alert(error.response?.data?.message || 'Không đăng được bài viết.')
+    }
+  }
+
+  const handleTogglePostReaction = async post => {
+    if (!ensureAuthenticated('thả tim')) {
+      return
+    }
+
+    try {
+      const response = await api.patch(`/api/forum/posts/${post.id}/reaction`)
+      const nextHeartCount = response.data?.heartCount ?? post.heartCount
+      const nextIsHearted = Boolean(response.data?.isHearted)
+      setForumPosts(prev =>
+        prev.map(item =>
+          String(item.id) === String(post.id)
+            ? { ...item, heartCount: nextHeartCount, isHearted: nextIsHearted }
+            : item
+        )
+      )
+    } catch (error) {
+      alert(error.response?.data?.message || 'Không thả tim được.')
     }
   }
 
@@ -833,7 +932,7 @@ function App() {
 
     try {
       const response = await api.patch('/api/users/role', { username, role })
-      alert(response.data.message)
+      alert(getApiSuccessMessage(response))
       fetchManagedUsers()
     } catch (error) {
       alert(error.response?.data?.message || 'Không cập nhật được vai trò user.')
@@ -847,7 +946,7 @@ function App() {
 
     try {
       const response = await api.patch('/api/users/status', { username, status })
-      alert(response.data.message)
+      alert(getApiSuccessMessage(response))
       fetchManagedUsers()
     } catch (error) {
       alert(error.response?.data?.message || 'Không cập nhật được trạng thái tài khoản.')
@@ -865,7 +964,7 @@ function App() {
 
     try {
       const response = await api.delete(`/api/users/${encodeURIComponent(username)}`)
-      alert(response.data.message)
+      alert(getApiSuccessMessage(response))
       fetchManagedUsers()
     } catch (error) {
       alert(error.response?.data?.message || 'Không xóa được tài khoản.')
@@ -887,7 +986,7 @@ function App() {
         category: newVideoData.category,
         url: newVideoData.url.trim()
       })
-      alert(response.data.message)
+      alert(getApiSuccessMessage(response))
       setNewVideoData({ category: newVideoData.category, url: '' })
       fetchVideos()
     } catch (error) {
@@ -906,7 +1005,7 @@ function App() {
 
     try {
       const response = await api.delete(`/api/videos/${videoId}`)
-      alert(response.data.message)
+      alert(getApiSuccessMessage(response))
       fetchVideos()
     } catch (error) {
       alert(error.response?.data?.message || 'Không xóa được video.')
@@ -930,7 +1029,7 @@ function App() {
         displayName: newUserData.displayName.trim(),
         role: newUserData.role
       })
-      alert(response.data.message)
+      alert(getApiSuccessMessage(response))
       setNewUserData({ username: '', password: '', displayName: '', role: newUserData.role })
       fetchManagedUsers()
     } catch (error) {
@@ -965,6 +1064,28 @@ function App() {
       }
     }
   }, [])
+
+  const fetchCourseAssignments = useCallback(
+    async courseId => {
+      if (!courseId || !currentUser) {
+        setCourseAssignments([])
+        return
+      }
+
+      try {
+        const response = await api.get(`/api/courses/${courseId}/assignments`)
+        setCourseAssignments(response.data.assignments || [])
+      } catch (error) {
+        setCourseAssignments([])
+        if (error?.response?.status === 401) {
+          alert('Cậu cần đăng nhập để xem bài tập.')
+        } else if (error?.response?.status === 403) {
+          alert(error.response?.data?.message || 'Cần tham gia lớp trước khi xem bài tập.')
+        }
+      }
+    },
+    [currentUser]
+  )
 
   const fetchMyEnrollments = useCallback(async () => {
     if (!currentUser || (currentRole !== 'student' && currentRole !== 'user')) {
@@ -1016,8 +1137,10 @@ function App() {
     setSelectedCourse(course)
     if (course?._id) {
       fetchCourseLessons(course._id)
+      fetchCourseAssignments(course._id)
     } else {
       setCourseLessons([])
+      setCourseAssignments([])
     }
   }
 
@@ -1033,8 +1156,172 @@ function App() {
     setSelectedTeacherCourseId(courseId)
     if (courseId) {
       fetchCourseLessons(courseId)
+      fetchCourseAssignments(courseId)
     } else {
       setCourseLessons([])
+      setCourseAssignments([])
+    }
+  }
+
+  const handleAssignmentDraftChange = (assignmentId, value) => {
+    setAssignmentDrafts(prev => ({ ...prev, [assignmentId]: value }))
+  }
+
+  const handleSubmitAssignment = async assignmentId => {
+    if (!ensureAuthenticated('nộp bài')) {
+      return
+    }
+
+    const content = (assignmentDrafts[assignmentId] || '').trim()
+    if (!content) {
+      alert('Cậu nhập nội dung bài nộp trước nhé!')
+      return
+    }
+
+    try {
+      const response = await api.post(`/api/assignments/${assignmentId}/submissions`, { content })
+      const submission = response.data?.submission
+
+      setCourseAssignments(prev =>
+        prev.map(item =>
+          String(item._id) === String(assignmentId)
+            ? { ...item, mySubmission: submission }
+            : item
+        )
+      )
+      setAssignmentDrafts(prev => ({ ...prev, [assignmentId]: '' }))
+    } catch (error) {
+      alert(error.response?.data?.message || 'Không nộp được bài.')
+    }
+  }
+
+  const handleCreateAssignment = async () => {
+    if (!currentUser || (currentRole !== 'teacher' && currentRole !== 'admin')) {
+      return
+    }
+
+    if (!newAssignmentData.courseId || !newAssignmentData.title.trim()) {
+      alert('Cậu chọn lớp và nhập tiêu đề bài tập nhé.')
+      return
+    }
+
+    try {
+      const response = await api.post(`/api/courses/${newAssignmentData.courseId}/assignments`, {
+        title: newAssignmentData.title.trim(),
+        description: newAssignmentData.description,
+        dueAt: newAssignmentData.dueAt || null
+      })
+
+      const created = response.data?.assignment
+      if (String(newAssignmentData.courseId) === String(selectedTeacherCourseId)) {
+        setCourseAssignments(prev => [created, ...prev])
+      }
+
+      setNewAssignmentData({
+        courseId: newAssignmentData.courseId,
+        title: '',
+        description: '',
+        dueAt: ''
+      })
+    } catch (error) {
+      alert(error.response?.data?.message || 'Không tạo được bài tập.')
+    }
+  }
+
+  const handleEditAssignmentStart = assignment => {
+    setEditAssignmentId(assignment._id)
+    setEditAssignmentData({
+      title: assignment.title || '',
+      description: assignment.description || '',
+      dueAt: assignment.dueAt ? new Date(assignment.dueAt).toISOString().slice(0, 16) : ''
+    })
+  }
+
+  const handleEditAssignmentCancel = () => {
+    setEditAssignmentId(null)
+    setEditAssignmentData({ title: '', description: '', dueAt: '' })
+  }
+
+  const handleUpdateAssignment = async assignmentId => {
+    if (!assignmentId) {
+      return
+    }
+
+    try {
+      const response = await api.patch(`/api/assignments/${assignmentId}`, {
+        title: editAssignmentData.title,
+        description: editAssignmentData.description,
+        dueAt: editAssignmentData.dueAt || null
+      })
+
+      const updated = response.data?.assignment
+      setCourseAssignments(prev =>
+        prev.map(item => (String(item._id) === String(assignmentId) ? updated : item))
+      )
+      handleEditAssignmentCancel()
+    } catch (error) {
+      alert(error.response?.data?.message || 'Không cập nhật được bài tập.')
+    }
+  }
+
+  const handleDeleteAssignment = async assignmentId => {
+    if (!assignmentId) {
+      return
+    }
+
+    if (!window.confirm('Xóa bài tập này?')) {
+      return
+    }
+
+    try {
+      await api.delete(`/api/assignments/${assignmentId}`)
+      setCourseAssignments(prev => prev.filter(item => String(item._id) !== String(assignmentId)))
+      setAssignmentSubmissions(prev => {
+        const next = { ...prev }
+        delete next[String(assignmentId)]
+        return next
+      })
+    } catch (error) {
+      alert(error.response?.data?.message || 'Không xóa được bài tập.')
+    }
+  }
+
+  const handleLoadAssignmentSubmissions = async assignmentId => {
+    if (!assignmentId) {
+      return
+    }
+
+    try {
+      const response = await api.get(`/api/assignments/${assignmentId}/submissions`)
+      setAssignmentSubmissions(prev => ({
+        ...prev,
+        [assignmentId]: response.data?.submissions || []
+      }))
+    } catch (error) {
+      alert(error.response?.data?.message || 'Không tải được bài nộp.')
+    }
+  }
+
+  const handleGradeSubmission = async (submissionId, payload) => {
+    if (!submissionId) {
+      return
+    }
+
+    try {
+      const response = await api.patch(`/api/submissions/${submissionId}/grade`, payload)
+      const updated = response.data?.submission
+
+      setAssignmentSubmissions(prev => {
+        const next = { ...prev }
+        Object.keys(next).forEach(assignmentId => {
+          next[assignmentId] = (next[assignmentId] || []).map(item =>
+            String(item._id) === String(submissionId) ? updated : item
+          )
+        })
+        return next
+      })
+    } catch (error) {
+      alert(error.response?.data?.message || 'Không chấm được bài.')
     }
   }
 
@@ -1215,7 +1502,7 @@ function App() {
   }
 
   const handleOpenMyProfile = () => {
-    if (!ensureAuthenticated('cap nhat ho so')) {
+    if (!ensureAuthenticated('cập nhật hồ sơ')) {
       return
     }
     setProfileMode('view')
@@ -1257,7 +1544,7 @@ function App() {
   }
 
   const handleSaveProfile = async () => {
-    if (!ensureAuthenticated('cap nhat ho so')) {
+    if (!ensureAuthenticated('cập nhật hồ sơ')) {
       return
     }
 
@@ -1266,10 +1553,10 @@ function App() {
       const user = response.data?.user || null
       setMyProfile(user)
       applyProfileToDraft(user)
-      alert(response.data?.message || 'Da cap nhat ho so.')
+      alert(response.data?.message || 'Đã cập nhật hồ sơ.')
       setProfileMode('view')
     } catch (error) {
-      alert(error.response?.data?.message || 'Khong cap nhat duoc ho so.')
+      alert(error.response?.data?.message || 'Không cập nhật được hồ sơ.')
     }
   }
 
@@ -1280,12 +1567,12 @@ function App() {
 
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
     if (!allowedTypes.includes(file.type)) {
-      return 'Chi ho tro anh JPG, PNG, WebP.'
+      return 'Chỉ hỗ trợ ảnh JPG, PNG, WebP.'
     }
 
     const maxSize = 2 * 1024 * 1024
     if (file.size > maxSize) {
-      return 'Anh vuot qua 2MB.'
+      return 'Ảnh vượt quá 2MB.'
     }
 
     return ''
@@ -1294,9 +1581,9 @@ function App() {
   const validateVideoFile = file => {
     if (!file) return ''
     const allowed = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime']
-    if (!allowed.includes(file.type)) return 'Chi ho tro video MP4, WebM, OGG, MOV.'
+    if (!allowed.includes(file.type)) return 'Chỉ hỗ trợ video MP4, WebM, OGG, MOV.'
     const maxSize = 200 * 1024 * 1024
-    if (file.size > maxSize) return 'Video vuot qua 200MB.'
+    if (file.size > maxSize) return 'Video vượt quá 200MB.'
     return ''
   }
 
@@ -1555,7 +1842,7 @@ function App() {
     if (!file) return
     const err = validateVideoFile(file)
     if (err) {
-      alert(err)
+      alert(getApiErrorMessage(err, 'File không hợp lệ.'))
       return
     }
     try {
@@ -1573,7 +1860,7 @@ function App() {
     if (!file) return
     const err = validateVideoFile(file)
     if (err) {
-      alert(err)
+      alert(getApiErrorMessage(err, 'File không hợp lệ.'))
       return
     }
     try {
@@ -1591,7 +1878,7 @@ function App() {
     if (!file) return
     const err = validateVideoFile(file)
     if (err) {
-      alert(err)
+      alert(getApiErrorMessage(err, 'File không hợp lệ.'))
       return
     }
     try {
@@ -1615,6 +1902,7 @@ function App() {
       alert(response.data.message || 'Đã tham gia lớp học.')
       fetchMyEnrollments()
       fetchCourseLessons(courseId)
+      fetchCourseAssignments(courseId)
     } catch (error) {
       alert(error.response?.data?.message || 'Không tham gia được lớp học.')
     }
@@ -1849,6 +2137,27 @@ function App() {
     window.location.reload()
   }
 
+  const forumCourses = useMemo(() => {
+    if (!currentUser) {
+      return []
+    }
+
+    if (currentRole === 'admin') {
+      return courses
+    }
+
+    if (currentRole === 'teacher') {
+      return teacherCourses
+    }
+
+    if (currentRole === 'student' || currentRole === 'user') {
+      const enrolledCourseIds = new Set(myEnrollments.map(enrollment => String(enrollment.course)))
+      return courses.filter(course => enrolledCourseIds.has(String(course._id)))
+    }
+
+    return []
+  }, [courses, currentRole, currentUser, myEnrollments, teacherCourses])
+
   useEffect(() => {
     fetchVideos()
   }, [fetchVideos])
@@ -1858,7 +2167,31 @@ function App() {
   }, [fetchForumData])
 
   useEffect(() => {
+    if (!forumCourseId) {
+      setForumCourse(null)
+      return
+    }
+    const match = forumCourses.find(course => String(course._id) === String(forumCourseId))
+    if (match) {
+      setForumCourse(match)
+      return
+    }
+    setForumCourse(null)
+    setForumCourseId('')
+  }, [forumCourseId, forumCourses])
+
+  useEffect(() => {
     if (activeTab === 'lms') {
+      fetchCourses()
+      fetchMyEnrollments()
+      if (currentRole === 'teacher' || currentRole === 'admin') {
+        fetchTeacherCourses()
+      }
+    }
+  }, [activeTab, currentRole, fetchCourses, fetchMyEnrollments, fetchTeacherCourses])
+
+  useEffect(() => {
+    if (activeTab === 'forum') {
       fetchCourses()
       fetchMyEnrollments()
       if (currentRole === 'teacher' || currentRole === 'admin') {
@@ -2110,12 +2443,18 @@ function App() {
               onCommentDraftChange={handleCommentDraftChange}
               onAddComment={handleAddComment}
               onReportContent={handleReportContent}
+              onTogglePostReaction={handleTogglePostReaction}
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
               forumPage={forumPage}
               forumTotalPages={forumTotalPages}
               onPageChange={setForumPage}
               filteredForumPosts={filteredForumPosts}
+              forumScope={forumScope}
+              forumCourse={forumCourse}
+              forumCourses={forumCourses}
+              onForumScopeChange={handleForumScopeChange}
+              onForumCourseChange={handleForumCourseChange}
             />
           )}
 
@@ -2129,6 +2468,10 @@ function App() {
               selectedCourse={selectedCourse}
               onSelectCourse={handleSelectCourse}
               lessons={courseLessons}
+              assignments={courseAssignments}
+              assignmentDrafts={assignmentDrafts}
+              onAssignmentDraftChange={handleAssignmentDraftChange}
+              onSubmitAssignment={handleSubmitAssignment}
               enrollmentByCourse={enrollmentByCourse}
               teacherEnrollments={teacherEnrollments}
               onEnroll={handleEnroll}
@@ -2136,6 +2479,7 @@ function App() {
               currentUser={currentUser}
               onOpenProfile={handleOpenProfile}
               onOpenLesson={openLessonRoute}
+              onOpenCourseForum={handleOpenCourseForum}
               onLoadEnrollments={fetchTeacherEnrollments}
               onDeleteLesson={handleDeleteLesson}
             />
@@ -2154,6 +2498,20 @@ function App() {
               newLessonData={newLessonData}
               onNewLessonDataChange={setNewLessonData}
               onCreateLesson={handleCreateLesson}
+              assignments={courseAssignments}
+              newAssignmentData={newAssignmentData}
+              onNewAssignmentDataChange={setNewAssignmentData}
+              onCreateAssignment={handleCreateAssignment}
+              editAssignmentId={editAssignmentId}
+              editAssignmentData={editAssignmentData}
+              onEditAssignmentStart={handleEditAssignmentStart}
+              onEditAssignmentChange={setEditAssignmentData}
+              onEditAssignmentCancel={handleEditAssignmentCancel}
+              onUpdateAssignment={handleUpdateAssignment}
+              onDeleteAssignment={handleDeleteAssignment}
+              assignmentSubmissions={assignmentSubmissions}
+              onLoadAssignmentSubmissions={handleLoadAssignmentSubmissions}
+              onGradeSubmission={handleGradeSubmission}
               editLessonId={editLessonId}
               editLessonData={editLessonData}
               onEditLessonStart={handleStartEditLesson}

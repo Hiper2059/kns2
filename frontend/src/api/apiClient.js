@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { sanitizeApiError, sanitizeApiResponse } from '../utils/apiMessages'
 
 const TOKEN_KEYS = {
   access: 'zmate_access_token',
@@ -41,18 +42,18 @@ export const createApiClient = baseURL => {
   })
 
   api.interceptors.response.use(
-    response => response,
+    response => sanitizeApiResponse(response),
     async error => {
       const response = error?.response
       const originalRequest = error?.config
 
       if (!response || response.status !== 401 || originalRequest?._retry) {
-        return Promise.reject(error)
+        return Promise.reject(sanitizeApiError(error))
       }
 
       const refreshToken = getRefreshToken()
       if (!refreshToken) {
-        return Promise.reject(error)
+        return Promise.reject(sanitizeApiError(error))
       }
 
       originalRequest._retry = true
@@ -68,7 +69,7 @@ export const createApiClient = baseURL => {
         const { accessToken, refreshToken: nextRefreshToken, signatureToken } = refreshResponse.data || {}
         if (!accessToken || !nextRefreshToken) {
           clearTokens()
-          return Promise.reject(error)
+          return Promise.reject(sanitizeApiError(error))
         }
 
         setTokens({ accessToken, refreshToken: nextRefreshToken, signatureToken })
@@ -77,7 +78,7 @@ export const createApiClient = baseURL => {
       } catch (refreshError) {
         refreshPromise = null
         clearTokens()
-        return Promise.reject(refreshError)
+        return Promise.reject(sanitizeApiError(refreshError))
       }
     }
   )

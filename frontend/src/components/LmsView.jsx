@@ -10,6 +10,10 @@ const LmsView = ({
   selectedCourse,
   onSelectCourse,
   lessons,
+  assignments,
+  assignmentDrafts,
+  onAssignmentDraftChange,
+  onSubmitAssignment,
   enrollmentByCourse,
   teacherEnrollments,
   onEnroll,
@@ -17,6 +21,7 @@ const LmsView = ({
   currentUser,
   onOpenProfile,
   onOpenLesson,
+  onOpenCourseForum,
   onLoadEnrollments,
   onDeleteLesson
 }) => {
@@ -30,15 +35,16 @@ const LmsView = ({
   const canEnroll = currentUser && (currentRole === 'student' || currentRole === 'user')
   const isEnrolled = Boolean(enrollment)
   const sortedLessons = [...lessons].sort((a, b) => (a.order || 1) - (b.order || 1))
+  const visibleAssignments = Array.isArray(assignments) ? assignments : []
   const completedLessonIds = useMemo(() => {
     return new Set((enrollment?.completedLessons || []).map(item => String(item)))
   }, [enrollment])
 
   const getProgressLabel = value => {
     const percent = Number(value) || 0
-    if (percent <= 30) return 'Tan binh'
-    if (percent < 80) return 'Hieu biet'
-    return 'Biet tuot'
+    if (percent <= 30) return 'Tân binh'
+    if (percent < 80) return 'Hiểu biết'
+    return 'Biết tuốt'
   }
 
   useEffect(() => {
@@ -47,7 +53,6 @@ const LmsView = ({
     }
     onLoadEnrollments?.(selectedCourse._id)
   }, [isTeacherView, onLoadEnrollments, selectedCourse?._id])
-
 
   return (
     <div className="lms-view">
@@ -145,11 +150,11 @@ const LmsView = ({
                   {enrollment && (
                     <div className="progress-block">
                       <div className="progress-text">
-                        Tiến độ: {enrollment.progressPercent || 0}% ·
-                        {` ${getProgressLabel(enrollment.progressPercent)}`} ·
+                        Tiến độ: {enrollment.progressPercent || 0}% -{' '}
+                        {getProgressLabel(enrollment.progressPercent)} -{' '}
                         {enrollment.evaluation?.score !== null && enrollment.evaluation?.score !== undefined
-                          ? ` Điểm: ${enrollment.evaluation.score}`
-                          : ' Chưa có điểm'}
+                          ? `Điểm: ${enrollment.evaluation.score}`
+                          : 'Chưa có điểm'}
                       </div>
                       <div className="progress-bar">
                         <div
@@ -169,6 +174,11 @@ const LmsView = ({
                     </button>
                   )}
                   {isEnrolled && <span className="enrolled-pill">Đã tham gia</span>}
+                  {selectedCourse && (
+                    <button className="btn-ghost" onClick={() => onOpenCourseForum?.(selectedCourse)}>
+                      Diễn đàn lớp
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -196,7 +206,7 @@ const LmsView = ({
 
               <div className="syllabus-panel">
                 <div className="syllabus-header">
-                  <h3>Danh sach bai hoc</h3>
+                  <h3>Danh sách bài học</h3>
                 </div>
 
                 {sortedLessons.length ? (
@@ -222,7 +232,7 @@ const LmsView = ({
                               completedLessonIds.has(String(lesson._id)) ? 'done' : 'todo'
                             }`}
                           >
-                            {completedLessonIds.has(String(lesson._id)) ? 'Da hoan thanh' : 'Chua hoan thanh'}
+                            {completedLessonIds.has(String(lesson._id)) ? 'Đã hoàn thành' : 'Chưa hoàn thành'}
                           </span>
                           {isTeacherView && (
                             <button
@@ -232,7 +242,7 @@ const LmsView = ({
                                 onDeleteLesson?.(lesson._id)
                               }}
                             >
-                              Xoa
+                              Xóa
                             </button>
                           )}
                         </div>
@@ -241,6 +251,67 @@ const LmsView = ({
                   </div>
                 ) : (
                   <p>Chưa có bài học nào.</p>
+                )}
+              </div>
+
+              <div className="syllabus-panel">
+                <div className="syllabus-header">
+                  <h3>Bài tập</h3>
+                </div>
+
+                {visibleAssignments.length ? (
+                  <div className="assignment-list">
+                    {visibleAssignments.map(assignment => (
+                      <div key={assignment._id} className="assignment-item">
+                        <div className="assignment-meta">
+                          <h4>{assignment.title}</h4>
+                          <p>{assignment.description || 'Chưa có mô tả.'}</p>
+                          {assignment.dueAt && (
+                            <span className="assignment-due">
+                              Hạn: {new Date(assignment.dueAt).toLocaleString()}
+                            </span>
+                          )}
+                          {assignment.mySubmission && (
+                            <div className="assignment-submission-summary">
+                              <span className="assignment-status">
+                                {assignment.mySubmission.status === 'graded'
+                                  ? `Đã chấm - Điểm ${assignment.mySubmission.score ?? '-'}`
+                                  : 'Đã nộp - đang chờ chấm'}
+                              </span>
+                              {assignment.mySubmission.content && (
+                                <p className="assignment-submitted-content">
+                                  Bài đã nộp: {assignment.mySubmission.content}
+                                </p>
+                              )}
+                              {assignment.mySubmission.status === 'graded' && assignment.mySubmission.feedback && (
+                                <p className="assignment-feedback">
+                                  Nhận xét: {assignment.mySubmission.feedback}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {currentUser && !isTeacherView && (
+                          <div className="assignment-submit">
+                            <textarea
+                              value={assignmentDrafts?.[assignment._id] || ''}
+                              onChange={e => onAssignmentDraftChange?.(assignment._id, e.target.value)}
+                              placeholder="Nhập nội dung bài nộp..."
+                            />
+                            <button
+                              className="btn-post"
+                              onClick={() => onSubmitAssignment?.(assignment._id)}
+                            >
+                              Nộp bài
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p>Chưa có bài tập nào.</p>
                 )}
               </div>
             </>

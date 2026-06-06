@@ -1,6 +1,12 @@
 const Course = require('../models/Course');
 const Lesson = require('../models/Lesson');
 const Enrollment = require('../models/Enrollment');
+const Assignment = require('../models/Assignment');
+const Submission = require('../models/Submission');
+const ForumPost = require('../models/ForumPost');
+const ForumComment = require('../models/ForumComment');
+const LessonComment = require('../models/LessonComment');
+const LessonView = require('../models/LessonView');
 
 const listCourses = async (req, res) => {
   try {
@@ -118,8 +124,27 @@ const deleteCourse = async (req, res) => {
       return res.status(403).json({ message: 'Bạn không có quyền xóa lớp học này.' });
     }
 
-    await Lesson.deleteMany({ course: course._id });
-    await Enrollment.deleteMany({ course: course._id });
+    const [assignmentIds, forumPostIds] = await Promise.all([
+      Assignment.find({ course: course._id }, { _id: 1 }).lean(),
+      ForumPost.find({ scope: 'course', course: course._id }, { _id: 1 }).lean()
+    ]);
+
+    await Promise.all([
+      Lesson.deleteMany({ course: course._id }),
+      LessonComment.deleteMany({ course: course._id }),
+      LessonView.deleteMany({ course: course._id }),
+      Enrollment.deleteMany({ course: course._id }),
+      Submission.deleteMany({
+        $or: [
+          { course: course._id },
+          { assignment: { $in: assignmentIds.map(item => item._id) } }
+        ]
+      }),
+      Assignment.deleteMany({ course: course._id }),
+      ForumComment.deleteMany({ postId: { $in: forumPostIds.map(item => item._id) } }),
+      ForumPost.deleteMany({ scope: 'course', course: course._id })
+    ]);
+
     await course.deleteOne();
 
     res.json({ message: 'Đã xóa lớp học.' });

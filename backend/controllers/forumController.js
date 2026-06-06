@@ -1,30 +1,123 @@
 const mongoose = require('mongoose');
 const ForumPost = require('../models/ForumPost');
 const ForumComment = require('../models/ForumComment');
+const Course = require('../models/Course');
+const Enrollment = require('../models/Enrollment');
+const { isStudentRole } = require('../utils/userUtils');
+
+const normalizeScope = value => (value === 'course' ? 'course' : 'general');
+const generalForumPostCondition = () => ({ $or: [{ scope: { $exists: false } }, { scope: 'general' }] });
+const impossibleObjectId = () => new mongoose.Types.ObjectId();
+
+const ensureCourseForumAccess = async (req, res, courseId, actionLabel = 'truy cap dien dan lop') => {
+  if (!courseId || !mongoose.Types.ObjectId.isValid(courseId)) {
+    res.status(400).json({ message: 'courseId khong hop le.' });
+    return null;
+  }
+
+  const course = await Course.findById(courseId).lean();
+  if (!course) {
+    res.status(404).json({ message: 'Khong tim thay lop hoc.' });
+    return null;
+  }
+
+  if (!req.currentUser) {
+    res.status(401).json({ message: `Can dang nhap de ${actionLabel}.` });
+    return null;
+  }
+
+  if (req.currentUser.role === 'admin') {
+    return course;
+  }
+
+  if (req.currentUser.role === 'teacher') {
+    if (String(course.teacher) === String(req.currentUser._id)) {
+      return course;
+    }
+
+    res.status(403).json({ message: 'Ban khong co quyen truy cap dien dan lop nay.' });
+    return null;
+  }
+
+  if (isStudentRole(req.currentUser.role)) {
+    const enrolled = await Enrollment.findOne({
+      course: course._id,
+      student: req.currentUser._id
+    }).lean();
+
+    if (enrolled) {
+      return course;
+    }
+
+    res.status(403).json({ message: 'Cau can tham gia lop truoc khi vao dien dan lop.' });
+    return null;
+  }
+
+  res.status(403).json({ message: 'Ban khong co quyen truy cap dien dan lop nay.' });
+  return null;
+};
+
+const ensurePostForumAccess = async (req, res, post, actionLabel = 'truy cap dien dan lop') => {
+  if (!post || post.isDeleted) {
+    res.status(404).json({ message: 'Khong tim thay bai viet.' });
+    return null;
+  }
+
+  if ((post.scope || 'general') !== 'course') {
+    return { post, course: null };
+  }
+
+  const course = await ensureCourseForumAccess(req, res, post.course, actionLabel);
+  if (!course) {
+    return null;
+  }
+
+  return { post, course };
+};
+
+const formatPostForUser = (post, userKey) => ({
+  ...post,
+  heartCount: (post.heartUserIds || []).length,
+  isHearted: userKey ? (post.heartUserIds || []).some(item => String(item) === userKey) : false
+});
 
 const getPosts = async (req, res) => {
   try {
     const search = req.query.search ? String(req.query.search).trim() : '';
     const category = req.query.category ? String(req.query.category).trim() : '';
+    const scope = normalizeScope(String(req.query.scope || '').trim());
+    const courseId = req.query.courseId ? String(req.query.courseId).trim() : '';
     const pageRaw = Number(req.query.page);
     const limitRaw = Number(req.query.limit);
 
-    const filter = { isDeleted: false };
+    const andConditions = [{ isDeleted: false }];
+
+    if (scope === 'course') {
+      const course = await ensureCourseForumAccess(req, res, courseId, 'xem dien dan lop');
+      if (!course) {
+        return;
+      }
+      andConditions.push({ scope: 'course', course: course._id });
+    } else {
+      andConditions.push(generalForumPostCondition());
+    }
 
     if (category) {
-      filter.category = category;
+      andConditions.push({ category });
     }
 
     if (search) {
       const regex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-      filter.$or = [{ title: regex }, { content: regex }, { category: regex }, { author: regex }];
+      andConditions.push({ $or: [{ title: regex }, { content: regex }, { category: regex }, { author: regex }] });
     }
 
+    const filter = { $and: andConditions };
     const usePaging = Number.isFinite(pageRaw) || Number.isFinite(limitRaw);
+    const userKey = req.currentUser?._id ? String(req.currentUser._id) : '';
 
     if (!usePaging) {
       const posts = await ForumPost.find(filter).sort({ createdAt: -1 }).lean();
-      return res.json({ posts });
+      return res.json({ posts: posts.map(post => formatPostForUser(post, userKey)) });
     }
 
     const page = Number.isFinite(pageRaw) && pageRaw > 0 ? Math.floor(pageRaw) : 1;
@@ -38,7 +131,7 @@ const getPosts = async (req, res) => {
 
     const totalPages = Math.max(1, Math.ceil(totalItems / limit));
     res.json({
-      posts,
+      posts: posts.map(post => formatPostForUser(post, userKey)),
       pagination: {
         page,
         limit,
@@ -48,74 +141,154 @@ const getPosts = async (req, res) => {
     });
   } catch (error) {
     console.error('Loi lay forum posts:', error);
-    res.status(500).json({ message: 'Không tải được bài viết diễn đàn.' });
+    res.status(500).json({ message: 'Khong tai duoc bai viet dien dan.' });
   }
 };
 
 const createPost = async (req, res) => {
   try {
-    const { title, content, category } = req.body;
+    const { title, content, category, scope: scopeRaw, courseId } = req.body || {};
+    const scope = normalizeScope(String(scopeRaw || '').trim());
+    const trimmedTitle = String(title || '').trim();
+    const trimmedContent = String(content || '').trim();
+    const trimmedCategory = String(category || '').trim();
 
-    if (!title || !content || !category) {
-      return res.status(400).json({ message: 'Thiếu title, content hoặc category.' });
+    if (!trimmedTitle || !trimmedContent || !trimmedCategory) {
+      return res.status(400).json({ message: 'Thieu title, content hoac category.' });
+    }
+
+    let course = null;
+    if (scope === 'course') {
+      course = await ensureCourseForumAccess(req, res, courseId, 'dang bai trong dien dan lop');
+      if (!course) {
+        return;
+      }
     }
 
     const created = await ForumPost.create({
       author: req.currentUser.username,
-      title: title.trim(),
-      content: content.trim(),
-      category: category.trim()
+      title: trimmedTitle,
+      content: trimmedContent,
+      category: trimmedCategory,
+      scope,
+      course: scope === 'course' ? course._id : null
     });
 
-    res.status(201).json({ post: created });
+    const payload = created.toObject();
+    payload.heartCount = (payload.heartUserIds || []).length;
+    payload.isHearted = false;
+
+    res.status(201).json({ post: payload });
   } catch (error) {
     console.error('Loi tao forum post:', error);
-    res.status(500).json({ message: 'Không tạo được bài viết.' });
+    res.status(500).json({ message: 'Khong tao duoc bai viet.' });
   }
+};
+
+const getPostIdsForCommentQuery = async (req, res) => {
+  if (req.query.postId) {
+    const postId = String(req.query.postId).trim();
+    if (!mongoose.Types.ObjectId.isValid(postId)) {
+      res.status(400).json({ message: 'postId khong hop le.' });
+      return null;
+    }
+
+    const post = await ForumPost.findById(postId).lean();
+    const access = await ensurePostForumAccess(req, res, post, 'xem binh luan lop');
+    return access ? [post._id] : null;
+  }
+
+  if (req.query.postIds) {
+    const ids = String(req.query.postIds)
+      .split(',')
+      .map(item => item.trim())
+      .filter(item => mongoose.Types.ObjectId.isValid(item));
+
+    if (!ids.length) {
+      return [impossibleObjectId()];
+    }
+
+    const posts = await ForumPost.find({ _id: { $in: ids }, isDeleted: false }).lean();
+    for (const post of posts) {
+      const access = await ensurePostForumAccess(req, res, post, 'xem binh luan lop');
+      if (!access) {
+        return null;
+      }
+    }
+
+    return posts.length ? posts.map(post => post._id) : [impossibleObjectId()];
+  }
+
+  const scope = normalizeScope(String(req.query.scope || '').trim());
+  const postFilter = { isDeleted: false };
+
+  if (scope === 'course') {
+    const courseId = req.query.courseId ? String(req.query.courseId).trim() : '';
+    const course = await ensureCourseForumAccess(req, res, courseId, 'xem binh luan lop');
+    if (!course) {
+      return null;
+    }
+
+    postFilter.scope = 'course';
+    postFilter.course = course._id;
+  } else {
+    Object.assign(postFilter, generalForumPostCondition());
+  }
+
+  const posts = await ForumPost.find(postFilter, { _id: 1 }).lean();
+  return posts.length ? posts.map(item => item._id) : [impossibleObjectId()];
 };
 
 const getComments = async (req, res) => {
   try {
-    const filter = { isDeleted: false };
-    if (req.query.postId) {
-      filter.postId = req.query.postId;
+    const postIds = await getPostIdsForCommentQuery(req, res);
+    if (!postIds) {
+      return;
     }
 
-    const comments = await ForumComment.find(filter).sort({ createdAt: 1 }).lean();
+    const comments = await ForumComment.find({
+      isDeleted: false,
+      postId: { $in: postIds }
+    })
+      .sort({ createdAt: 1 })
+      .lean();
+
     res.json({ comments });
   } catch (error) {
     console.error('Loi lay forum comments:', error);
-    res.status(500).json({ message: 'Không tải được bình luận.' });
+    res.status(500).json({ message: 'Khong tai duoc binh luan.' });
   }
 };
 
 const createComment = async (req, res) => {
   try {
-    const { postId, text } = req.body;
+    const { postId, text } = req.body || {};
+    const trimmedText = String(text || '').trim();
 
-    if (!postId || !text) {
-      return res.status(400).json({ message: 'Thiếu postId hoặc text.' });
+    if (!postId || !trimmedText) {
+      return res.status(400).json({ message: 'Thieu postId hoac text.' });
     }
 
     if (!mongoose.Types.ObjectId.isValid(postId)) {
-      return res.status(400).json({ message: 'postId không hợp lệ.' });
+      return res.status(400).json({ message: 'postId khong hop le.' });
     }
 
-    const postExists = await ForumPost.exists({ _id: postId });
-    if (!postExists) {
-      return res.status(404).json({ message: 'Bài viết không tồn tại.' });
+    const post = await ForumPost.findById(postId).lean();
+    const access = await ensurePostForumAccess(req, res, post, 'binh luan trong dien dan lop');
+    if (!access) {
+      return;
     }
 
     const created = await ForumComment.create({
-      postId,
+      postId: post._id,
       author: req.currentUser.username,
-      text: text.trim()
+      text: trimmedText
     });
 
     res.status(201).json({ comment: created });
   } catch (error) {
     console.error('Loi tao forum comment:', error);
-    res.status(500).json({ message: 'Không tạo được bình luận.' });
+    res.status(500).json({ message: 'Khong tao duoc binh luan.' });
   }
 };
 
@@ -123,14 +296,14 @@ const deletePost = async (req, res) => {
   try {
     const post = await ForumPost.findById(req.params.id);
     if (!post) {
-      return res.status(404).json({ message: 'Không tìm thấy bài viết.' });
+      return res.status(404).json({ message: 'Khong tim thay bai viet.' });
     }
 
     const isOwner = post.author === req.currentUser.username;
     const isAdmin = req.currentUser.role === 'admin';
 
     if (!isOwner && !isAdmin) {
-      return res.status(403).json({ message: 'Bạn không có quyền xóa bài viết này.' });
+      return res.status(403).json({ message: 'Ban khong co quyen xoa bai viet nay.' });
     }
 
     const deletedAt = new Date();
@@ -157,10 +330,10 @@ const deletePost = async (req, res) => {
       }
     );
 
-    res.json({ message: 'Đã xóa bài viết thành công.' });
+    res.json({ message: 'Da xoa bai viet thanh cong.' });
   } catch (error) {
     console.error('Loi xoa forum post:', error);
-    res.status(500).json({ message: 'Không xóa được bài viết.' });
+    res.status(500).json({ message: 'Khong xoa duoc bai viet.' });
   }
 };
 
@@ -168,14 +341,14 @@ const deleteComment = async (req, res) => {
   try {
     const comment = await ForumComment.findById(req.params.id);
     if (!comment) {
-      return res.status(404).json({ message: 'Không tìm thấy bình luận.' });
+      return res.status(404).json({ message: 'Khong tim thay binh luan.' });
     }
 
     const isOwner = comment.author === req.currentUser.username;
     const isAdmin = req.currentUser.role === 'admin';
 
     if (!isOwner && !isAdmin) {
-      return res.status(403).json({ message: 'Bạn không có quyền xóa bình luận này.' });
+      return res.status(403).json({ message: 'Ban khong co quyen xoa binh luan nay.' });
     }
 
     await ForumComment.updateOne(
@@ -189,10 +362,41 @@ const deleteComment = async (req, res) => {
         }
       }
     );
-    res.json({ message: 'Đã xóa bình luận thành công.' });
+    res.json({ message: 'Da xoa binh luan thanh cong.' });
   } catch (error) {
     console.error('Loi xoa forum comment:', error);
-    res.status(500).json({ message: 'Không xóa được bình luận.' });
+    res.status(500).json({ message: 'Khong xoa duoc binh luan.' });
+  }
+};
+
+const togglePostReaction = async (req, res) => {
+  try {
+    const post = await ForumPost.findById(req.params.id);
+    const access = await ensurePostForumAccess(req, res, post, 'tha tim bai viet lop');
+    if (!access) {
+      return;
+    }
+
+    const userKey = req.currentUser?._id ? String(req.currentUser._id) : '';
+    if (!userKey) {
+      return res.status(401).json({ message: 'Can dang nhap de tha tim.' });
+    }
+
+    const existingIndex = (post.heartUserIds || []).findIndex(item => String(item) === userKey);
+    if (existingIndex >= 0) {
+      post.heartUserIds.splice(existingIndex, 1);
+    } else {
+      post.heartUserIds.push(userKey);
+    }
+
+    await post.save();
+
+    const heartCount = post.heartUserIds.length;
+    const isHearted = post.heartUserIds.some(item => String(item) === userKey);
+    res.json({ heartCount, isHearted });
+  } catch (error) {
+    console.error('Loi tha tim forum post:', error);
+    res.status(500).json({ message: 'Khong tha tim duoc.' });
   }
 };
 
@@ -209,7 +413,7 @@ const getDeletedPosts = async (req, res) => {
     res.json({ posts });
   } catch (error) {
     console.error('Loi lay deleted posts:', error);
-    res.status(500).json({ message: 'Không tải được danh sách bài đã xóa.' });
+    res.status(500).json({ message: 'Khong tai duoc danh sach bai da xoa.' });
   }
 };
 
@@ -226,7 +430,7 @@ const getDeletedComments = async (req, res) => {
     res.json({ comments });
   } catch (error) {
     console.error('Loi lay deleted comments:', error);
-    res.status(500).json({ message: 'Không tải được danh sách bình luận đã xóa.' });
+    res.status(500).json({ message: 'Khong tai duoc danh sach binh luan da xoa.' });
   }
 };
 
@@ -234,20 +438,20 @@ const deleteDeletedPost = async (req, res) => {
   try {
     const post = await ForumPost.findById(req.params.id);
     if (!post) {
-      return res.status(404).json({ message: 'Không tìm thấy bài viết.' });
+      return res.status(404).json({ message: 'Khong tim thay bai viet.' });
     }
 
     if (!post.isDeleted) {
-      return res.status(400).json({ message: 'Bài viết này chưa ở trạng thái đã ẩn.' });
+      return res.status(400).json({ message: 'Bai viet nay chua o trang thai da an.' });
     }
 
     await ForumComment.deleteMany({ postId: post._id });
     await ForumPost.deleteOne({ _id: post._id });
 
-    res.json({ message: 'Đã xóa vĩnh viễn bài viết và bình luận liên quan.' });
+    res.json({ message: 'Da xoa vinh vien bai viet va binh luan lien quan.' });
   } catch (error) {
     console.error('Loi xoa vinh vien post:', error);
-    res.status(500).json({ message: 'Không xóa vĩnh viễn được bài viết.' });
+    res.status(500).json({ message: 'Khong xoa vinh vien duoc bai viet.' });
   }
 };
 
@@ -255,19 +459,19 @@ const deleteDeletedComment = async (req, res) => {
   try {
     const comment = await ForumComment.findById(req.params.id);
     if (!comment) {
-      return res.status(404).json({ message: 'Không tìm thấy bình luận.' });
+      return res.status(404).json({ message: 'Khong tim thay binh luan.' });
     }
 
     if (!comment.isDeleted) {
-      return res.status(400).json({ message: 'Bình luận này chưa ở trạng thái đã ẩn.' });
+      return res.status(400).json({ message: 'Binh luan nay chua o trang thai da an.' });
     }
 
     await ForumComment.deleteOne({ _id: comment._id });
 
-    res.json({ message: 'Đã xóa vĩnh viễn bình luận.' });
+    res.json({ message: 'Da xoa vinh vien binh luan.' });
   } catch (error) {
     console.error('Loi xoa vinh vien comment:', error);
-    res.status(500).json({ message: 'Không xóa vĩnh viễn được bình luận.' });
+    res.status(500).json({ message: 'Khong xoa vinh vien duoc binh luan.' });
   }
 };
 
@@ -275,7 +479,7 @@ const restorePost = async (req, res) => {
   try {
     const post = await ForumPost.findById(req.params.id);
     if (!post) {
-      return res.status(404).json({ message: 'Không tìm thấy bài viết.' });
+      return res.status(404).json({ message: 'Khong tim thay bai viet.' });
     }
 
     post.isDeleted = false;
@@ -296,10 +500,10 @@ const restorePost = async (req, res) => {
       }
     );
 
-    res.json({ message: 'Đã khôi phục bài viết.' });
+    res.json({ message: 'Da khoi phuc bai viet.' });
   } catch (error) {
     console.error('Loi restore post:', error);
-    res.status(500).json({ message: 'Không khôi phục được bài viết.' });
+    res.status(500).json({ message: 'Khong khoi phuc duoc bai viet.' });
   }
 };
 
@@ -307,7 +511,7 @@ const restoreComment = async (req, res) => {
   try {
     const comment = await ForumComment.findById(req.params.id);
     if (!comment) {
-      return res.status(404).json({ message: 'Không tìm thấy bình luận.' });
+      return res.status(404).json({ message: 'Khong tim thay binh luan.' });
     }
 
     comment.isDeleted = false;
@@ -316,10 +520,10 @@ const restoreComment = async (req, res) => {
     comment.deletionReason = null;
     await comment.save();
 
-    res.json({ message: 'Đã khôi phục bình luận.' });
+    res.json({ message: 'Da khoi phuc binh luan.' });
   } catch (error) {
     console.error('Loi restore comment:', error);
-    res.status(500).json({ message: 'Không khôi phục được bình luận.' });
+    res.status(500).json({ message: 'Khong khoi phuc duoc binh luan.' });
   }
 };
 
@@ -330,6 +534,7 @@ module.exports = {
   createComment,
   deletePost,
   deleteComment,
+  togglePostReaction,
   getDeletedPosts,
   getDeletedComments,
   deleteDeletedPost,

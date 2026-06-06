@@ -1,6 +1,20 @@
 import RichTextEditor from './RichTextEditor'
 import './ForumView.css'
 
+const ComposeField = ({ label, hint, children, className = '', as = 'label' }) => {
+  const FieldTag = as
+
+  return (
+  <FieldTag className={`compose-field${className ? ` ${className}` : ''}`}>
+    <div className="compose-field-copy">
+      <span className="compose-label">{label}</span>
+      {hint && <span className="compose-hint">{hint}</span>}
+    </div>
+    {children}
+  </FieldTag>
+  )
+}
+
 const ForumView = ({
   newPost,
   onNewPostChange,
@@ -12,36 +26,133 @@ const ForumView = ({
   onCommentDraftChange,
   onAddComment,
   onReportContent,
+  onTogglePostReaction,
   searchTerm,
   onSearchChange,
   forumPage,
   forumTotalPages,
   onPageChange,
-  filteredForumPosts
+  filteredForumPosts,
+  forumScope,
+  forumCourse,
+  forumCourses,
+  onForumScopeChange,
+  onForumCourseChange
 }) => (
   <div className="forum-view">
     <div className="forum-layout">
-      <div className="create-post-box card-panel">
-        <h3>Tạo bài viết mới</h3>
-        <input
-          type="text"
-          placeholder="Tiêu đề bài viết..."
-          value={newPost.title}
-          onChange={e => onNewPostChange({ ...newPost, title: e.target.value })}
-        />
-        <select
-          value={newPost.category}
-          onChange={e => onNewPostChange({ ...newPost, category: e.target.value })}
-        >
-          {categories.map((cat, i) => <option key={i} value={cat}>{cat}</option>)}
-        </select>
-        <RichTextEditor
-          toolbarId="forum-post-toolbar"
-          value={newPost.content}
-          onChange={value => onNewPostChange({ ...newPost, content: value })}
-          placeholder="Nội dung bạn muốn chia sẻ..."
-        />
-        <button onClick={() => onPostSubmit()} className="btn-post">Đăng bài</button>
+      <div className="create-post-box forum-composer card-panel">
+        <div className="composer-header">
+          <div>
+            <span className="composer-kicker">Diễn đàn</span>
+            <h3>Viết bài mới</h3>
+            <p>Đặt câu hỏi, chia sẻ tiến độ hoặc mở thảo luận cho lớp.</p>
+          </div>
+          <span className="composer-privacy">{forumScope === 'course' ? 'Lớp riêng' : 'Cộng đồng'}</span>
+        </div>
+
+        <div className="composer-section">
+          <div className="compose-field-copy">
+            <span className="compose-label">Nơi đăng</span>
+            <span className="compose-hint">Chọn diễn đàn chung hoặc không gian riêng của lớp học.</span>
+          </div>
+          <div className="forum-scope-controls scope-segmented" role="group" aria-label="Phạm vi bài viết">
+            <button
+              type="button"
+              className={forumScope === 'general' ? 'btn-scope active' : 'btn-scope'}
+              onClick={() => onForumScopeChange?.('general')}
+            >
+              Diễn đàn chung
+            </button>
+            <button
+              type="button"
+              className={forumScope === 'course' ? 'btn-scope active' : 'btn-scope'}
+              onClick={() => onForumScopeChange?.('course')}
+            >
+              Diễn đàn lớp
+            </button>
+          </div>
+        </div>
+
+        {forumScope === 'course' && (
+          <div className="composer-section">
+            <ComposeField
+              label="Lớp học"
+              hint="Bài viết chỉ hiển thị với thành viên có quyền vào lớp."
+            >
+              <select
+                value={forumCourse?._id || ''}
+                onChange={e => onForumCourseChange?.(e.target.value)}
+                aria-label="Chọn lớp học"
+              >
+                <option value="">Chọn lớp học</option>
+                {(forumCourses || []).map(course => (
+                  <option key={course._id} value={course._id}>{course.title}</option>
+                ))}
+              </select>
+            </ComposeField>
+          </div>
+        )}
+
+        <div className="composer-section">
+          <ComposeField
+            label="Tiêu đề"
+            hint="Nêu rõ câu hỏi hoặc chủ đề để người khác hiểu nhanh."
+          >
+            <input
+              type="text"
+              placeholder="Ví dụ: Cách giữ thăng bằng khi xoay hông?"
+              value={newPost.title}
+              onChange={e => onNewPostChange({ ...newPost, title: e.target.value })}
+              aria-label="Tiêu đề bài viết"
+            />
+          </ComposeField>
+
+          {forumScope === 'general' ? (
+            <ComposeField label="Chủ đề" hint="Giúp bài viết xuất hiện đúng khu vực thảo luận.">
+              <select
+                value={newPost.category}
+                onChange={e => onNewPostChange({ ...newPost, category: e.target.value })}
+                aria-label="Chủ đề bài viết"
+              >
+                {categories.map((cat, i) => <option key={i} value={cat}>{cat}</option>)}
+              </select>
+            </ComposeField>
+          ) : (
+            <div className="forum-course-label">
+              {forumCourse ? `Lớp: ${forumCourse.title}` : 'Chọn lớp để đăng bài.'}
+            </div>
+          )}
+        </div>
+
+        <div className="composer-section composer-section-editor">
+          <ComposeField
+            label="Nội dung"
+            hint="Viết đủ bối cảnh, điều đã thử, ảnh hoặc video nếu cần."
+            className="compose-field-editor"
+            as="div"
+          >
+            <RichTextEditor
+              toolbarId="forum-post-toolbar"
+              value={newPost.content}
+              onChange={value => onNewPostChange({ ...newPost, content: value })}
+              placeholder="Nội dung bạn muốn chia sẻ..."
+            />
+          </ComposeField>
+        </div>
+
+        <div className="composer-actions">
+          <p className="composer-note">
+            {forumScope === 'course' ? 'Đăng trong diễn đàn lớp đã chọn.' : 'Đăng công khai trong diễn đàn chung.'}
+          </p>
+          <button
+            onClick={() => onPostSubmit()}
+            className="btn-post"
+            disabled={forumScope === 'course' && !forumCourse}
+          >
+            Đăng bài
+          </button>
+        </div>
       </div>
 
       <div className="post-list">
@@ -62,6 +173,15 @@ const ForumView = ({
               <div className="post-header">
                 <span className="post-category">{post.category}</span>
                 <span className="post-author">Bởi: {post.author}</span>
+              </div>
+              <div className="post-reactions">
+                <button
+                  className={post.isHearted ? 'btn-heart active' : 'btn-heart'}
+                  onClick={() => onTogglePostReaction?.(post)}
+                  aria-label={post.isHearted ? 'Bỏ tim bài viết' : 'Thả tim bài viết'}
+                >
+                  <span aria-hidden="true">♥</span> {post.heartCount || 0}
+                </button>
               </div>
               <h4>{post.title}</h4>
               <div className="rich-text" dangerouslySetInnerHTML={{ __html: post.content }}></div>
@@ -102,14 +222,14 @@ const ForumView = ({
                       </div>
                     ))
                   ) : (
-                    <p className="empty-comment">Chưa có bình luận, cậu mở màn nhé.</p>
+                    <p className="empty-comment">Chưa có bình luận, bạn mở màn nhé.</p>
                   )}
                 </div>
 
                 <div className="comment-form">
                   <input
                     type="text"
-                    placeholder="Viết bình luận của cậu..."
+                    placeholder="Viết bình luận của bạn..."
                     value={commentDrafts[post.id] || ''}
                     onChange={e => onCommentDraftChange(post.id, e.target.value)}
                   />

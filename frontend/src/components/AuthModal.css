@@ -12,15 +12,14 @@
 }
 
 .auth-notice-panel {
-	border: 2px solid var(--line);
-	border-radius: var(--radius-md);
-	background: var(--accent-soft);
+	border: 1px solid var(--line);
+	border-radius: var(--radius-lg);
+	background: var(--bg-raised);
 	padding: 14px;
-	box-shadow: var(--shadow-hard);
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
-	min-height: 240px;
+	min-height: 220px;
 }
 
 .auth-notice-header {
@@ -43,7 +42,7 @@
 	padding: 0 8px;
 	border-radius: 999px;
 	background: var(--bg-main);
-	border: 2px solid var(--line);
+	border: 1px solid var(--line);
 	font-weight: 700;
 }
 
@@ -57,7 +56,7 @@
 }
 
 .auth-notice-item {
-	border: 2px solid var(--line);
+	border: 1px solid var(--line);
 	border-radius: var(--radius-md);
 	padding: 10px 12px;
 	background: var(--bg-main);
@@ -75,15 +74,15 @@
 }
 
 .auth-notice-item.success {
-	background: #ecf8ea;
+	background: #ecfdf5;
 }
 
 .auth-notice-item.warning {
-	background: #fff5db;
+	background: #fff7ed;
 }
 
 .auth-notice-item.error {
-	background: #ffe7e7;
+	background: #fef2f2;
 }
 
 .auth-switch {
@@ -92,15 +91,16 @@
 	padding: 0;
 	margin-top: 12px;
 	cursor: pointer;
-	color: var(--brand);
+	color: var(--brand-dark);
 	font: inherit;
+	font-weight: 700;
 	text-align: center;
 }
 
 .auth-switch:focus-visible,
 .logo-zone:focus-visible,
 .lms-sidebar li:focus-visible {
-	outline: 2px solid var(--brand);
+	outline: 3px solid rgba(15, 118, 110, 0.22);
 	outline-offset: 3px;
 }
 

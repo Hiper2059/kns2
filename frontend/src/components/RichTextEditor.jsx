@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import ReactQuill, { Quill } from 'react-quill'
 import axios from 'axios'
 import 'react-quill/dist/quill.snow.css'
+import { getApiErrorMessage } from '../utils/apiMessages'
 import './RichTextEditor.css'
 
 let quillRegistered = false
@@ -114,7 +115,7 @@ const RichTextEditor = ({ value, onChange, placeholder, toolbarId }) => {
       return res.data?.url || null
     } catch (err) {
       console.error('Upload error', err)
-      alert(err.response?.data?.message || err.message || 'Không upload được file.')
+      alert(getApiErrorMessage(err, 'Không upload được file.'))
       if (type === 'image') setImageProgress(0)
       if (type === 'video') setVideoProgress(0)
       return null
@@ -233,7 +234,7 @@ const RichTextEditor = ({ value, onChange, placeholder, toolbarId }) => {
       {imageProgress > 0 && imageProgress < 100 && (
         <div className="upload-progress image">
           <div className="bar" style={{ width: `${imageProgress}%` }}></div>
-          <div className="label">Uploading image {imageProgress}%</div>
+          <div className="label">Đang tải ảnh lên {imageProgress}%</div>
         </div>
       )}
       <input
@@ -256,7 +257,7 @@ const RichTextEditor = ({ value, onChange, placeholder, toolbarId }) => {
       {videoProgress > 0 && videoProgress < 100 && (
         <div className="upload-progress video">
           <div className="bar" style={{ width: `${videoProgress}%` }}></div>
-          <div className="label">Uploading video {videoProgress}%</div>
+          <div className="label">Đang tải video lên {videoProgress}%</div>
         </div>
       )}
       <ReactQuill
