@@ -86,7 +86,7 @@ const Navbar = ({
           <span className="label">Lớp học</span>
         </NavLink>
 
-        {(currentRole === 'teacher' || currentRole === 'admin') && (
+        {currentRole === 'teacher' && (
           <NavLink to="/teacher" className={({ isActive }) => (isActive ? 'active' : '')}>
             <span className="icon"><IconTeacher/></span>
             <span className="label">Giảng viên</span>

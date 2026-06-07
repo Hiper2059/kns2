@@ -40,8 +40,10 @@ const LmsView = ({
   onDeleteLesson
 }) => {
   const [quizDrafts, setQuizDrafts] = useState({})
-  const isTeacherView = currentRole === 'teacher' || currentRole === 'admin'
-  const coursePool = isTeacherView ? teacherCourses : courses
+  const isTeacher = currentRole === 'teacher'
+  const isAdmin = currentRole === 'admin'
+  const canManageLearning = isTeacher || isAdmin
+  const coursePool = isTeacher ? teacherCourses : courses
   const visibleCourses = useMemo(() => {
     return selectedCategory
       ? coursePool.filter(course => course.category === selectedCategory)
@@ -64,8 +66,8 @@ const LmsView = ({
   const enrollment = selectedCourse ? enrollmentByCourse[selectedCourse._id] : null
   const canEnroll = currentUser && (currentRole === 'student' || currentRole === 'user')
   const isEnrolled = Boolean(enrollment)
-  const needsEnrollmentToViewLessons = selectedCourse && !isTeacherView && currentUser && !isEnrolled
-  const needsLoginToViewLessons = selectedCourse && !isTeacherView && !currentUser
+  const needsEnrollmentToViewLessons = selectedCourse && !canManageLearning && currentUser && !isEnrolled
+  const needsLoginToViewLessons = selectedCourse && !canManageLearning && !currentUser
   const sortedLessons = useMemo(
     () => [...lessons].sort((a, b) => (a.order || 1) - (b.order || 1)),
     [lessons]
@@ -110,11 +112,11 @@ const LmsView = ({
   }, [selectedCourse?._id, selectedCategory])
 
   useEffect(() => {
-    if (!isTeacherView || !selectedCourse?._id) {
+    if (!canManageLearning || !selectedCourse?._id) {
       return
     }
     onLoadEnrollments?.(selectedCourse._id)
-  }, [isTeacherView, onLoadEnrollments, selectedCourse?._id])
+  }, [canManageLearning, onLoadEnrollments, selectedCourse?._id])
 
   const getProgressLabel = value => {
     const percent = Number(value) || 0
@@ -168,7 +170,7 @@ const LmsView = ({
         {questions.map((question, index) => (
           <div key={`${assignment._id}-question-${index}`} className="lms-quiz-question">
             <strong>Câu {index + 1}: {question.question}</strong>
-            {currentUser && !isTeacherView && !assignment.mySubmission ? (
+            {currentUser && !canManageLearning && !assignment.mySubmission ? (
               <div className="lms-quiz-options">
                 {(question.options || []).map((option, optionIndex) => (
                   <label key={`${assignment._id}-option-${index}-${optionIndex}`} className="lms-quiz-option">
@@ -303,7 +305,7 @@ const LmsView = ({
                   </div>
 
                   <div className="lms-detail-actions">
-                    {!currentUser && !isTeacherView && <div className="lms-login-note">Đăng nhập để tham gia</div>}
+                    {!currentUser && !canManageLearning && <div className="lms-login-note">Đăng nhập để tham gia</div>}
 
                     {canEnroll && !isEnrolled && (
                       <button className="lms-primary-action" onClick={() => onEnroll(selectedCourse._id)}>
@@ -319,7 +321,7 @@ const LmsView = ({
                   </div>
                 </div>
 
-                {isTeacherView && (
+                {canManageLearning && (
                   <div className="gsap-animate lms-detail-section">
                     <h3><span><Users size={18} /></span> Học viên tham gia</h3>
                     <div className="lms-student-list">
@@ -357,7 +359,7 @@ const LmsView = ({
                               {completedLessonIds.has(String(lesson._id)) ? 'Đã xong' : 'Chưa học'}
                             </span>
 
-                            {isTeacherView && (
+                            {canManageLearning && (
                               <button
                                 className="lms-delete-lesson"
                                 onClick={event => {
@@ -419,7 +421,7 @@ const LmsView = ({
                               </div>
                             )}
 
-                            {currentUser && !isTeacherView && !isQuiz && (
+                            {currentUser && !canManageLearning && !isQuiz && (
                               <div className="lms-submit-box">
                                 <textarea
                                   value={assignmentDrafts?.[assignment._id] || ''}
@@ -435,7 +437,7 @@ const LmsView = ({
                               </div>
                             )}
 
-                            {currentUser && !isTeacherView && isQuiz && !assignment.mySubmission && (
+                            {currentUser && !canManageLearning && isQuiz && !assignment.mySubmission && (
                               <div className="lms-submit-box">
                                 <button
                                   className="lms-secondary-action dark"

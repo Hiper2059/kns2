@@ -1169,7 +1169,7 @@ function App() {
   }, [currentRole, currentUser])
 
   const fetchTeacherCourses = useCallback(async () => {
-    if (!currentUser || (currentRole !== 'teacher' && currentRole !== 'admin')) {
+    if (!currentUser || currentRole !== 'teacher') {
       setTeacherCourses([])
       return
     }
@@ -1204,7 +1204,7 @@ function App() {
     await Promise.all([
       fetchCourses(),
       fetchMyEnrollments(),
-      currentRole === 'teacher' || currentRole === 'admin'
+      currentRole === 'teacher'
         ? fetchTeacherCourses()
         : Promise.resolve()
     ])
@@ -1870,7 +1870,9 @@ function App() {
       })
       alert(response.data.message || 'Đã tạo lớp học.')
       setNewCourseData({ title: '', category: allCategories[0] || categories[0], description: '', imageUrl: '', imageFile: null })
-      fetchTeacherCourses()
+      if (currentRole === 'teacher') {
+        fetchTeacherCourses()
+      }
       fetchCourses()
     } catch (error) {
       alert(error.response?.data?.message || 'Không tạo được lớp học.')
@@ -2442,7 +2444,7 @@ function App() {
       return
     }
 
-    const coursePool = [...courses, ...teacherCourses]
+    const coursePool = currentRole === 'teacher' ? teacherCourses : courses
     const routeCourse = coursePool.find(course => String(course._id) === String(courseId))
     if (!routeCourse) {
       return
@@ -2456,7 +2458,7 @@ function App() {
       setSelectedCourse(routeCourse)
       loadSelectedCourseContent(routeCourse._id)
     }
-  }, [courses, teacherCourses, location.pathname, lmsCategory, selectedCourse?._id, loadSelectedCourseContent])
+  }, [courses, currentRole, teacherCourses, location.pathname, lmsCategory, selectedCourse?._id, loadSelectedCourseContent])
 
   useEffect(() => {
     if (lessonRouteSlug && !courses.length) {
