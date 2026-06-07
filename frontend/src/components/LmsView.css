@@ -446,7 +446,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px;
+  min-height: 74px;
+  padding: 12px 14px;
 }
 
 .lms-lesson-row {
@@ -466,7 +467,9 @@
   gap: 11px;
   min-width: 0;
   color: #172033;
-  font-weight: 800;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.32;
 }
 
 .lms-lesson-title div {
@@ -478,10 +481,14 @@
   border-radius: 999px;
   background: #eef2f7;
   color: #667085;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .lms-lesson-title span {
   overflow-wrap: anywhere;
+  padding-top: 1px;
 }
 
 .lms-lesson-actions {
@@ -495,12 +502,17 @@
 .lms-status,
 .lms-delete-lesson {
   border-radius: 999px;
-  padding: 5px 10px;
+  min-height: 36px;
+  padding: 0 12px;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .lms-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid #e4eaf3;
   background: #fff;
   color: #667085;
@@ -513,6 +525,9 @@
 }
 
 .lms-delete-lesson {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid #fecaca;
   background: #fee2e2;
   color: #991b1b;
