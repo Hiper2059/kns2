@@ -42,6 +42,7 @@ const Navbar = ({
   onLogout,
   onOpenAuth,
   onBrandClick,
+  onOpenForum,
   onOpenProfile,
   sidebarCollapsed,
   onToggleSidebar,
@@ -75,7 +76,7 @@ const Navbar = ({
           <span className="label">Trang chủ</span>
         </NavLink>
 
-        <NavLink to="/forum" className={({ isActive }) => (isActive ? 'active' : '')}>
+        <NavLink to="/forum" onClick={onOpenForum} className={({ isActive }) => (isActive ? 'active' : '')}>
           <span className="icon"><IconForum/></span>
           <span className="label">Diễn đàn</span>
         </NavLink>

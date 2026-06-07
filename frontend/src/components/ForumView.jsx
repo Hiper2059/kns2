@@ -34,65 +34,42 @@ const ForumView = ({
   onPageChange,
   filteredForumPosts,
   forumScope,
-  forumCourse,
-  forumCourses,
-  onForumScopeChange,
-  onForumCourseChange
+  forumCourse
 }) => (
   <div className="forum-view">
     <div className="forum-layout">
       <div className="create-post-box forum-composer card-panel">
         <div className="composer-header">
           <div>
-            <span className="composer-kicker">Diễn đàn</span>
+            <span className="composer-kicker">
+              {forumScope === 'course' ? 'Diễn đàn lớp' : 'Diễn đàn chung'}
+            </span>
             <h3>Viết bài mới</h3>
             <p>Đặt câu hỏi, chia sẻ tiến độ hoặc mở thảo luận cho lớp.</p>
           </div>
-          <span className="composer-privacy">{forumScope === 'course' ? 'Lớp riêng' : 'Cộng đồng'}</span>
+          {forumScope === 'course' && forumCourse && (
+            <span className="composer-privacy">Lớp: {forumCourse.title}</span>
+          )}
         </div>
+
+        {forumScope === 'course' && forumCourse && (
+          <div className="composer-section forum-course-context">
+            <div className="forum-course-label">
+              Bài viết chỉ hiển thị trong lớp {forumCourse.title}.
+            </div>
+          </div>
+        )}
 
         <div className="composer-section">
           <div className="compose-field-copy">
             <span className="compose-label">Nơi đăng</span>
-            <span className="compose-hint">Chọn diễn đàn chung hoặc không gian riêng của lớp học.</span>
-          </div>
-          <div className="forum-scope-controls scope-segmented" role="group" aria-label="Phạm vi bài viết">
-            <button
-              type="button"
-              className={forumScope === 'general' ? 'btn-scope active' : 'btn-scope'}
-              onClick={() => onForumScopeChange?.('general')}
-            >
-              Diễn đàn chung
-            </button>
-            <button
-              type="button"
-              className={forumScope === 'course' ? 'btn-scope active' : 'btn-scope'}
-              onClick={() => onForumScopeChange?.('course')}
-            >
-              Diễn đàn lớp
-            </button>
+            <span className="compose-hint">
+              {forumScope === 'course'
+                ? 'Bài viết sẽ đăng trong diễn đàn của lớp đang mở.'
+                : 'Bài viết sẽ đăng công khai trong diễn đàn chung.'}
+            </span>
           </div>
         </div>
-
-        {forumScope === 'course' && (
-          <div className="composer-section">
-            <ComposeField
-              label="Lớp học"
-              hint="Bài viết chỉ hiển thị với thành viên có quyền vào lớp."
-            >
-              <select
-                value={forumCourse?._id || ''}
-                onChange={e => onForumCourseChange?.(e.target.value)}
-                aria-label="Chọn lớp học"
-              >
-                <option value="">Chọn lớp học</option>
-                {(forumCourses || []).map(course => (
-                  <option key={course._id} value={course._id}>{course.title}</option>
-                ))}
-              </select>
-            </ComposeField>
-          </div>
-        )}
 
         <div className="composer-section">
           <ComposeField
@@ -108,7 +85,7 @@ const ForumView = ({
             />
           </ComposeField>
 
-          {forumScope === 'general' ? (
+          {forumScope === 'general' && (
             <ComposeField label="Chủ đề" hint="Giúp bài viết xuất hiện đúng khu vực thảo luận.">
               <select
                 value={newPost.category}
@@ -118,10 +95,6 @@ const ForumView = ({
                 {categories.map((cat, i) => <option key={i} value={cat}>{cat}</option>)}
               </select>
             </ComposeField>
-          ) : (
-            <div className="forum-course-label">
-              {forumCourse ? `Lớp: ${forumCourse.title}` : 'Chọn lớp để đăng bài.'}
-            </div>
           )}
         </div>
 

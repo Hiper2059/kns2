@@ -1,6 +1,11 @@
 .forum-view {
-  font-family: 'Sora', sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
   min-width: 0;
+}
+
+.forum-view,
+.forum-view * {
+  font-family: Arial, Helvetica, sans-serif !important;
 }
 
 .forum-layout {
@@ -50,10 +55,12 @@
 .composer-kicker,
 .composer-privacy,
 .compose-label {
-  font-size: 12px;
-  font-weight: 800;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 16px;
+  font-weight: 700;
   letter-spacing: 0;
-  text-transform: uppercase;
+  text-transform: none;
+  line-height: 1.25;
 }
 
 .composer-kicker {
@@ -95,6 +102,12 @@
   color: var(--text-main);
 }
 
+.forum-composer :where(.composer-kicker, .composer-privacy, .compose-label) {
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+}
+
 .compose-hint,
 .composer-note {
   color: var(--text-muted);
@@ -118,51 +131,15 @@
   min-height: 220px;
 }
 
-.forum-scope-controls {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.scope-segmented {
-  width: fit-content;
-  max-width: 100%;
-  padding: 4px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: #f1f5f9;
-}
-
-.btn-scope {
-  border: 1px solid transparent;
-  border-radius: 10px;
-  padding: 9px 12px;
-  background: transparent;
-  color: var(--text-muted);
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.btn-scope:hover {
-  color: var(--text-main);
-  background: rgba(255, 255, 255, 0.72);
-}
-
-.btn-scope.active {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: #fff;
-  box-shadow: 0 8px 18px rgba(15, 118, 110, 0.18);
-}
-
 .forum-course-label {
   padding: 11px 12px;
   border: 1px dashed rgba(15, 118, 110, 0.35);
   border-radius: 12px;
   background: rgba(15, 118, 110, 0.06);
   color: var(--brand-dark);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
+  line-height: 1.45;
 }
 
 .composer-actions {
@@ -349,14 +326,6 @@
   .composer-actions {
     padding-left: 14px;
     padding-right: 14px;
-  }
-
-  .scope-segmented {
-    width: 100%;
-  }
-
-  .scope-segmented .btn-scope {
-    flex: 1 1 150px;
   }
 
   .forum-filter {

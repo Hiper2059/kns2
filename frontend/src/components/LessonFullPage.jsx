@@ -52,11 +52,9 @@ const LessonFullPage = ({
   course,
   lessons,
   courses,
-  categories,
   onClose,
   onOpenLesson,
   onSelectCourse,
-  onSelectCategory,
   isLoading,
   onCompleteLesson,
   canComplete,
@@ -153,19 +151,6 @@ const LessonFullPage = ({
     return /\.mpd(\?|$)/i.test(url)
   }, [lesson?.videoUrl])
 
-  // Debug logging
-  useEffect(() => {
-    if (lesson?.videoUrl) {
-      console.log('[LessonFullPage] Video URL:', lesson.videoUrl, {
-        videoId,
-        isDirectVideo,
-        isHls,
-        isDash,
-        embedUrl: getVideoEmbedUrl(lesson.videoUrl)
-      })
-    }
-  }, [lesson?.videoUrl, videoId, isDirectVideo, isHls, isDash])
-
   useEffect(() => {
     setHasScrolledToEnd(false)
     setHasVideoEnded(false)
@@ -193,7 +178,6 @@ const LessonFullPage = ({
 
   useEffect(() => {
     if (!videoId || !youtubeContainerEl) {
-      console.log('[LessonFullPage] YouTube player setup skipped:', { videoId, hasContainer: !!youtubeContainerEl })
       setVideoReady(false)
       return undefined
     }
@@ -224,7 +208,6 @@ const LessonFullPage = ({
       .then(YT => {
         if (!isMounted || !youtubeContainerEl) return
 
-        console.log('[LessonFullPage] YouTube API loaded, creating player...')
         playerRef.current?.destroy?.()
         playerRef.current = new YT.Player(youtubeContainerEl, {
           videoId,
@@ -238,13 +221,11 @@ const LessonFullPage = ({
           events: {
             onReady: () => {
               if (!isMounted) return
-              console.log('[LessonFullPage] YouTube player ready')
               setVideoReady(true)
               lastTimeRef.current = 0
             },
             onStateChange: event => {
               if (!isMounted) return
-              console.log('[LessonFullPage] Player state changed:', event.data)
               if (event.data === YT.PlayerState.ENDED) {
                 setHasVideoEnded(true)
                 clearPlaybackInterval()
@@ -552,19 +533,6 @@ const LessonFullPage = ({
 
         {!isSidebarCollapsed && (
           <div id="lesson-sidebar-content" className="lesson-sidebar-content">
-            <div className="sidebar-section">
-              <h4>Danh mục kỹ năng</h4>
-              <ul>
-                {categories.map(category => (
-                  <li key={category}>
-                    <button className="sidebar-link" onClick={() => onSelectCategory?.(category)}>
-                      {category}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
             <div className="sidebar-section">
               <h4>Lớp học</h4>
               <ul>

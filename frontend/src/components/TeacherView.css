@@ -2,8 +2,13 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 18px;
-  font-family: 'Sora', sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
   min-width: 0;
+}
+
+.teacher-view,
+.teacher-view * {
+  font-family: Arial, Helvetica, sans-serif !important;
 }
 
 .teacher-panel {

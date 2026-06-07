@@ -5,39 +5,10 @@ import 'react-quill/dist/quill.snow.css'
 import { getApiErrorMessage } from '../utils/apiMessages'
 import './RichTextEditor.css'
 
-let quillRegistered = false
-
-const registerQuill = () => {
-  if (quillRegistered) return
-
-  const Font = Quill.import('formats/font')
-  Font.whitelist = [
-    'sans-serif',
-    'serif',
-    'monospace',
-    'be-vietnam-pro',
-    'merriweather',
-    'fira-sans'
-  ]
-  Quill.register(Font, true)
-  quillRegistered = true
-}
-
 const quillFormats = [
-  'font',
-  'header',
   'bold',
   'italic',
   'underline',
-  'strike',
-  'color',
-  'background',
-  'script',
-  'list',
-  'indent',
-  'align',
-  'blockquote',
-  'code-block',
   'link',
   'image',
   'video'
@@ -72,26 +43,61 @@ const normalizePastedText = text => {
 const buildModules = toolbarId => ({
   toolbar: {
     container: `#${toolbarId}`,
-    handlers: {
-      latex: function () {
-        const range = this.quill.getSelection()
-        if (!range) return
-        const insertText = '$$\\text{LaTeX}$$'
-        this.quill.insertText(range.index, insertText, 'user')
-        this.quill.setSelection(range.index + 2, 8, 'user')
-      }
-    }
+    handlers: {}
   }
 })
 
-const RichTextEditor = ({ value, onChange, placeholder, toolbarId }) => {
-  registerQuill()
+const defaultInlineFormats = {
+  bold: false,
+  italic: false,
+  underline: false
+}
 
+const applyStickyFormats = (quill, formats, source = 'silent') => {
+  if (!quill) return
+
+  Object.entries(formats).forEach(([name, enabled]) => {
+    quill.format(name, enabled, source)
+  })
+}
+
+const toggleInlineFormat = (quill, format, savedRange, activeFormatsRef, onActiveFormatsChange) => {
+  if (!quill) return
+
+  const fallbackIndex = Math.max((quill.getLength?.() || 1) - 1, 0)
+  const range = quill.getSelection() || savedRange || { index: fallbackIndex, length: 0 }
+  if (!range) return
+
+  const nextFormats = {
+    ...activeFormatsRef.current,
+    [format]: !activeFormatsRef.current[format]
+  }
+
+  activeFormatsRef.current = nextFormats
+  onActiveFormatsChange(nextFormats)
+
+  quill.focus()
+  quill.setSelection(range.index, range.length, 'silent')
+
+  if (range.length > 0) {
+    quill.formatText(range.index, range.length, format, nextFormats[format], 'user')
+    quill.setSelection(range.index, range.length, 'silent')
+    applyStickyFormats(quill, nextFormats)
+    return
+  }
+
+  applyStickyFormats(quill, nextFormats, 'user')
+}
+
+const RichTextEditor = ({ value, onChange, placeholder, toolbarId }) => {
   const imageInputRef = useRef(null)
   const videoInputRef = useRef(null)
   const quillRef = useRef(null)
+  const lastRangeRef = useRef(null)
+  const activeFormatsRef = useRef(defaultInlineFormats)
   const [imageProgress, setImageProgress] = useState(0)
   const [videoProgress, setVideoProgress] = useState(0)
+  const [activeFormats, setActiveFormats] = useState(defaultInlineFormats)
 
   const uploadToApi = async (file, type) => {
     if (!file) return null
@@ -142,6 +148,11 @@ const RichTextEditor = ({ value, onChange, placeholder, toolbarId }) => {
     }
   }), [toolbarId])
 
+  const handleInlineFormatClick = format => {
+    const quillInstance = quillRef.current?.getEditor?.()
+    toggleInlineFormat(quillInstance, format, lastRangeRef.current, activeFormatsRef, setActiveFormats)
+  }
+
   useEffect(() => {
     const quillInstance = quillRef.current?.getEditor?.()
     if (!quillInstance) {
@@ -162,53 +173,65 @@ const RichTextEditor = ({ value, onChange, placeholder, toolbarId }) => {
 
       return normalizedDelta || delta
     })
+
+    const preserveStickyFormats = () => {
+      const range = quillInstance.getSelection()
+      if (range) {
+        lastRangeRef.current = range
+        if (range.length === 0) {
+          applyStickyFormats(quillInstance, activeFormatsRef.current)
+        }
+      }
+    }
+
+    quillInstance.on('selection-change', preserveStickyFormats)
+    quillInstance.on('text-change', preserveStickyFormats)
+
+    return () => {
+      quillInstance.off('selection-change', preserveStickyFormats)
+      quillInstance.off('text-change', preserveStickyFormats)
+    }
   }, [])
 
   return (
     <div className="rich-editor">
       <div id={toolbarId} className="ql-toolbar ql-snow editor-toolbar">
         <span className="ql-formats">
-          <select className="ql-font" defaultValue="sans-serif">
-            <option value="sans-serif">Sans</option>
-            <option value="serif">Serif</option>
-            <option value="monospace">Mono</option>
-            <option value="be-vietnam-pro">Be Vietnam Pro</option>
-            <option value="merriweather">Merriweather</option>
-            <option value="fira-sans">Fira Sans</option>
-          </select>
-          <select className="ql-header" defaultValue="">
-            <option value="1">H1</option>
-            <option value="2">H2</option>
-            <option value="3">H3</option>
-            <option value="">Normal</option>
-          </select>
+          <button
+            className={activeFormats.bold ? 'editor-format-button is-active' : 'editor-format-button'}
+            type="button"
+            aria-label="In đậm"
+            aria-pressed={activeFormats.bold}
+            onMouseDown={event => event.preventDefault()}
+            onClick={() => handleInlineFormatClick('bold')}
+          >
+            B
+          </button>
+          <button
+            className={activeFormats.italic ? 'editor-format-button is-active' : 'editor-format-button'}
+            type="button"
+            aria-label="In nghiêng"
+            aria-pressed={activeFormats.italic}
+            onMouseDown={event => event.preventDefault()}
+            onClick={() => handleInlineFormatClick('italic')}
+          >
+            <i>I</i>
+          </button>
+          <button
+            className={activeFormats.underline ? 'editor-format-button is-active' : 'editor-format-button'}
+            type="button"
+            aria-label="Gạch chân"
+            aria-pressed={activeFormats.underline}
+            onMouseDown={event => event.preventDefault()}
+            onClick={() => handleInlineFormatClick('underline')}
+          >
+            <u>U</u>
+          </button>
         </span>
         <span className="ql-formats">
-          <button className="ql-bold" />
-          <button className="ql-italic" />
-          <button className="ql-underline" />
-          <button className="ql-strike" />
-        </span>
-        <span className="ql-formats">
-          <button className="ql-list" value="ordered" />
-          <button className="ql-list" value="bullet" />
-          <button className="ql-indent" value="-1" />
-          <button className="ql-indent" value="+1" />
-        </span>
-        <span className="ql-formats">
-          <button className="ql-blockquote" />
-          <button className="ql-code-block" />
-        </span>
-        <span className="ql-formats">
-          <button className="ql-link" />
-          <button className="ql-image" />
-          <button className="ql-video" />
-        </span>
-        <span className="ql-formats">
-          <button className="ql-clean" />
-        </span>
-        <span className="ql-formats">
-          <button className="ql-latex" type="button">Text LaTeX</button>
+          <button className="ql-link" type="button" aria-label="Chèn liên kết" />
+          <button className="ql-image" type="button" aria-label="Chèn ảnh" />
+          <button className="ql-video" type="button" aria-label="Chèn video" />
         </span>
       </div>
       <input

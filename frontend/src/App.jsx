@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import { clearTokens, createApiClient, setTokens } from './api/apiClient'
 import AppShell from './components/AppShell'
 import AuthModal from './components/AuthModal'
@@ -56,10 +56,12 @@ const getAuthGateFromPath = pathname => {
   return null
 }
 
-const isCoursePath = pathname => pathname === '/courses' || pathname === '/lms'
+const isCoursePath = pathname => pathname === '/courses' || pathname === '/lms' || pathname.startsWith('/courses/')
 
 
 function App() {
+  const navigate = useNavigate()
+  const location = useLocation()
   const [isAuthOpen, setIsAuthOpen] = useState(false)
   const [authMode, setAuthMode] = useState('login')
   const [authNotifications, setAuthNotifications] = useState([
@@ -276,31 +278,31 @@ function App() {
 
   const updatePathForTab = tab => {
     if (tab === 'manage') {
-      window.history.pushState({}, '', '/admin')
+      navigate('/admin')
       setAuthGate(getAuthGateFromPath('/admin'))
       return
     }
 
     if (tab === 'teacher') {
-      window.history.pushState({}, '', '/teacher')
+      navigate('/teacher')
       setAuthGate(getAuthGateFromPath('/teacher'))
       return
     }
 
     if (tab === 'profile') {
-      window.history.pushState({}, '', '/profile')
+      navigate('/profile')
       setAuthGate(getAuthGateFromPath('/profile'))
       return
     }
 
-    if (['/admin', '/teacher', '/student'].includes(window.location.pathname)) {
-      window.history.pushState({}, '', '/')
+    if (['/admin', '/teacher', '/student'].includes(location.pathname)) {
+      navigate('/')
       setAuthGate(null)
       return
     }
 
-    if (window.location.pathname === '/profile') {
-      window.history.pushState({}, '', '/')
+    if (location.pathname === '/profile') {
+      navigate('/')
       setAuthGate(null)
     }
   }
@@ -317,7 +319,7 @@ function App() {
     if (lessonRouteSlug && activeTab !== tab) {
       resetLessonRoute()
       if (tab !== 'lms') {
-        window.history.pushState({}, '', '/')
+        navigate('/')
       }
     }
 
@@ -325,18 +327,23 @@ function App() {
 
     // Update path after setting tab
     if (tab === 'manage') {
-      window.history.pushState({}, '', '/admin')
+      navigate('/admin')
       setAuthGate(getAuthGateFromPath('/admin'))
     } else if (tab === 'teacher') {
-      window.history.pushState({}, '', '/teacher')
+      navigate('/teacher')
       setAuthGate(getAuthGateFromPath('/teacher'))
     } else if (tab === 'lms') {
-      window.history.pushState({}, '', '/courses')
+      navigate('/courses')
+    } else if (tab === 'forum') {
+      setForumScope('general')
+      setForumCourseId('')
+      setForumCourse(null)
+      setForumPage(1)
+      navigate('/forum')
+      setAuthGate(null)
     } else {
-      if (window.location.pathname.startsWith('/lesson/')) {
-        window.history.pushState({}, '', '/')
-      } else if (['/admin', '/teacher'].includes(window.location.pathname)) {
-        window.history.pushState({}, '', '/')
+      if (location.pathname !== '/') {
+        navigate('/')
       }
       setAuthGate(null)
     }
@@ -347,10 +354,10 @@ function App() {
       return
     }
     resetLessonRoute()
-    if (window.location.pathname.startsWith('/lesson/')) {
-      window.history.pushState({}, '', '/')
+    if (location.pathname.startsWith('/lesson/')) {
+      navigate('/')
     }
-  }, [activeTab, lessonRouteSlug, resetLessonRoute])
+  }, [activeTab, lessonRouteSlug, location.pathname, navigate, resetLessonRoute])
 
   useEffect(() => {
     localStorage.setItem('zmate_points_by_user', JSON.stringify(pointsByUser))
@@ -731,19 +738,12 @@ function App() {
     return false
   }
 
-  const handleForumScopeChange = scope => {
-    const nextScope = scope === 'course' ? 'course' : 'general'
-    setForumScope(nextScope)
-    if (nextScope !== 'course') {
-      setForumCourseId('')
-      setForumCourse(null)
-    }
-  }
-
-  const handleForumCourseChange = courseId => {
-    setForumCourseId(courseId)
-    const course = courses.find(item => String(item._id) === String(courseId))
-    setForumCourse(course || null)
+  const openGeneralForum = () => {
+    setForumScope('general')
+    setForumCourseId('')
+    setForumCourse(null)
+    setForumPage(1)
+    navigate('/forum')
   }
 
   const handleOpenCourseForum = course => {
@@ -753,7 +753,8 @@ function App() {
     setForumScope('course')
     setForumCourseId(course._id)
     setForumCourse(course)
-    handleTabChange('forum')
+    setForumPage(1)
+    navigate('/forum')
   }
 
 
@@ -1233,11 +1234,22 @@ function App() {
     loadSelectedCourseContent(course?._id)
   }
 
+  const handleSelectLmsCourse = course => {
+    handleSelectCourse(course)
+    if (course?._id) {
+      navigate(`/courses/${course._id}`)
+    }
+  }
+
   const handleSelectLmsCategory = category => {
     setLmsCategory(category)
     if (selectedCourse && category && selectedCourse.category !== category) {
       setSelectedCourse(null)
       setCourseLessons([])
+      setCourseAssignments([])
+      if (isCoursePath(location.pathname)) {
+        navigate('/courses')
+      }
     }
   }
 
@@ -1505,69 +1517,64 @@ function App() {
   )
 
   useEffect(() => {
-    const handlePopState = () => {
-      const pathname = window.location.pathname
-      if (pathname.startsWith('/lesson/')) {
-        const slug = decodeURIComponent(pathname.replace('/lesson/', ''))
+    const pathname = location.pathname
+    if (pathname.startsWith('/lesson/')) {
+      const slug = decodeURIComponent(pathname.replace('/lesson/', ''))
+      setActiveTab('lms')
+      setAuthGate(null)
+      if (lessonRouteSlug !== slug) {
         setLessonRouteSlug(slug)
-        setActiveTab('lms')
         fetchLessonRoute(slug)
-        return
       }
-
-      if (isCoursePath(pathname)) {
-        if (lessonRouteSlug) {
-          setLessonRouteSlug(null)
-          setLessonRouteLesson(null)
-          setLessonRouteCourse(null)
-          setLessonRouteLessons([])
-        }
-        setAuthGate(getAuthGateFromPath(pathname))
-        setActiveTab('lms')
-        return
-      }
-
-      if (lessonRouteSlug) {
-        setLessonRouteSlug(null)
-        setLessonRouteLesson(null)
-        setLessonRouteCourse(null)
-        setLessonRouteLessons([])
-      }
-      setAuthGate(getAuthGateFromPath(pathname))
-      if (pathname === '/admin') {
-        setActiveTab('manage')
-        return
-      }
-      if (pathname === '/teacher') {
-        setActiveTab('teacher')
-        return
-      }
-      if (pathname === '/profile') {
-        setActiveTab('profile')
-        return
-      }
-      setActiveTab('home')
+      return
     }
 
-    window.addEventListener('popstate', handlePopState)
-    handlePopState()
-    return () => window.removeEventListener('popstate', handlePopState)
-  }, [fetchLessonRoute, lessonRouteSlug])
+    if (lessonRouteSlug) {
+      resetLessonRoute()
+    }
+
+    setAuthGate(getAuthGateFromPath(pathname))
+
+    if (isCoursePath(pathname)) {
+      setActiveTab('lms')
+      return
+    }
+
+    if (pathname === '/forum') {
+      setActiveTab('forum')
+      return
+    }
+
+    if (pathname === '/admin') {
+      setActiveTab('manage')
+      return
+    }
+
+    if (pathname === '/teacher') {
+      setActiveTab('teacher')
+      return
+    }
+
+    if (pathname === '/profile') {
+      setActiveTab('profile')
+      return
+    }
+
+    setActiveTab('home')
+  }, [fetchLessonRoute, lessonRouteSlug, location.pathname, resetLessonRoute])
 
   const openLessonRoute = lesson => {
     if (!lesson) {
       return
     }
     const slug = lesson.slug || lesson._id
-    setLessonRouteSlug(slug)
-    setActiveTab('lms')
-    window.history.pushState({}, '', `/lesson/${slug}`)
-    fetchLessonRoute(slug)
+    const lessonUrl = `${window.location.origin}/lesson/${encodeURIComponent(slug)}`
+    window.open(lessonUrl, '_blank', 'noopener,noreferrer')
   }
 
   const closeLessonRoute = () => {
     resetLessonRoute()
-    window.history.pushState({}, '', '/courses')
+    navigate('/courses')
     setActiveTab('lms')
   }
 
@@ -2040,9 +2047,11 @@ function App() {
     try {
       const response = await api.post(`/api/courses/${courseId}/enroll`)
       alert(response.data.message || 'Đã tham gia lớp học.')
-      fetchMyEnrollments()
-      fetchCourseLessons(courseId)
-      fetchCourseAssignments(courseId)
+      await Promise.all([
+        fetchMyEnrollments(),
+        fetchCourseLessons(courseId),
+        fetchCourseAssignments(courseId)
+      ])
     } catch (error) {
       alert(error.response?.data?.message || 'Không tham gia được lớp học.')
     }
@@ -2331,6 +2340,32 @@ function App() {
   }, [activeTab, loadLearningSurfaceData])
 
   useEffect(() => {
+    if (!location.pathname.startsWith('/courses/')) {
+      return
+    }
+
+    const courseId = decodeURIComponent(location.pathname.replace('/courses/', ''))
+    if (!courseId) {
+      return
+    }
+
+    const coursePool = [...courses, ...teacherCourses]
+    const routeCourse = coursePool.find(course => String(course._id) === String(courseId))
+    if (!routeCourse) {
+      return
+    }
+
+    setActiveTab('lms')
+    if (routeCourse.category && lmsCategory !== routeCourse.category) {
+      setLmsCategory(routeCourse.category)
+    }
+    if (String(selectedCourse?._id) !== String(routeCourse._id)) {
+      setSelectedCourse(routeCourse)
+      loadSelectedCourseContent(routeCourse._id)
+    }
+  }, [courses, teacherCourses, location.pathname, lmsCategory, selectedCourse?._id, loadSelectedCourseContent])
+
+  useEffect(() => {
     if (lessonRouteSlug && !courses.length) {
       fetchCourses()
     }
@@ -2432,6 +2467,7 @@ function App() {
         onLogout={handleLogout}
         onOpenAuth={handleOpenAuth}
         onBrandClick={handleBrandClick}
+        onOpenForum={openGeneralForum}
         onOpenProfile={handleOpenMyProfile}
         sidebarCollapsed={sidebarCollapsed}
         sidebarOpen={sidebarOpen}
@@ -2513,7 +2549,34 @@ function App() {
               courses={courses}
               teacherCourses={teacherCourses}
               selectedCourse={selectedCourse}
-              onSelectCourse={handleSelectCourse}
+              onSelectCourse={handleSelectLmsCourse}
+              lessons={courseLessons}
+              assignments={courseAssignments}
+              assignmentDrafts={assignmentDrafts}
+              onAssignmentDraftChange={handleAssignmentDraftChange}
+              onSubmitAssignment={handleSubmitAssignment}
+              enrollmentByCourse={enrollmentByCourse}
+              teacherEnrollments={teacherEnrollments}
+              onEnroll={handleEnroll}
+              currentRole={currentRole}
+              currentUser={currentUser}
+              onOpenProfile={handleOpenProfile}
+              onOpenLesson={openLessonRoute}
+              onOpenCourseForum={handleOpenCourseForum}
+              onLoadEnrollments={fetchTeacherEnrollments}
+              onDeleteLesson={handleDeleteLesson}
+            />
+          } />
+
+          <Route path='/courses/:courseId' element={
+            <LmsView
+              categories={allCategories}
+              selectedCategory={lmsCategory}
+              onSelectCategory={handleSelectLmsCategory}
+              courses={courses}
+              teacherCourses={teacherCourses}
+              selectedCourse={selectedCourse}
+              onSelectCourse={handleSelectLmsCourse}
               lessons={courseLessons}
               assignments={courseAssignments}
               assignmentDrafts={assignmentDrafts}
@@ -2553,9 +2616,6 @@ function App() {
               filteredForumPosts={filteredForumPosts}
               forumScope={forumScope}
               forumCourse={forumCourse}
-              forumCourses={forumCourses}
-              onForumScopeChange={handleForumScopeChange}
-              onForumCourseChange={handleForumCourseChange}
             />
           } />
 
@@ -2684,12 +2744,10 @@ function App() {
               course={lessonRouteCourse}
               lessons={lessonRouteLessons}
               courses={courses}
-              categories={allCategories}
               isLoading={lessonRouteLoading}
               onClose={closeLessonRoute}
               onOpenLesson={openLessonRoute}
-              onSelectCourse={handleSelectCourse}
-              onSelectCategory={handleSelectLmsCategory}
+              onSelectCourse={handleSelectLmsCourse}
               onCompleteLesson={handleCompleteLesson}
               canComplete={canCompleteLesson}
               isCompleted={isLessonCompleted}
