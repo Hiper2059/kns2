@@ -17,6 +17,21 @@ const assignmentSchema = new mongoose.Schema(
       type: String,
       default: ''
     },
+    type: {
+      type: String,
+      enum: ['text', 'quiz'],
+      default: 'text'
+    },
+    questions: {
+      type: [
+        {
+          question: { type: String, default: '' },
+          options: { type: [String], default: [] },
+          correctOptionIndex: { type: Number, default: 0 }
+        }
+      ],
+      default: []
+    },
     dueAt: {
       type: Date,
       default: null

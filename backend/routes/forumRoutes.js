@@ -6,6 +6,8 @@ const {
   createComment,
   deletePost,
   deleteComment,
+  listAllCommentsForAdmin,
+  punishCommentAuthor,
   togglePostReaction,
   getDeletedPosts,
   getDeletedComments,
@@ -26,6 +28,8 @@ router.patch('/forum/posts/:id/reaction', requireActiveUser, togglePostReaction)
 router.get('/forum/comments', optionalAuth, getComments);
 router.post('/forum/comments', requireActiveUser, createComment);
 router.delete('/forum/comments/:id', requireActiveUser, deleteComment);
+router.get('/forum/admin/comments', requireAdmin, listAllCommentsForAdmin);
+router.patch('/forum/comments/:id/punish', requireAdmin, punishCommentAuthor);
 
 router.get('/forum/deleted/posts', requireAdmin, getDeletedPosts);
 router.get('/forum/deleted/comments', requireAdmin, getDeletedComments);

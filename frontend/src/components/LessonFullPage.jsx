@@ -51,10 +51,8 @@ const LessonFullPage = ({
   lesson,
   course,
   lessons,
-  courses,
   onClose,
   onOpenLesson,
-  onSelectCourse,
   isLoading,
   onCompleteLesson,
   canComplete,
@@ -65,13 +63,6 @@ const LessonFullPage = ({
   currentRole,
   onReportContent
 }) => {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
-    if (typeof window === 'undefined') {
-      return false
-    }
-
-    return window.matchMedia('(max-width: 1000px)').matches
-  })
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false)
   const [hasVideoEnded, setHasVideoEnded] = useState(false)
   const [hasSeeked, setHasSeeked] = useState(false)
@@ -84,28 +75,14 @@ const LessonFullPage = ({
   const lastTimeRef = useRef(0)
 
   const sortedLessons = [...lessons].sort((a, b) => (a.order || 1) - (b.order || 1))
-  const sidebarTitle = 'Mục lục'
+  const currentLessonId = String(lesson?._id || '')
 
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return undefined
+  const handleLessonSelect = event => {
+    const nextLesson = sortedLessons.find(item => String(item._id) === event.target.value)
+    if (nextLesson) {
+      onOpenLesson?.(nextLesson)
     }
-
-    const mediaQuery = window.matchMedia('(max-width: 1000px)')
-    const syncSidebarState = event => {
-      setIsSidebarCollapsed(event.matches)
-    }
-
-    syncSidebarState(mediaQuery)
-
-    if (typeof mediaQuery.addEventListener === 'function') {
-      mediaQuery.addEventListener('change', syncSidebarState)
-      return () => mediaQuery.removeEventListener('change', syncSidebarState)
-    }
-
-    mediaQuery.addListener(syncSidebarState)
-    return () => mediaQuery.removeListener(syncSidebarState)
-  }, [])
+  }
 
   const getVideoEmbedUrl = url => {
     if (!url) return ''
@@ -518,51 +495,27 @@ const LessonFullPage = ({
 
   return (
     <div className="lesson-full-page">
-      <aside className={isSidebarCollapsed ? 'lesson-sidebar is-collapsed' : 'lesson-sidebar'}>
+      <aside className="lesson-sidebar">
         <div className="lesson-sidebar-header">
-          <h4>{sidebarTitle}</h4>
-          <button
-            className="lesson-sidebar-toggle"
-            onClick={() => setIsSidebarCollapsed(prev => !prev)}
-            aria-expanded={!isSidebarCollapsed}
-            aria-controls="lesson-sidebar-content"
-          >
-            {isSidebarCollapsed ? 'Mở ra' : 'Thu gọn'}
-          </button>
+          <h4>Mục lục bài học</h4>
         </div>
 
-        {!isSidebarCollapsed && (
-          <div id="lesson-sidebar-content" className="lesson-sidebar-content">
-            <div className="sidebar-section">
-              <h4>Lớp học</h4>
-              <ul>
-                {courses.map(item => (
-                  <li key={item._id}>
-                    <button className="sidebar-link" onClick={() => onSelectCourse?.(item)}>
-                      {item.title}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="sidebar-section">
-              <h4>Bài học</h4>
-              <ul>
-                {sortedLessons.map(item => (
-                  <li key={item._id}>
-                    <button
-                      className={String(item._id) === String(lesson?._id) ? 'sidebar-link active' : 'sidebar-link'}
-                      onClick={() => onOpenLesson?.(item)}
-                    >
-                      {item.order}. {item.title}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        )}
+        <div className="lesson-combobox">
+          <label htmlFor="lesson-selector">Bài học</label>
+          <select
+            id="lesson-selector"
+            value={currentLessonId}
+            onChange={handleLessonSelect}
+            disabled={!sortedLessons.length}
+          >
+            {!sortedLessons.length && <option value="">Chưa có bài học</option>}
+            {sortedLessons.map(item => (
+              <option key={item._id} value={String(item._id)}>
+                {item.order}. {item.title}
+              </option>
+            ))}
+          </select>
+        </div>
       </aside>
 
       <section className="lesson-body">

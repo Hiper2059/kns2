@@ -132,6 +132,8 @@ function App() {
   const [isLoadingDeletedPosts, setIsLoadingDeletedPosts] = useState(false)
   const [deletedComments, setDeletedComments] = useState([])
   const [isLoadingDeletedComments, setIsLoadingDeletedComments] = useState(false)
+  const [adminForumComments, setAdminForumComments] = useState([])
+  const [isLoadingForumComments, setIsLoadingForumComments] = useState(false)
   const [adminAnalytics, setAdminAnalytics] = useState({
     totalLessonViews: 0,
     uniqueLessonViewers: 0,
@@ -186,13 +188,21 @@ function App() {
     courseId: '',
     title: '',
     description: '',
-    dueAt: ''
+    dueAt: '',
+    type: 'quiz',
+    questions: [
+      { question: '', options: ['', '', '', ''], correctOptionIndex: 0 }
+    ]
   })
   const [editAssignmentId, setEditAssignmentId] = useState(null)
   const [editAssignmentData, setEditAssignmentData] = useState({
     title: '',
     description: '',
-    dueAt: ''
+    dueAt: '',
+    type: 'quiz',
+    questions: [
+      { question: '', options: ['', '', '', ''], correctOptionIndex: 0 }
+    ]
   })
   const [assignmentSubmissions, setAssignmentSubmissions] = useState({})
   const [editLessonId, setEditLessonId] = useState(null)
@@ -214,7 +224,7 @@ function App() {
     username: '',
     password: '',
     displayName: '',
-    role: 'teacher'
+    role: 'student'
   })
   const [adminUploadUrl, setAdminUploadUrl] = useState('')
   const [isAdminUploadLoading, setIsAdminUploadLoading] = useState(false)
@@ -953,6 +963,22 @@ function App() {
     }
   }, [currentRole, currentUser, deletedReasonFilter])
 
+  const fetchAdminForumComments = useCallback(async () => {
+    if (!currentUser || currentRole !== 'admin') {
+      return
+    }
+
+    setIsLoadingForumComments(true)
+    try {
+      const response = await api.get('/api/forum/admin/comments')
+      setAdminForumComments(response.data.comments || [])
+    } catch (error) {
+      alert(error.response?.data?.message || 'Không tải được bình luận diễn đàn.')
+    } finally {
+      setIsLoadingForumComments(false)
+    }
+  }, [currentRole, currentUser])
+
   const fetchAdminAnalytics = useCallback(async () => {
     if (!currentUser || currentRole !== 'admin') {
       return
@@ -1081,7 +1107,7 @@ function App() {
         role: newUserData.role
       })
       alert(getApiSuccessMessage(response))
-      setNewUserData({ username: '', password: '', displayName: '', role: newUserData.role })
+      setNewUserData({ username: '', password: '', displayName: '', role: newUserData.role || 'student' })
       fetchManagedUsers()
     } catch (error) {
       alert(error.response?.data?.message || 'Không tạo được tài khoản.')
@@ -1106,13 +1132,8 @@ function App() {
     try {
       const response = await api.get(`/api/courses/${courseId}/lessons`)
       setCourseLessons(response.data.lessons || [])
-    } catch (error) {
+    } catch {
       setCourseLessons([])
-      if (error?.response?.status === 401) {
-        alert('Cậu cần đăng nhập để xem bài học.')
-      } else if (error?.response?.status === 403) {
-        alert(error.response?.data?.message || 'Cần tham gia lớp trước khi xem bài học.')
-      }
     }
   }, [])
 
@@ -1126,13 +1147,8 @@ function App() {
       try {
         const response = await api.get(`/api/courses/${courseId}/assignments`)
         setCourseAssignments(response.data.assignments || [])
-      } catch (error) {
+      } catch {
         setCourseAssignments([])
-        if (error?.response?.status === 401) {
-          alert('Cậu cần đăng nhập để xem bài tập.')
-        } else if (error?.response?.status === 403) {
-          alert(error.response?.data?.message || 'Cần tham gia lớp trước khi xem bài tập.')
-        }
       }
     },
     [currentUser]
@@ -1217,6 +1233,7 @@ function App() {
       fetchModerationReports(),
       fetchDeletedPosts(),
       fetchDeletedComments(),
+      fetchAdminForumComments(),
       fetchAdminAnalytics()
     ])
   }, [
@@ -1226,6 +1243,7 @@ function App() {
     fetchModerationReports,
     fetchDeletedPosts,
     fetchDeletedComments,
+    fetchAdminForumComments,
     fetchAdminAnalytics
   ])
 
@@ -1347,6 +1365,29 @@ function App() {
     }
   }
 
+  const handleSubmitQuizAssignment = async (assignmentId, answers) => {
+    if (!ensureAuthenticated('nộp trắc nghiệm')) {
+      return false
+    }
+
+    try {
+      const response = await api.post(`/api/assignments/${assignmentId}/submissions`, { answers })
+      const submission = response.data?.submission
+
+      setCourseAssignments(prev =>
+        prev.map(item =>
+          String(item._id) === String(assignmentId)
+            ? { ...item, mySubmission: submission }
+            : item
+        )
+      )
+      return true
+    } catch (error) {
+      alert(error.response?.data?.message || 'Không nộp được trắc nghiệm.')
+      return false
+    }
+  }
+
   const handleCreateAssignment = async () => {
     if (!currentUser || (currentRole !== 'teacher' && currentRole !== 'admin')) {
       return
@@ -1361,7 +1402,9 @@ function App() {
       const response = await api.post(`/api/courses/${newAssignmentData.courseId}/assignments`, {
         title: newAssignmentData.title.trim(),
         description: newAssignmentData.description,
-        dueAt: newAssignmentData.dueAt || null
+        dueAt: newAssignmentData.dueAt || null,
+        type: newAssignmentData.type || 'quiz',
+        questions: newAssignmentData.questions || []
       })
 
       const created = response.data?.assignment
@@ -1373,7 +1416,11 @@ function App() {
         courseId: newAssignmentData.courseId,
         title: '',
         description: '',
-        dueAt: ''
+        dueAt: '',
+        type: 'quiz',
+        questions: [
+          { question: '', options: ['', '', '', ''], correctOptionIndex: 0 }
+        ]
       })
     } catch (error) {
       alert(error.response?.data?.message || 'Không tạo được bài tập.')
@@ -1385,13 +1432,27 @@ function App() {
     setEditAssignmentData({
       title: assignment.title || '',
       description: assignment.description || '',
-      dueAt: assignment.dueAt ? new Date(assignment.dueAt).toISOString().slice(0, 16) : ''
+      dueAt: assignment.dueAt ? new Date(assignment.dueAt).toISOString().slice(0, 16) : '',
+      type: assignment.type || 'quiz',
+      questions: Array.isArray(assignment.questions) && assignment.questions.length
+        ? assignment.questions.map(item => ({
+            question: item.question || '',
+            options: [...(item.options || []), '', '', '', ''].slice(0, 4),
+            correctOptionIndex: item.correctOptionIndex || 0
+          }))
+        : [{ question: '', options: ['', '', '', ''], correctOptionIndex: 0 }]
     })
   }
 
   const handleEditAssignmentCancel = () => {
     setEditAssignmentId(null)
-    setEditAssignmentData({ title: '', description: '', dueAt: '' })
+    setEditAssignmentData({
+      title: '',
+      description: '',
+      dueAt: '',
+      type: 'quiz',
+      questions: [{ question: '', options: ['', '', '', ''], correctOptionIndex: 0 }]
+    })
   }
 
   const handleUpdateAssignment = async assignmentId => {
@@ -1403,7 +1464,9 @@ function App() {
       const response = await api.patch(`/api/assignments/${assignmentId}`, {
         title: editAssignmentData.title,
         description: editAssignmentData.description,
-        dueAt: editAssignmentData.dueAt || null
+        dueAt: editAssignmentData.dueAt || null,
+        type: editAssignmentData.type || 'quiz',
+        questions: editAssignmentData.questions || []
       })
 
       const updated = response.data?.assignment
@@ -1568,13 +1631,18 @@ function App() {
       return
     }
     const slug = lesson.slug || lesson._id
-    const lessonUrl = `${window.location.origin}/lesson/${encodeURIComponent(slug)}`
-    window.open(lessonUrl, '_blank', 'noopener,noreferrer')
+    const fallbackCoursePath = selectedCourse?._id ? `/courses/${selectedCourse._id}` : '/courses'
+    const from = location.pathname.startsWith('/lesson/')
+      ? location.state?.from || fallbackCoursePath
+      : location.pathname || fallbackCoursePath
+    navigate(`/lesson/${encodeURIComponent(slug)}`, { state: { from } })
   }
 
   const closeLessonRoute = () => {
+    const fallbackCoursePath = lessonRouteCourse?._id ? `/courses/${lessonRouteCourse._id}` : '/courses'
+    const from = location.state?.from || fallbackCoursePath
     resetLessonRoute()
-    navigate('/courses')
+    navigate(from)
     setActiveTab('lms')
   }
 
@@ -2103,6 +2171,31 @@ function App() {
     }
   }
 
+  const handlePunishForumComment = async (comment, penalty = 'warn') => {
+    if (!currentUser || currentRole !== 'admin' || !comment?._id) {
+      return
+    }
+
+    const label = penalty === 'ban' ? 'xóa bình luận và ban tài khoản' : penalty === 'suspend' ? 'xóa bình luận và tạm khóa tài khoản' : 'xóa bình luận và ghi nhận vi phạm'
+    if (!window.confirm(`${label} của ${comment.author}?`)) {
+      return
+    }
+
+    try {
+      const response = await api.patch(`/api/forum/comments/${comment._id}/punish`, {
+        penalty,
+        reason: 'manual_admin_review'
+      })
+      alert(response.data?.message || 'Đã xử lý bình luận.')
+      setAdminForumComments(prev => prev.filter(item => String(item._id) !== String(comment._id)))
+      fetchDeletedComments()
+      fetchManagedUsers()
+      fetchForumData()
+    } catch (error) {
+      alert(error.response?.data?.message || 'Không xử lý được bình luận.')
+    }
+  }
+
   const handleRestorePost = async postId => {
     if (!currentUser || currentRole !== 'admin') {
       return
@@ -2555,6 +2648,7 @@ function App() {
               assignmentDrafts={assignmentDrafts}
               onAssignmentDraftChange={handleAssignmentDraftChange}
               onSubmitAssignment={handleSubmitAssignment}
+              onSubmitQuizAssignment={handleSubmitQuizAssignment}
               enrollmentByCourse={enrollmentByCourse}
               teacherEnrollments={teacherEnrollments}
               onEnroll={handleEnroll}
@@ -2582,6 +2676,7 @@ function App() {
               assignmentDrafts={assignmentDrafts}
               onAssignmentDraftChange={handleAssignmentDraftChange}
               onSubmitAssignment={handleSubmitAssignment}
+              onSubmitQuizAssignment={handleSubmitQuizAssignment}
               enrollmentByCourse={enrollmentByCourse}
               teacherEnrollments={teacherEnrollments}
               onEnroll={handleEnroll}
@@ -2620,7 +2715,8 @@ function App() {
           } />
 
           <Route path='/teacher' element={
-            <TeacherView
+            currentRole === 'teacher' ? (
+              <TeacherView
               categories={allCategories}
               courses={teacherCourses}
               lessons={courseLessons}
@@ -2657,6 +2753,9 @@ function App() {
               onUploadLessonEditorVideo={handleUploadLessonEditorVideo}
               onUploadEditLessonEditorVideo={handleUploadEditLessonEditorVideo}
             />
+            ) : (
+              <div className="empty-state">Chỉ tài khoản giảng viên mới truy cập được Studio giảng viên.</div>
+            )
           } />
 
           <Route path='/admin' element={
@@ -2675,8 +2774,10 @@ function App() {
                 onDeleteLesson={handleDeleteLesson}
                 onFetchUsers={fetchManagedUsers}
                 onFetchReports={fetchModerationReports}
-                onFetchDeletedPosts={fetchDeletedPosts}
-                onFetchDeletedComments={fetchDeletedComments}
+              onFetchDeletedPosts={fetchDeletedPosts}
+              onFetchDeletedComments={fetchDeletedComments}
+              onFetchForumComments={fetchAdminForumComments}
+              isLoadingForumComments={isLoadingForumComments}
                 deletedReasonFilter={deletedReasonFilter}
                 onReasonChange={setDeletedReasonFilter}
                 newUserData={newUserData}
@@ -2697,8 +2798,10 @@ function App() {
                 moderationReports={moderationReports}
                 onDeleteModerationReport={handleDeleteModerationReport}
                 onClearModerationReports={handleClearModerationReports}
-                forumPosts={forumPosts}
-                onAdminDeletePost={handleAdminDeletePost}
+              forumPosts={forumPosts}
+              forumComments={adminForumComments}
+              onAdminDeletePost={handleAdminDeletePost}
+              onPunishForumComment={handlePunishForumComment}
                 deletedPosts={deletedPosts}
                 onRestorePost={handleRestorePost}
                 onPermanentDeletePost={handlePermanentDeletePost}

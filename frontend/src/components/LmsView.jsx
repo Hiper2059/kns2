@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import gsap from 'gsap'
 import {
   BookOpen,
@@ -11,6 +11,8 @@ import {
   Users
 } from 'lucide-react'
 import './LmsView.css'
+
+const answerLabel = index => String.fromCharCode(65 + index)
 
 const LmsView = ({
   categories,
@@ -25,6 +27,7 @@ const LmsView = ({
   assignmentDrafts,
   onAssignmentDraftChange,
   onSubmitAssignment,
+  onSubmitQuizAssignment,
   enrollmentByCourse,
   teacherEnrollments,
   onEnroll,
@@ -36,6 +39,7 @@ const LmsView = ({
   onLoadEnrollments,
   onDeleteLesson
 }) => {
+  const [quizDrafts, setQuizDrafts] = useState({})
   const isTeacherView = currentRole === 'teacher' || currentRole === 'admin'
   const coursePool = isTeacherView ? teacherCourses : courses
   const visibleCourses = useMemo(() => {
@@ -105,6 +109,13 @@ const LmsView = ({
     }
   }, [selectedCourse?._id, selectedCategory])
 
+  useEffect(() => {
+    if (!isTeacherView || !selectedCourse?._id) {
+      return
+    }
+    onLoadEnrollments?.(selectedCourse._id)
+  }, [isTeacherView, onLoadEnrollments, selectedCourse?._id])
+
   const getProgressLabel = value => {
     const percent = Number(value) || 0
     if (percent <= 30) return 'Tân binh'
@@ -112,12 +123,79 @@ const LmsView = ({
     return 'Biết tuốt'
   }
 
-  useEffect(() => {
-    if (!isTeacherView || !selectedCourse?._id) {
+  const handleQuizAnswer = (assignmentId, questionIndex, optionIndex) => {
+    setQuizDrafts(prev => {
+      const nextAnswers = [...(prev[assignmentId] || [])]
+      nextAnswers[questionIndex] = optionIndex
+      return { ...prev, [assignmentId]: nextAnswers }
+    })
+  }
+
+  const handleSubmitQuiz = async assignment => {
+    const answers = quizDrafts[assignment._id] || []
+    const questions = Array.isArray(assignment.questions) ? assignment.questions : []
+    const hasMissingAnswer = questions.some((question, index) => {
+      const answer = answers[index]
+      return !Number.isInteger(answer) || answer < 0 || answer >= (question.options || []).length
+    })
+
+    if (hasMissingAnswer) {
+      alert('Cậu trả lời hết các câu trước khi nộp nhé.')
       return
     }
-    onLoadEnrollments?.(selectedCourse._id)
-  }, [isTeacherView, onLoadEnrollments, selectedCourse?._id])
+
+    const ok = await onSubmitQuizAssignment?.(assignment._id, answers)
+    if (ok) {
+      setQuizDrafts(prev => {
+        const next = { ...prev }
+        delete next[assignment._id]
+        return next
+      })
+    }
+  }
+
+  const renderAssignmentBody = assignment => {
+    const isQuiz = assignment.type === 'quiz'
+    const questions = Array.isArray(assignment.questions) ? assignment.questions : []
+    const draftAnswers = quizDrafts[assignment._id] || []
+
+    if (!isQuiz || !questions.length) {
+      return null
+    }
+
+    return (
+      <div className="lms-quiz-preview">
+        {questions.map((question, index) => (
+          <div key={`${assignment._id}-question-${index}`} className="lms-quiz-question">
+            <strong>Câu {index + 1}: {question.question}</strong>
+            {currentUser && !isTeacherView && !assignment.mySubmission ? (
+              <div className="lms-quiz-options">
+                {(question.options || []).map((option, optionIndex) => (
+                  <label key={`${assignment._id}-option-${index}-${optionIndex}`} className="lms-quiz-option">
+                    <input
+                      type="radio"
+                      name={`${assignment._id}-${index}`}
+                      checked={draftAnswers[index] === optionIndex}
+                      onChange={() => handleQuizAnswer(assignment._id, index, optionIndex)}
+                    />
+                    <span>{answerLabel(optionIndex)}. {option}</span>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <div>
+                {(question.options || []).map((option, optionIndex) => (
+                  <span key={`${assignment._id}-option-${index}-${optionIndex}`}>
+                    {answerLabel(optionIndex)}. {option}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    )
+  }
 
   return (
     <div ref={containerRef} className="lms-learning-surface">
@@ -309,52 +387,67 @@ const LmsView = ({
                   <h3><span><ClipboardList size={18} /></span> Bài tập thực hành</h3>
                   <div className="lms-assignment-list">
                     {visibleAssignments.length ? (
-                      visibleAssignments.map(assignment => (
-                        <div key={assignment._id} className="lms-assignment-card">
-                          <div className="lms-assignment-meta">
-                            <h4>{assignment.title}</h4>
-                            <p>{assignment.description || 'Không có mô tả.'}</p>
-                            {assignment.dueAt && (
-                              <div className="lms-due-date">Hạn nộp: {new Date(assignment.dueAt).toLocaleString()}</div>
+                      visibleAssignments.map(assignment => {
+                        const isQuiz = assignment.type === 'quiz'
+                        return (
+                          <div key={assignment._id} className="lms-assignment-card">
+                            <div className="lms-assignment-meta">
+                              <h4>{assignment.title}</h4>
+                              <p>{assignment.description || 'Không có mô tả.'}</p>
+                              {renderAssignmentBody(assignment)}
+                              {assignment.dueAt && (
+                                <div className="lms-due-date">Hạn nộp: {new Date(assignment.dueAt).toLocaleString()}</div>
+                              )}
+                            </div>
+
+                            {assignment.mySubmission && (
+                              <div className="lms-submission-box">
+                                <div className="lms-submission-head">
+                                  <span>Trạng thái bài làm:</span>
+                                  <strong className={assignment.mySubmission.status === 'graded' ? 'graded' : ''}>
+                                    {assignment.mySubmission.status === 'graded'
+                                      ? `Đã chấm - ${assignment.mySubmission.score} điểm`
+                                      : 'Đang chờ chấm'}
+                                  </strong>
+                                </div>
+                                {assignment.mySubmission.content && (
+                                  <div className="lms-submitted-content">{assignment.mySubmission.content}</div>
+                                )}
+                                {assignment.mySubmission.status === 'graded' && assignment.mySubmission.feedback && (
+                                  <div className="lms-feedback">Kết quả: {assignment.mySubmission.feedback}</div>
+                                )}
+                              </div>
+                            )}
+
+                            {currentUser && !isTeacherView && !isQuiz && (
+                              <div className="lms-submit-box">
+                                <textarea
+                                  value={assignmentDrafts?.[assignment._id] || ''}
+                                  onChange={event => onAssignmentDraftChange?.(assignment._id, event.target.value)}
+                                  placeholder="Nhập nội dung bài làm của bạn..."
+                                />
+                                <button
+                                  className="lms-secondary-action dark"
+                                  onClick={() => onSubmitAssignment?.(assignment._id)}
+                                >
+                                  {assignment.mySubmission ? 'Nộp lại bài' : 'Gửi bài nộp'}
+                                </button>
+                              </div>
+                            )}
+
+                            {currentUser && !isTeacherView && isQuiz && !assignment.mySubmission && (
+                              <div className="lms-submit-box">
+                                <button
+                                  className="lms-secondary-action dark"
+                                  onClick={() => handleSubmitQuiz(assignment)}
+                                >
+                                  Nộp trắc nghiệm
+                                </button>
+                              </div>
                             )}
                           </div>
-
-                          {assignment.mySubmission && (
-                            <div className="lms-submission-box">
-                              <div className="lms-submission-head">
-                                <span>Trạng thái bài làm:</span>
-                                <strong className={assignment.mySubmission.status === 'graded' ? 'graded' : ''}>
-                                  {assignment.mySubmission.status === 'graded'
-                                    ? `Đã chấm - ${assignment.mySubmission.score} điểm`
-                                    : 'Đang chờ chấm'}
-                                </strong>
-                              </div>
-                              {assignment.mySubmission.content && (
-                                <div className="lms-submitted-content">{assignment.mySubmission.content}</div>
-                              )}
-                              {assignment.mySubmission.status === 'graded' && assignment.mySubmission.feedback && (
-                                <div className="lms-feedback">Giáo viên: {assignment.mySubmission.feedback}</div>
-                              )}
-                            </div>
-                          )}
-
-                          {currentUser && !isTeacherView && (
-                            <div className="lms-submit-box">
-                              <textarea
-                                value={assignmentDrafts?.[assignment._id] || ''}
-                                onChange={event => onAssignmentDraftChange?.(assignment._id, event.target.value)}
-                                placeholder="Nhập nội dung bài làm của bạn..."
-                              />
-                              <button
-                                className="lms-secondary-action dark"
-                                onClick={() => onSubmitAssignment?.(assignment._id)}
-                              >
-                                {assignment.mySubmission ? 'Nộp lại bài' : 'Gửi bài nộp'}
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      ))
+                        )
+                      })
                     ) : (
                       <div className="lms-empty compact">Chưa có bài tập nào.</div>
                     )}

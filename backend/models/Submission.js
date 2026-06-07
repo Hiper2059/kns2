@@ -32,6 +32,14 @@ const submissionSchema = new mongoose.Schema(
       type: String,
       default: ''
     },
+    answers: {
+      type: [Number],
+      default: []
+    },
+    autoScore: {
+      type: Number,
+      default: null
+    },
     status: {
       type: String,
       enum: ['submitted', 'graded'],

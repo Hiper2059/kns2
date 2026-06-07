@@ -3,6 +3,7 @@ const ForumPost = require('../models/ForumPost');
 const ForumComment = require('../models/ForumComment');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
+const User = require('../models/User');
 const { isStudentRole } = require('../utils/userUtils');
 
 const normalizeScope = value => (value === 'course' ? 'course' : 'general');
@@ -369,6 +370,94 @@ const deleteComment = async (req, res) => {
   }
 };
 
+const listAllCommentsForAdmin = async (req, res) => {
+  try {
+    const comments = await ForumComment.find({ isDeleted: false })
+      .sort({ createdAt: -1 })
+      .limit(300)
+      .lean();
+
+    const postIds = [...new Set(comments.map(comment => String(comment.postId)).filter(Boolean))];
+    const posts = postIds.length
+      ? await ForumPost.find({ _id: { $in: postIds } }, { title: 1, scope: 1, course: 1, category: 1 }).lean()
+      : [];
+    const postById = posts.reduce((acc, post) => {
+      acc[String(post._id)] = post;
+      return acc;
+    }, {});
+
+    const courseIds = [...new Set(posts.map(post => String(post.course || '')).filter(Boolean))];
+    const courses = courseIds.length
+      ? await Course.find({ _id: { $in: courseIds } }, { title: 1 }).lean()
+      : [];
+    const courseById = courses.reduce((acc, course) => {
+      acc[String(course._id)] = course;
+      return acc;
+    }, {});
+
+    res.json({
+      comments: comments.map(comment => {
+        const post = postById[String(comment.postId)] || null;
+        const course = post?.course ? courseById[String(post.course)] || null : null;
+        return {
+          ...comment,
+          postTitle: post?.title || '',
+          postScope: post?.scope || 'general',
+          postCategory: post?.category || '',
+          courseTitle: course?.title || ''
+        };
+      })
+    });
+  } catch (error) {
+    console.error('Loi lay tat ca binh luan forum:', error);
+    res.status(500).json({ message: 'Khong tai duoc danh sach binh luan dien dan.' });
+  }
+};
+
+const punishCommentAuthor = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { penalty = 'warn', reason = '' } = req.body || {};
+    const comment = await ForumComment.findById(id);
+    if (!comment) {
+      return res.status(404).json({ message: 'Khong tim thay binh luan.' });
+    }
+
+    comment.isDeleted = true;
+    comment.deletedAt = new Date();
+    comment.deletedBy = req.currentUser.username;
+    comment.deletionReason = reason ? `admin_${penalty}_${reason}` : `admin_${penalty}`;
+    await comment.save();
+
+    let accountStatus = null;
+    let violationCount = null;
+    const targetUser = await User.findOne({ username: comment.author });
+    if (targetUser && targetUser.role !== 'admin') {
+      targetUser.violationCount = (targetUser.violationCount || 0) + 1;
+      targetUser.lastViolationAt = new Date();
+
+      if (penalty === 'ban') {
+        targetUser.status = 'banned';
+      } else if (penalty === 'suspend' || targetUser.violationCount >= 3) {
+        targetUser.status = 'suspended';
+      }
+
+      await targetUser.save();
+      accountStatus = targetUser.status;
+      violationCount = targetUser.violationCount;
+    }
+
+    res.json({
+      message: 'Da xoa binh luan va cap nhat vi pham tai khoan.',
+      accountStatus,
+      violationCount
+    });
+  } catch (error) {
+    console.error('Loi phat tac gia binh luan:', error);
+    res.status(500).json({ message: 'Khong phat duoc tac gia binh luan.' });
+  }
+};
+
 const togglePostReaction = async (req, res) => {
   try {
     const post = await ForumPost.findById(req.params.id);
@@ -534,6 +623,8 @@ module.exports = {
   createComment,
   deletePost,
   deleteComment,
+  listAllCommentsForAdmin,
+  punishCommentAuthor,
   togglePostReaction,
   getDeletedPosts,
   getDeletedComments,

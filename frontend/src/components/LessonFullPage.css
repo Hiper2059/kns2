@@ -26,7 +26,7 @@
 .lesson-sidebar-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 12px;
   margin-bottom: 8px;
   min-width: 0;
@@ -35,6 +35,35 @@
 
 .lesson-sidebar-header h4 {
   margin: 0;
+}
+
+.lesson-combobox {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.lesson-combobox label {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.lesson-combobox select {
+  width: min(520px, 100%);
+  min-height: 46px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--text-main);
+  padding: 0 42px 0 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.lesson-combobox select:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
 }
 
 .lesson-sidebar-toggle {
