@@ -7,6 +7,7 @@ const ProfilePage = ({
   isLoading,
   mode,
   currentUser,
+  isOwnProfile = false,
   onClose,
   onEdit,
   onSave,
@@ -60,6 +61,9 @@ const ProfilePage = ({
   }
 
   const openAvatarPicker = () => {
+    if (!isOwnProfile || !isEditing) {
+      return
+    }
     avatarInputRef.current?.click()
   }
 
@@ -74,7 +78,12 @@ const ProfilePage = ({
           </button>
 
           <div className={`profile-page__avatar-wrap ${isEditing ? 'is-editing' : ''}`}>
-            <button className="profile-page__avatar" onClick={openAvatarPicker} type="button">
+            <button
+              className="profile-page__avatar"
+              onClick={openAvatarPicker}
+              type="button"
+              disabled={!isOwnProfile || !isEditing}
+            >
               {avatarUrl ? (
                 <img src={avatarUrl} alt={displayName} />
               ) : (
@@ -88,7 +97,7 @@ const ProfilePage = ({
               className="profile-page__file"
               onChange={onAvatarChange}
             />
-            <p className="profile-page__hint">Bấm vào avatar để đổi ảnh hồ sơ.</p>
+            {isOwnProfile && isEditing && <p className="profile-page__hint">Bấm vào avatar để đổi ảnh hồ sơ.</p>}
           </div>
 
           <div className="profile-page__identity">
@@ -108,17 +117,19 @@ const ProfilePage = ({
             </div>
           </div>
 
-          <div className="profile-page__actions">
-            {isEditing ? (
-              <button className="btn-post" onClick={onSave}>
-                Lưu hồ sơ
-              </button>
-            ) : (
-              <button className="btn-post" onClick={onEdit}>
-                Chỉnh sửa hồ sơ
-              </button>
-            )}
-          </div>
+          {isOwnProfile && (
+            <div className="profile-page__actions">
+              {isEditing ? (
+                <button className="btn-post" onClick={onSave}>
+                  Lưu hồ sơ
+                </button>
+              ) : (
+                <button className="btn-post" onClick={onEdit}>
+                  Chỉnh sửa hồ sơ
+                </button>
+              )}
+            </div>
+          )}
         </aside>
 
         <div className="profile-page__content">

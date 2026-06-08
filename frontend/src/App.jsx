@@ -6,7 +6,6 @@ import AuthModal from './components/AuthModal'
 import ChatWidget from './components/ChatWidget'
 import Navbar from './components/Navbar'
 import PageFallback from './components/PageFallback'
-import ProfileModal from './components/ProfileModal'
 import {
   categories,
   defaultCategoryVideos,
@@ -47,9 +46,6 @@ const getAuthGateFromPath = pathname => {
   if (pathname === '/teacher') {
     return { role: 'teacher', label: 'Giảng viên' }
   }
-  if (pathname === '/profile') {
-    return { role: 'profile', label: 'Hồ sơ cá nhân' }
-  }
   if (pathname === '/student') {
     return { role: 'student', label: 'Học sinh' }
   }
@@ -64,9 +60,7 @@ function App() {
   const location = useLocation()
   const [isAuthOpen, setIsAuthOpen] = useState(false)
   const [authMode, setAuthMode] = useState('login')
-  const [authNotifications, setAuthNotifications] = useState([
-    { type: 'info', title: 'Mẹo', message: 'Đăng nhập đúng vai trò để tránh lỗi truy cập.' }
-  ])
+  const [authNotifications, setAuthNotifications] = useState([])
   const [currentUser, setCurrentUser] = useState(() => {
     const storedUser = localStorage.getItem('zmate_current_user')
     return storedUser || null
@@ -228,7 +222,6 @@ function App() {
   })
   const [adminUploadUrl, setAdminUploadUrl] = useState('')
   const [isAdminUploadLoading, setIsAdminUploadLoading] = useState(false)
-  const [profileModalOpen, setProfileModalOpen] = useState(false)
   const [profileMode, setProfileMode] = useState('view')
   const [profileLoading, setProfileLoading] = useState(false)
   const [profileUser, setProfileUser] = useState(null)
@@ -301,7 +294,7 @@ function App() {
 
     if (tab === 'profile') {
       navigate('/profile')
-      setAuthGate(getAuthGateFromPath('/profile'))
+      setAuthGate(null)
       return
     }
 
@@ -1623,6 +1616,12 @@ function App() {
       return
     }
 
+    if (pathname.startsWith('/profile/')) {
+      setActiveTab('profile')
+      setAuthGate(null)
+      return
+    }
+
     setActiveTab('home')
   }, [fetchLessonRoute, lessonRouteSlug, location.pathname, resetLessonRoute])
 
@@ -1695,6 +1694,16 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!location.pathname.startsWith('/profile/')) {
+      return
+    }
+
+    const userId = decodeURIComponent(location.pathname.replace('/profile/', ''))
+    setProfileMode('view')
+    fetchProfileById(userId)
+  }, [fetchProfileById, location.pathname])
+
   const fetchMyProfile = useCallback(async () => {
     setMyProfileLoading(true)
     try {
@@ -1711,13 +1720,24 @@ function App() {
   }, [])
 
   const handleOpenProfile = userId => {
+    if (!userId) {
+      return
+    }
     setProfileMode('view')
-    setProfileModalOpen(true)
-    fetchProfileById(userId)
+    setProfileUser(null)
+    navigate(`/profile/${encodeURIComponent(userId)}`)
+    setActiveTab('profile')
+    setAuthGate(null)
   }
 
   const handleOpenMyProfile = () => {
-    if (!ensureAuthenticated('cập nhật hồ sơ')) {
+    if (!currentUser) {
+      alert('Bạn phải đăng nhập để xem hồ sơ.')
+      navigate('/')
+      setActiveTab('home')
+      setAuthGate(null)
+      setIsAuthOpen(true)
+      setAuthMode('login')
       return
     }
     setProfileMode('view')
@@ -2364,15 +2384,18 @@ function App() {
   }
 
   const handleLogout = () => {
+    const isInsideLesson = location.pathname.startsWith('/lesson/')
     setCurrentUser(null)
     setCurrentRole('student')
     setMyProfile(null)
     setProfileUser(null)
-    setProfileModalOpen(false)
     setProfileMode('view')
     clearTokens()
     localStorage.removeItem('zmate_current_user')
     localStorage.removeItem('zmate_current_role')
+    if (isInsideLesson) {
+      alert('Bạn phải đăng nhập để tiếp tục học bài.')
+    }
     handleTabChange('home')
   }
 
@@ -2529,6 +2552,7 @@ function App() {
     : false
 
   const handleOpenAuth = mode => {
+    setAuthNotifications([])
     if (authGate) {
       setAuthMode('login')
       setIsAuthOpen(true)
@@ -2579,10 +2603,11 @@ function App() {
         <button
           className="mobile-sidebar-dock"
           onClick={() => setSidebarOpen(true)}
-          aria-label="Mo muc luc va thanh dieu huong"
+          aria-label="Mở menu điều hướng"
         >
-          <span className="mobile-sidebar-dock__title">Mục lục</span>
-          <span className="mobile-sidebar-dock__hint">Bấm để mở menu</span>
+          <span className="mobile-sidebar-dock__bar" />
+          <span className="mobile-sidebar-dock__bar" />
+          <span className="mobile-sidebar-dock__bar" />
         </button>
       )}
       {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
@@ -2606,13 +2631,7 @@ function App() {
           }
           setAuthMode(prev => {
             const next = prev === 'login' ? 'register' : 'login'
-            pushAuthNotice(
-              next === 'register'
-                ? 'Nhập thông tin để tạo tài khoản mới.'
-                : 'Đăng nhập nếu cậu đã có tài khoản.',
-              'info',
-              'Hướng dẫn'
-            )
+            setAuthNotifications([])
             return next
           })
         }}
@@ -2830,13 +2849,33 @@ function App() {
               isLoading={myProfileLoading}
               mode={profileMode}
               currentUser={currentUser}
+              isOwnProfile
               onClose={() => {
-                window.location.href = '/'
+                navigate('/')
+                setActiveTab('home')
               }}
               onEdit={() => {
                 setProfileMode('edit')
                 fetchMyProfile()
               }}
+              onSave={handleSaveProfile}
+              onChange={setProfileDraft}
+              onAvatarChange={handleProfileAvatarChange}
+            />
+          } />
+
+          <Route path='/profile/:userId' element={
+            <ProfilePage
+              profileUser={profileUser}
+              profileDraft={profileUser?.profile || {}}
+              isLoading={profileLoading}
+              mode="view"
+              currentUser={currentUser}
+              isOwnProfile={profileUser?.username === currentUser}
+              onClose={() => {
+                navigate(-1)
+              }}
+              onEdit={handleOpenMyProfile}
               onSave={handleSaveProfile}
               onChange={setProfileDraft}
               onAvatarChange={handleProfileAvatarChange}
@@ -2878,21 +2917,6 @@ function App() {
         onActionClick={handleChatAction}
       />
 
-      <ProfileModal
-        isOpen={profileModalOpen}
-        mode={profileMode}
-        profileUser={profileUser}
-        profileDraft={profileDraft}
-        isLoading={profileLoading}
-        onClose={() => setProfileModalOpen(false)}
-        onEdit={() => {
-          setProfileMode('edit')
-          fetchMyProfile()
-        }}
-        onSave={handleSaveProfile}
-        onChange={setProfileDraft}
-        isOwnProfile={profileUser?.username === currentUser}
-      />
     </AppShell>
   )
 }

@@ -78,6 +78,10 @@
   justify-content: center;
 }
 
+.profile-page__avatar:disabled {
+  cursor: default;
+}
+
 .profile-page__avatar img {
   width: 100%;
   height: 100%;

@@ -49,11 +49,22 @@ const Navbar = ({
   sidebarOpen,
   onCloseSidebar
 }) => {
+  const closeMobileSidebar = () => {
+    if (sidebarOpen) {
+      onCloseSidebar?.()
+    }
+  }
+
+  const runAndClose = callback => event => {
+    callback?.(event)
+    closeMobileSidebar()
+  }
+
   return (
     <aside className={`sidebar glass-nav ${sidebarCollapsed ? 'collapsed' : ''} ${sidebarOpen ? 'overlay-open' : ''}`}>
       <div
         className="sidebar-brand clickable-brand"
-        onClick={onBrandClick}
+        onClick={runAndClose(onBrandClick)}
         role="button"
         tabIndex={0}
         onKeyDown={event => {
@@ -71,30 +82,30 @@ const Navbar = ({
       </div>
 
       <nav className="sidebar-nav">
-        <NavLink to="/" className={({ isActive }) => (isActive ? 'active' : '')}>
+        <NavLink to="/" onClick={closeMobileSidebar} className={({ isActive }) => (isActive ? 'active' : '')}>
           <span className="icon"><IconHome/></span>
           <span className="label">Trang chủ</span>
         </NavLink>
 
-        <NavLink to="/forum" onClick={onOpenForum} className={({ isActive }) => (isActive ? 'active' : '')}>
+        <NavLink to="/forum" onClick={runAndClose(onOpenForum)} className={({ isActive }) => (isActive ? 'active' : '')}>
           <span className="icon"><IconForum/></span>
           <span className="label">Diễn đàn</span>
         </NavLink>
 
-        <NavLink to="/courses" className={({ isActive }) => (isActive ? 'active' : '')}>
+        <NavLink to="/courses" onClick={closeMobileSidebar} className={({ isActive }) => (isActive ? 'active' : '')}>
           <span className="icon"><IconLms/></span>
           <span className="label">Lớp học</span>
         </NavLink>
 
         {currentRole === 'teacher' && (
-          <NavLink to="/teacher" className={({ isActive }) => (isActive ? 'active' : '')}>
+          <NavLink to="/teacher" onClick={closeMobileSidebar} className={({ isActive }) => (isActive ? 'active' : '')}>
             <span className="icon"><IconTeacher/></span>
             <span className="label">Giảng viên</span>
           </NavLink>
         )}
 
         {currentRole === 'admin' && (
-          <NavLink to="/admin" className={({ isActive }) => (isActive ? 'active' : '')}>
+          <NavLink to="/admin" onClick={closeMobileSidebar} className={({ isActive }) => (isActive ? 'active' : '')}>
             <span className="icon"><IconManage/></span>
             <span className="label">Quản lý</span>
           </NavLink>
@@ -110,28 +121,27 @@ const Navbar = ({
 
         {currentUser ? (
           <>
-            <button className="user-avatar" onClick={onOpenProfile} aria-label="Mở hồ sơ cá nhân">
+            <button className="user-avatar" onClick={runAndClose(onOpenProfile)} aria-label="Mở hồ sơ cá nhân">
               {currentUserAvatar ? (
                 <img src={currentUserAvatar} alt={currentUserLabel || currentUser} />
               ) : (
                 <span>{(currentUserLabel || currentUser || 'U').slice(0, 1).toUpperCase()}</span>
               )}
             </button>
-            <button className="user-name" onClick={onOpenProfile}>
+            <div className="user-name" aria-label={currentUserLabel || currentUser}>
               {currentUserLabel || currentUser}
-            </button>
+            </div>
             <div className="rank-pill">
               {currentRank?.name || ''} · {currentUserPoints || 0} điểm
             </div>
             <div className="auth-actions">
-              <button className="btn-ghost" onClick={onOpenProfile}>Hồ sơ</button>
-              <button className="btn-ghost" onClick={onLogout}>Đăng xuất</button>
+              <button className="btn-ghost" onClick={runAndClose(onLogout)}>Đăng xuất</button>
             </div>
           </>
         ) : (
           <div className="auth-actions">
-            <button className="btn-login" onClick={() => onOpenAuth('login')}>Đăng nhập</button>
-            <button className="btn-register" onClick={() => onOpenAuth('register')}>Đăng ký</button>
+            <button className="btn-login" onClick={runAndClose(() => onOpenAuth('login'))}>Đăng nhập</button>
+            <button className="btn-register" onClick={runAndClose(() => onOpenAuth('register'))}>Đăng ký</button>
           </div>
         )}
       </div>

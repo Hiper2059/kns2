@@ -1,11 +1,3 @@
-.auth-modal-split {
-	display: grid;
-	grid-template-columns: minmax(280px, 1fr) minmax(240px, 0.8fr);
-	gap: 18px;
-	max-width: 860px;
-	min-width: 0;
-}
-
 .auth-form-panel {
 	display: flex;
 	flex-direction: column;
@@ -13,90 +5,39 @@
 	min-width: 0;
 }
 
-.auth-notice-panel {
-	border: 1px solid var(--line);
-	border-radius: var(--radius-lg);
-	background: var(--bg-raised);
-	padding: 14px;
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-	min-height: 220px;
-	min-width: 0;
-	overflow: clip;
-}
-
-.auth-notice-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 10px;
-	min-width: 0;
-	flex-wrap: wrap;
-}
-
-.auth-modal-split h2,
-.auth-modal-split h3,
-.auth-modal-split p,
-.auth-modal-split span,
-.auth-modal-split strong {
+.auth-modal h2,
+.auth-modal p,
+.auth-modal span,
+.auth-modal strong {
 	overflow-wrap: anywhere;
 }
 
-.auth-notice-header h3 {
+.auth-inline-notice {
 	margin: 0;
-}
-
-.auth-notice-header span {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	min-width: 28px;
-	height: 28px;
-	padding: 0 8px;
-	border-radius: 999px;
-	background: var(--bg-main);
-	border: 1px solid var(--line);
-	font-weight: 700;
-}
-
-.auth-notice-list {
-	list-style: none;
-	padding: 0;
-	margin: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-}
-
-.auth-notice-item {
 	border: 1px solid var(--line);
 	border-radius: var(--radius-md);
 	padding: 10px 12px;
-	background: var(--bg-main);
+	background: var(--bg-raised);
+	font-size: 14px;
+	line-height: 1.45;
 }
 
-.auth-notice-item strong {
-	display: block;
-	margin-bottom: 4px;
-}
-
-.auth-notice-item p,
-.auth-notice-empty {
-	margin: 0;
-	line-height: 1.5;
-}
-
-.auth-notice-item.success {
+.auth-inline-notice.success {
 	background: #ecfdf5;
+	border-color: #bbf7d0;
+	color: #166534;
 }
 
-.auth-notice-item.warning {
+.auth-inline-notice.warning {
 	background: #fff7ed;
+	border-color: #fed7aa;
+	color: #9a3412;
 }
 
-.auth-notice-item.error {
+.auth-inline-notice.error {
 	background: #fef2f2;
+	border-color: #fecaca;
+	color: #991b1b;
 }
 
 .auth-switch {
@@ -116,10 +57,4 @@
 .lms-sidebar li:focus-visible {
 	outline: 3px solid rgba(15, 118, 110, 0.22);
 	outline-offset: 3px;
-}
-
-@media (max-width: 820px) {
-	.auth-modal-split {
-		grid-template-columns: 1fr;
-	}
 }

@@ -17,9 +17,11 @@ const AuthModal = ({
     return null
   }
 
+  const inlineNotice = notifications[0]
+
   return (
     <div className="auth-overlay">
-      <div className="auth-modal card-panel auth-modal-split">
+      <div className="auth-modal card-panel">
         <button className="close-btn" onClick={onClose}>
           ×
         </button>
@@ -45,6 +47,11 @@ const AuthModal = ({
             value={authData.password}
             onChange={e => onChange({ ...authData, password: e.target.value })}
           />
+          {inlineNotice && (
+            <p className={`auth-inline-notice ${inlineNotice.type || 'info'}`} role="status">
+              {inlineNotice.message}
+            </p>
+          )}
           <button className="btn-post" onClick={onAuth} disabled={isAuthLoading}>
             {isAuthLoading ? 'Đang xử lý...' : authMode === 'login' ? 'Vào ngay' : 'Tạo tài khoản'}
           </button>
@@ -54,25 +61,6 @@ const AuthModal = ({
             </button>
           )}
         </div>
-
-        <aside className="auth-notice-panel" aria-live="polite">
-          <div className="auth-notice-header">
-            <h3>Thông báo</h3>
-            <span>{notifications.length}</span>
-          </div>
-          {notifications.length ? (
-            <ul className="auth-notice-list">
-              {notifications.map((item, index) => (
-                <li key={`${item.title || 'note'}-${index}`} className={`auth-notice-item ${item.type || 'info'}`}>
-                  <strong>{item.title || 'Lưu ý'}</strong>
-                  <p>{item.message}</p>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="auth-notice-empty">Chưa có thông báo nào.</p>
-          )}
-        </aside>
       </div>
     </div>
   )
