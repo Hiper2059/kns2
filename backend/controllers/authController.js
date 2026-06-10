@@ -8,7 +8,7 @@ const { getEffectiveStatus, getEffectiveViolationCount } = require('../utils/use
 
 const register = async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, password, displayName } = req.body;
     if (!username || !password) {
       return res.status(400).json({ message: 'Thiếu tên đăng nhập hoặc mật khẩu.' });
     }
@@ -25,7 +25,14 @@ const register = async (req, res) => {
     }
 
     const passwordHash = await hashPassword(password);
-    await User.create({ username: normalizedUsername, passwordHash, role: roles.STUDENT });
+    const newUser = await User.create({ 
+      username: normalizedUsername, 
+      passwordHash, 
+      role: roles.STUDENT,
+      profile: {
+        displayName: displayName ? String(displayName).trim() : ''
+      }
+    });
     res.json({ message: 'Đăng ký thành công mỹ mãn!' });
   } catch (error) {
     console.error('Loi dang ky:', error);

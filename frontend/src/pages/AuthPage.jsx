@@ -76,7 +76,8 @@ const AuthPage = () => {
 
       await api.post('/api/register', {
         username: formData.username,
-        password: formData.password
+        password: formData.password,
+        displayName: formData.displayName
       })
       await loginWithCredentials()
     } catch (err) {
