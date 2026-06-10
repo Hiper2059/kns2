@@ -164,7 +164,7 @@ const ProfilePage = ({
               </p>
             </div>
             <div className="relative z-10 flex-shrink-0 bg-white/10 backdrop-blur-md border border-white/10 rounded-2xl p-5 flex flex-col items-center md:items-end justify-center min-w-[160px]">
-              <span className="text-[12px] font-bold text-slate-300 uppercase tracking-wide mb-1">Tài khoản</span>
+              <span className="text-[12px] font-bold text-slate-300 uppercase tracking-wide mb-1">Tài khoản {profileUser.role}</span>
               <strong className="text-xl font-black">{profileUser.username}</strong>
             </div>
             <div className="absolute -right-20 -top-20 w-96 h-96 bg-blue-500/20 rounded-full blur-[80px] pointer-events-none"></div>
