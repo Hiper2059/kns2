@@ -102,6 +102,7 @@ const ForumView = ({
                   className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-[14px] font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
                   value={newPost.title}
                   onChange={e => onNewPostChange({ ...newPost, title: e.target.value })}
+                  onKeyDown={e => e.key === 'Enter' && handlePostSubmit()}
                 />
               </ComposeField>
 

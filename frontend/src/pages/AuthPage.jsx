@@ -169,6 +169,7 @@ const AuthPage = () => {
                 required
                 value={formData.username}
                 onChange={handleChange}
+                onKeyDown={(e) => e.key === 'Enter' && handleSubmit(e)}
                 placeholder="VD: haihoan"
                 autoComplete="username"
                 className={baseInputClass}
@@ -186,6 +187,7 @@ const AuthPage = () => {
                   type="text"
                   value={formData.displayName}
                   onChange={handleChange}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSubmit(e)}
                   placeholder="VD: Trịnh Hải Hoan"
                   autoComplete="name"
                   className={baseInputClass}
@@ -204,6 +206,7 @@ const AuthPage = () => {
                 required
                 value={formData.password}
                 onChange={handleChange}
+                onKeyDown={(e) => e.key === 'Enter' && handleSubmit(e)}
                 placeholder="••••••••"
                 autoComplete={isLoginPage ? 'current-password' : 'new-password'}
                 className={baseInputClass}
@@ -219,6 +222,7 @@ const AuthPage = () => {
                   required
                   value={formData.confirmPassword}
                   onChange={handleChange}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSubmit(e)}
                   placeholder="••••••••"
                   autoComplete="new-password"
                   className={baseInputClass}
