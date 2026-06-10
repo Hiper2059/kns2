@@ -2474,17 +2474,7 @@ function App() {
               }}
               onCloseSidebar={() => setSidebarOpen(false)}
             />
-            {!sidebarOpen && (
-              <button
-                className="mobile-sidebar-dock"
-                onClick={() => setSidebarOpen(true)}
-                aria-label="Mở menu điều hướng"
-              >
-                <span className="mobile-sidebar-dock__bar" />
-                <span className="mobile-sidebar-dock__bar" />
-                <span className="mobile-sidebar-dock__bar" />
-              </button>
-            )}
+
             {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
               </>
             }

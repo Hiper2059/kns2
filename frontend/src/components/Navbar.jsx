@@ -69,11 +69,13 @@ const Navbar = ({
       </nav>
 
       {/* Bottom Actions */}
-      <div className={`flex items-center justify-end min-w-0 gap-2 ${sidebarOpen ? 'grid grid-cols-[auto_auto_1fr] justify-start mt-2' : ''}`}>
+      <div className={`flex items-center justify-end min-w-0 gap-2 ${sidebarOpen ? 'grid grid-cols-[auto_1fr] justify-between w-full mt-2' : ''}`}>
         
-        <button className="md:hidden inline-flex items-center justify-center w-[38px] h-[38px] rounded-xl border border-slate-200 bg-white text-slate-700 cursor-pointer" onClick={onToggleSidebar} aria-label="Mở menu">
-          <Menu size={18} />
-        </button>
+        {!sidebarOpen && (
+          <button className="md:hidden inline-flex items-center justify-center w-[38px] h-[38px] rounded-xl border border-slate-200 bg-white text-slate-700 cursor-pointer" onClick={onToggleSidebar} aria-label="Mở menu">
+            <Menu size={18} />
+          </button>
+        )}
 
         {sidebarOpen && (
           <div className="inline-flex">
