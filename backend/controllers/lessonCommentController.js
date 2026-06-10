@@ -29,9 +29,23 @@ const listComments = catchAsync(async (req, res) => {
     LessonComment.countDocuments(filter)
   ]);
 
+  const authorIds = [...new Set(comments.map(c => String(c.author)).filter(id => id && id !== 'null'))];
+  const authors = await mongoose.model('User').find({ _id: { $in: authorIds } }, { 'profile.displayName': 1, username: 1 }).lean();
+  const authorMap = authors.reduce((acc, user) => {
+    acc[String(user._id)] = user.profile?.displayName || user.username;
+    return acc;
+  }, {});
+
+  const formattedComments = comments.map(comment => {
+    return {
+      ...comment,
+      authorName: comment.author && authorMap[String(comment.author)] ? authorMap[String(comment.author)] : comment.authorName
+    };
+  });
+
   res.json({
-    data: comments,
-    comments,
+    data: formattedComments,
+    comments: formattedComments,
     pagination: buildPagination({ totalItems, page, limit })
   });
 });
@@ -85,7 +99,7 @@ const createComment = catchAsync(async (req, res) => {
     course: course ? course._id : null,
     parentComment: parentComment ? parentComment._id : null,
     author: req.currentUser?._id || null,
-    authorName: req.currentUser?.username || req.currentUser?.profile?.displayName || 'Khách',
+    authorName: req.currentUser?.profile?.displayName || req.currentUser?.username || 'Khách',
     content: String(content).trim()
   });
 

@@ -170,6 +170,7 @@ const createPost = catchAsync(async (req, res) => {
   const payload = created.toObject();
   payload.heartCount = (payload.heartUserIds || []).length;
   payload.isHearted = false;
+  payload.authorDisplayName = req.currentUser?.profile?.displayName || req.currentUser?.username || created.author;
 
   res.status(201).json({ post: payload });
 });
@@ -290,7 +291,10 @@ const createComment = catchAsync(async (req, res) => {
     text: trimmedText
   });
 
-  res.status(201).json({ comment: created });
+  const payload = created.toObject();
+  payload.authorDisplayName = req.currentUser?.profile?.displayName || req.currentUser?.username || created.author;
+
+  res.status(201).json({ comment: payload });
 });
 
 const deletePost = catchAsync(async (req, res) => {
