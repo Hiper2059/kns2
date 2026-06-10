@@ -3,6 +3,7 @@ import ReactQuill, { Quill } from 'react-quill'
 import axios from 'axios'
 import 'react-quill/dist/quill.snow.css'
 import { getApiErrorMessage } from '../utils/apiMessages'
+import { useUI } from '../context/UIContext'
 import './RichTextEditor.css'
 
 const quillFormats = [
@@ -90,6 +91,7 @@ const toggleInlineFormat = (quill, format, savedRange, activeFormatsRef, onActiv
 }
 
 const RichTextEditor = ({ value, onChange, placeholder, toolbarId }) => {
+  const { showError } = useUI()
   const imageInputRef = useRef(null)
   const videoInputRef = useRef(null)
   const quillRef = useRef(null)
@@ -121,7 +123,7 @@ const RichTextEditor = ({ value, onChange, placeholder, toolbarId }) => {
       return res.data?.url || null
     } catch (err) {
       console.error('Upload error', err)
-      alert(getApiErrorMessage(err, 'Không upload được file.'))
+      showError(getApiErrorMessage(err, 'Không upload được file.'))
       if (type === 'image') setImageProgress(0)
       if (type === 'video') setVideoProgress(0)
       return null

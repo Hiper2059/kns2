@@ -3,6 +3,7 @@ import Hls from 'hls.js'
 import dashjs from 'dashjs'
 import RichTextEditor from './RichTextEditor'
 import { getApiErrorMessage } from '../utils/apiMessages'
+import { useUI } from '../context/UIContext'
 import { ArrowLeft, Heart, Edit3, CheckCircle2, AlertCircle, MessageSquare, Reply, Flag, Trash2, ListVideo } from 'lucide-react'
 
 const loadYouTubeApi = (() => {
@@ -68,6 +69,7 @@ const LessonFullPage = ({
   currentRole,
   onReportContent
 }) => {
+  const { showWarning, showError, showSuccess } = useUI()
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false)
   const [hasVideoEnded, setHasVideoEnded] = useState(false)
   const [hasSeeked, setHasSeeked] = useState(false)
@@ -427,7 +429,7 @@ const LessonFullPage = ({
 
   const handleToggleHeart = async () => {
     if (!currentUser) {
-      alert('Cậu cần đăng nhập để thả tim.')
+      showWarning('Cậu cần đăng nhập để thả tim.')
       return
     }
 
@@ -440,7 +442,7 @@ const LessonFullPage = ({
         isHearted: Boolean(response.data?.isHearted)
       })
     } catch (err) {
-      alert(getApiErrorMessage(err, 'Không thả tim được.'))
+      showError(getApiErrorMessage(err, 'Không thả tim được.'))
     }
   }
 
@@ -466,7 +468,7 @@ const LessonFullPage = ({
       }
     } catch (err) {
       console.error('Post comment error', err)
-      alert(getApiErrorMessage(err, 'Không gửi được bình luận.'))
+      showError(getApiErrorMessage(err, 'Không gửi được bình luận.'))
     } finally {
       setPosting(false)
     }
@@ -476,7 +478,7 @@ const LessonFullPage = ({
     if (!lesson?._id) return
 
     if (!editDraft.title.trim()) {
-      alert('Cậu điền tiêu đề bài học trước nhé.')
+      showWarning('Cậu điền tiêu đề bài học trước nhé.')
       return
     }
 
@@ -493,8 +495,9 @@ const LessonFullPage = ({
       const updated = response.data?.lesson || { ...lesson, ...payload }
       onLessonUpdated?.(updated)
       setEditMode(false)
+      showSuccess('Đã cập nhật bài học thành công.')
     } catch (err) {
-      alert(getApiErrorMessage(err, 'Không cập nhật được bài học.'))
+      showError(getApiErrorMessage(err, 'Không cập nhật được bài học.'))
     } finally {
       setIsSavingLesson(false)
     }
@@ -759,7 +762,7 @@ const LessonFullPage = ({
                                           removeCommentBranch(item._id)
                                         } catch (err) {
                                           console.error('Delete comment error', err)
-                                          alert(getApiErrorMessage(err, 'Không xóa được bình luận.'))
+                                          showError(getApiErrorMessage(err, 'Không xóa được bình luận.'))
                                         }
                                       }}
                                     >

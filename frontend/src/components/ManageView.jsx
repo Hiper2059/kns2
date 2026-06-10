@@ -12,6 +12,7 @@ import {
   Users
 } from 'lucide-react'
 import { getApiErrorMessage } from '../utils/apiMessages'
+import { useUI } from '../context/UIContext'
 
 const baseInputClass = "w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-[14px] font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
 const baseButtonClass = "inline-flex items-center justify-center h-10 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-[0_4px_14px_0_rgb(37,99,235,0.39)] cursor-pointer text-[13px]"
@@ -67,6 +68,7 @@ const ManageView = ({
   onOpenProfile,
   api
 }) => {
+  const { showToast, showError, showSuccess } = useUI()
   const [activeSection, setActiveSection] = useState('overview')
   const [lessonCommentsById, setLessonCommentsById] = useState({})
   const [expandedLessonId, setExpandedLessonId] = useState('')
@@ -105,9 +107,9 @@ const ManageView = ({
     if (!adminUploadUrl) return
     try {
       await navigator.clipboard.writeText(adminUploadUrl)
-      alert('Đã sao chép link video.')
+      showSuccess('Đã sao chép link video.')
     } catch {
-      alert('Không sao chép được link video.')
+      showError('Không sao chép được link video.')
     }
   }
 
@@ -126,7 +128,7 @@ const ManageView = ({
       const response = await api.get(`/api/lessons/${lessonId}/comments`)
       setLessonCommentsById(prev => ({ ...prev, [lessonId]: response.data.comments || [] }))
     } catch (error) {
-      alert(getApiErrorMessage(error, 'Không tải được bình luận bài học.'))
+      showError(getApiErrorMessage(error, 'Không tải được bình luận bài học.'))
     } finally {
       setLoadingLessonCommentsId('')
     }
@@ -146,7 +148,7 @@ const ManageView = ({
         return next
       })
     } catch (error) {
-      alert(getApiErrorMessage(error, 'Không xóa được bình luận.'))
+      showError(getApiErrorMessage(error, 'Không xóa được bình luận.'))
     }
   }
 

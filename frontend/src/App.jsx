@@ -3,6 +3,7 @@ import { Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-
 import { clearTokens, createApiClient, setTokens } from './api/apiClient'
 import AppShell from './components/AppShell'
 import { useAuth } from './context/AuthContext'
+import { useUI } from './context/UIContext'
 import ChatWidget from './components/ChatWidget'
 import Navbar from './components/Navbar'
 import PageFallback from './components/PageFallback'
@@ -55,6 +56,7 @@ const ProtectedRoute = ({ children }) => {
 }
 
 function App() {
+  const { showToast, showError, showSuccess, showWarning, showInfo } = useUI()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -608,7 +610,7 @@ function App() {
       return true
     }
 
-    alert(`Cậu cần đăng nhập để ${actionLabel}.`)
+    showWarning(`Cậu cần đăng nhập để ${actionLabel}.`)
     navigate('/login')
     return false
   }
@@ -639,7 +641,7 @@ function App() {
     }
 
     if (!newPost.title.trim() || !newPost.content.trim()) {
-      alert('Cậu điền đủ tiêu đề và nội dung nhé!')
+      showWarning('Cậu điền đủ tiêu đề và nội dung nhé!')
       return
     }
 
@@ -647,7 +649,7 @@ function App() {
     const postCourseId = options.courseId || forumCourseId
 
     if (postScope === 'course' && !postCourseId) {
-      alert('Cậu chọn lớp trước khi đăng bài nhé!')
+      showWarning('Cậu chọn lớp trước khi đăng bài nhé!')
       return
     }
 
@@ -681,7 +683,7 @@ function App() {
       ])
       setNewPost({ title: '', content: '', category: allCategories[0] || categories[0] })
     } catch (error) {
-      alert(error.response?.data?.message || 'Không đăng được bài viết.')
+      showError(error.response?.data?.message || 'Không đăng được bài viết.')
     }
   }
 
@@ -702,7 +704,7 @@ function App() {
         )
       )
     } catch (error) {
-      alert(error.response?.data?.message || 'Không thả tim được.')
+      showError(error.response?.data?.message || 'Không thả tim được.')
     }
   }
 
@@ -713,7 +715,7 @@ function App() {
 
     const draft = (commentDrafts[postId] || '').trim()
     if (!draft) {
-      alert('Cậu nhập nội dung bình luận trước nhé!')
+      showWarning('Cậu nhập nội dung bình luận trước nhé!')
       return
     }
 
@@ -742,7 +744,7 @@ function App() {
         [postId]: ''
       }))
     } catch (error) {
-      alert(error.response?.data?.message || 'Không gửi được bình luận.')
+      showError(error.response?.data?.message || 'Không gửi được bình luận.')
     }
   }
 
@@ -757,7 +759,7 @@ function App() {
       const response = await api.get('/api/users')
       setManagedUsers(response.data.users || [])
     } catch (error) {
-      alert(error.response?.data?.message || 'Không tải được danh sách user.')
+      showError(error.response?.data?.message || 'Không tải được danh sách user.')
     } finally {
       setIsLoadingUsers(false)
     }
@@ -782,7 +784,7 @@ function App() {
       const response = await api.get('/api/moderation/reports')
       setModerationReports(response.data.reports || [])
     } catch (error) {
-      alert(error.response?.data?.message || 'Không tải được lịch sử kiểm duyệt.')
+      showError(error.response?.data?.message || 'Không tải được lịch sử kiểm duyệt.')
     } finally {
       setIsLoadingReports(false)
     }
@@ -802,7 +804,7 @@ function App() {
       })
       setDeletedPosts(response.data.posts || [])
     } catch (error) {
-      alert(error.response?.data?.message || 'Không tải được danh sách bài đã ẩn.')
+      showError(error.response?.data?.message || 'Không tải được danh sách bài đã ẩn.')
     } finally {
       setIsLoadingDeletedPosts(false)
     }
@@ -822,7 +824,7 @@ function App() {
       })
       setDeletedComments(response.data.comments || [])
     } catch (error) {
-      alert(error.response?.data?.message || 'Không tải được danh sách bình luận đã ẩn.')
+      showError(error.response?.data?.message || 'Không tải được danh sách bình luận đã ẩn.')
     } finally {
       setIsLoadingDeletedComments(false)
     }
@@ -838,7 +840,7 @@ function App() {
       const response = await api.get('/api/forum/admin/comments')
       setAdminForumComments(response.data.comments || [])
     } catch (error) {
-      alert(error.response?.data?.message || 'Không tải được bình luận diễn đàn.')
+      showError(error.response?.data?.message || 'Không tải được bình luận diễn đàn.')
     } finally {
       setIsLoadingForumComments(false)
     }
@@ -854,7 +856,7 @@ function App() {
       const response = await api.get('/api/analytics/lessons/overview')
       setAdminAnalytics(response.data || {})
     } catch (error) {
-      alert(error.response?.data?.message || 'Không tải được thống kê bài học.')
+      showError(error.response?.data?.message || 'Không tải được thống kê bài học.')
       setAdminAnalytics({
         totalLessonViews: 0,
         uniqueLessonViewers: 0,
@@ -874,10 +876,10 @@ function App() {
 
     try {
       const response = await api.patch('/api/users/role', { username, role })
-      alert(getApiSuccessMessage(response))
+      showSuccess(getApiSuccessMessage(response))
       fetchManagedUsers()
     } catch (error) {
-      alert(error.response?.data?.message || 'Không cập nhật được vai trò user.')
+      showError(error.response?.data?.message || 'Không cập nhật được vai trò user.')
     }
   }
 
@@ -888,10 +890,10 @@ function App() {
 
     try {
       const response = await api.patch('/api/users/status', { username, status })
-      alert(getApiSuccessMessage(response))
+      showSuccess(getApiSuccessMessage(response))
       fetchManagedUsers()
     } catch (error) {
-      alert(error.response?.data?.message || 'Không cập nhật được trạng thái tài khoản.')
+      showError(error.response?.data?.message || 'Không cập nhật được trạng thái tài khoản.')
     }
   }
 
@@ -906,10 +908,10 @@ function App() {
 
     try {
       const response = await api.delete(`/api/users/${encodeURIComponent(username)}`)
-      alert(getApiSuccessMessage(response))
+      showSuccess(getApiSuccessMessage(response))
       fetchManagedUsers()
     } catch (error) {
-      alert(error.response?.data?.message || 'Không xóa được tài khoản.')
+      showError(error.response?.data?.message || 'Không xóa được tài khoản.')
     }
   }
 
@@ -919,7 +921,7 @@ function App() {
     }
 
     if (!newVideoData.url.trim()) {
-      alert('Cậu nhập link YouTube trước nhé.')
+      showWarning('Cậu nhập link YouTube trước nhé.')
       return
     }
 
@@ -928,11 +930,11 @@ function App() {
         category: newVideoData.category,
         url: newVideoData.url.trim()
       })
-      alert(getApiSuccessMessage(response))
+      showSuccess(getApiSuccessMessage(response))
       setNewVideoData({ category: newVideoData.category, url: '' })
       fetchVideos()
     } catch (error) {
-      alert(error.response?.data?.message || 'Không thêm được video.')
+      showError(error.response?.data?.message || 'Không thêm được video.')
     }
   }
 
@@ -947,10 +949,10 @@ function App() {
 
     try {
       const response = await api.delete(`/api/videos/${videoId}`)
-      alert(getApiSuccessMessage(response))
+      showSuccess(getApiSuccessMessage(response))
       fetchVideos()
     } catch (error) {
-      alert(error.response?.data?.message || 'Không xóa được video.')
+      showError(error.response?.data?.message || 'Không xóa được video.')
     }
   }
 
@@ -960,7 +962,7 @@ function App() {
     }
 
     if (!newUserData.username.trim() || !newUserData.password.trim() || !newUserData.displayName.trim()) {
-      alert('Cậu nhập đủ username, tên hiển thị và mật khẩu nhé.')
+      showWarning('Cậu nhập đủ username, tên hiển thị và mật khẩu nhé.')
       return
     }
 
@@ -971,11 +973,11 @@ function App() {
         displayName: newUserData.displayName.trim(),
         role: newUserData.role
       })
-      alert(getApiSuccessMessage(response))
+      showSuccess(getApiSuccessMessage(response))
       setNewUserData({ username: '', password: '', displayName: '', role: newUserData.role || 'student' })
       fetchManagedUsers()
     } catch (error) {
-      alert(error.response?.data?.message || 'Không tạo được tài khoản.')
+      showError(error.response?.data?.message || 'Không tạo được tài khoản.')
     }
   }
 
@@ -1059,7 +1061,7 @@ function App() {
         setTeacherEnrollments(response.data.enrollments || [])
       } catch (error) {
         setTeacherEnrollments([])
-        alert(error.response?.data?.message || 'Không tải được danh sách học viên.')
+        showError(error.response?.data?.message || 'Không tải được danh sách học viên.')
       }
     },
     []
@@ -1143,12 +1145,12 @@ function App() {
 
     const normalized = String(categoryName || '').trim()
     if (!normalized) {
-      alert('Nhập tên danh mục trước nhé.')
+      showWarning('Nhập tên danh mục trước nhé.')
       return
     }
 
     if (allCategories.some(category => category.toLowerCase() === normalized.toLowerCase())) {
-      alert('Danh mục này đã tồn tại.')
+      showError('Danh mục này đã tồn tại.')
       return
     }
 
@@ -1159,7 +1161,7 @@ function App() {
       setNewCourseData(prev => ({ ...prev, category: normalized }))
       setNewVideoData(prev => ({ ...prev, category: normalized }))
     } catch (error) {
-      alert(error.response?.data?.message || 'Khong them duoc danh muc.')
+      showError(error.response?.data?.message || 'Khong them duoc danh muc.')
     }
   }
 
@@ -1189,7 +1191,7 @@ function App() {
       }))
       fetchCategories()
     } catch (error) {
-      alert(error.response?.data?.message || 'Khong xoa duoc danh muc.')
+      showError(error.response?.data?.message || 'Khong xoa duoc danh muc.')
     }
   }
 
@@ -1209,7 +1211,7 @@ function App() {
 
     const content = (assignmentDrafts[assignmentId] || '').trim()
     if (!content) {
-      alert('Cậu nhập nội dung bài nộp trước nhé!')
+      showWarning('Cậu nhập nội dung bài nộp trước nhé!')
       return
     }
 
@@ -1226,7 +1228,7 @@ function App() {
       )
       setAssignmentDrafts(prev => ({ ...prev, [assignmentId]: '' }))
     } catch (error) {
-      alert(error.response?.data?.message || 'Không nộp được bài.')
+      showError(error.response?.data?.message || 'Không nộp được bài.')
     }
   }
 
@@ -1248,7 +1250,7 @@ function App() {
       )
       return true
     } catch (error) {
-      alert(error.response?.data?.message || 'Không nộp được trắc nghiệm.')
+      showError(error.response?.data?.message || 'Không nộp được trắc nghiệm.')
       return false
     }
   }
@@ -1259,7 +1261,7 @@ function App() {
     }
 
     if (!newAssignmentData.courseId || !newAssignmentData.title.trim()) {
-      alert('Cậu chọn lớp và nhập tiêu đề bài tập nhé.')
+      showWarning('Cậu chọn lớp và nhập tiêu đề bài tập nhé.')
       return
     }
 
@@ -1288,7 +1290,7 @@ function App() {
         ]
       })
     } catch (error) {
-      alert(error.response?.data?.message || 'Không tạo được bài tập.')
+      showError(error.response?.data?.message || 'Không tạo được bài tập.')
     }
   }
 
@@ -1340,7 +1342,7 @@ function App() {
       )
       handleEditAssignmentCancel()
     } catch (error) {
-      alert(error.response?.data?.message || 'Không cập nhật được bài tập.')
+      showError(error.response?.data?.message || 'Không cập nhật được bài tập.')
     }
   }
 
@@ -1362,7 +1364,7 @@ function App() {
         return next
       })
     } catch (error) {
-      alert(error.response?.data?.message || 'Không xóa được bài tập.')
+      showError(error.response?.data?.message || 'Không xóa được bài tập.')
     }
   }
 
@@ -1378,7 +1380,7 @@ function App() {
         [assignmentId]: response.data?.submissions || []
       }))
     } catch (error) {
-      alert(error.response?.data?.message || 'Không tải được bài nộp.')
+      showError(error.response?.data?.message || 'Không tải được bài nộp.')
     }
   }
 
@@ -1401,7 +1403,7 @@ function App() {
         return next
       })
     } catch (error) {
-      alert(error.response?.data?.message || 'Không chấm được bài.')
+      showError(error.response?.data?.message || 'Không chấm được bài.')
     }
   }
 
@@ -1418,7 +1420,7 @@ function App() {
         const course = response.data?.course || null
 
         if (!lesson) {
-          alert('Không tìm thấy bài học này.')
+          showError('Không tìm thấy bài học này.')
           setLessonRouteSlug(null)
           setLessonRouteLesson(null)
           setLessonRouteCourse(null)
@@ -1433,7 +1435,7 @@ function App() {
         }
       } catch (error) {
         const message = error.response?.data?.message || 'Không tải được bài học.'
-        alert(message)
+        showError(message)
         setLessonRouteSlug(null)
         setLessonRouteLesson(null)
         setLessonRouteCourse(null)
@@ -1556,7 +1558,7 @@ function App() {
       const response = await api.get(`/api/users/${userId}/profile`)
       setProfileUser(response.data?.user || null)
     } catch (error) {
-      alert(error.response?.data?.message || 'Không tải được hồ sơ.')
+      showError(error.response?.data?.message || 'Không tải được hồ sơ.')
       setProfileUser(null)
     } finally {
       setProfileLoading(false)
@@ -1581,7 +1583,7 @@ function App() {
       setMyProfile(user)
       applyProfileToDraft(user)
     } catch (error) {
-      alert(error.response?.data?.message || 'Không tải được hồ sơ cá nhân.')
+      showError(error.response?.data?.message || 'Không tải được hồ sơ cá nhân.')
       setMyProfile(null)
     } finally {
       setMyProfileLoading(false)
@@ -1600,7 +1602,7 @@ function App() {
 
   const handleOpenMyProfile = () => {
     if (!currentUser) {
-      alert('Bạn phải đăng nhập để xem hồ sơ.')
+      showWarning('Bạn phải đăng nhập để xem hồ sơ.')
       navigate('/login')
       return
     }
@@ -1652,10 +1654,10 @@ function App() {
       const user = response.data?.user || null
       setMyProfile(user)
       applyProfileToDraft(user)
-      alert(response.data?.message || 'Đã cập nhật hồ sơ.')
+      showSuccess(response.data?.message || 'Đã cập nhật hồ sơ.')
       setProfileMode('view')
     } catch (error) {
-      alert(error.response?.data?.message || 'Không cập nhật được hồ sơ.')
+      showError(error.response?.data?.message || 'Không cập nhật được hồ sơ.')
     }
   }
 
@@ -1701,7 +1703,7 @@ function App() {
     }
     const videoError = validateVideoFile(file)
     if (videoError) {
-      alert(videoError)
+      showError(videoError)
       return
     }
     setIsAdminUploadLoading(true)
@@ -1709,7 +1711,7 @@ function App() {
       const url = await uploadVideoFile(file)
       setAdminUploadUrl(url || '')
     } catch {
-      alert('Không upload được video.')
+      showError('Không upload được video.')
     } finally {
       setIsAdminUploadLoading(false)
     }
@@ -1726,12 +1728,12 @@ function App() {
 
   const handleCreateCourse = async () => {
     if (!currentUser || (currentRole !== 'teacher' && currentRole !== 'admin')) {
-      alert('Chỉ giảng viên hoặc admin mới tạo được lớp học.')
+      showError('Chỉ giảng viên hoặc admin mới tạo được lớp học.')
       return
     }
 
     if (!newCourseData.title.trim() || !newCourseData.category.trim()) {
-      alert('Cậu điền tên lớp và danh mục trước nhé.')
+      showWarning('Cậu điền tên lớp và danh mục trước nhé.')
       return
     }
 
@@ -1740,7 +1742,7 @@ function App() {
       if (newCourseData.imageFile) {
         const errorMessage = validateImageFile(newCourseData.imageFile)
         if (errorMessage) {
-          alert(errorMessage)
+          showError(errorMessage)
           return
         }
         imageUrl = await uploadImageFile(newCourseData.imageFile)
@@ -1752,25 +1754,25 @@ function App() {
         description: newCourseData.description.trim(),
         imageUrl
       })
-      alert(response.data.message || 'Đã tạo lớp học.')
+      showSuccess(response.data.message || 'Đã tạo lớp học.')
       setNewCourseData({ title: '', category: allCategories[0] || categories[0], description: '', imageUrl: '', imageFile: null })
       if (currentRole === 'teacher') {
         fetchTeacherCourses()
       }
       fetchCourses()
     } catch (error) {
-      alert(error.response?.data?.message || 'Không tạo được lớp học.')
+      showError(error.response?.data?.message || 'Không tạo được lớp học.')
     }
   }
 
   const handleCreateLesson = async () => {
     if (!selectedTeacherCourseId) {
-      alert('Cậu chọn lớp trước nhé.')
+      showWarning('Cậu chọn lớp trước nhé.')
       return
     }
 
     if (!newLessonData.title.trim()) {
-      alert('Cậu điền tiêu đề bài học trước nhé.')
+      showWarning('Cậu điền tiêu đề bài học trước nhé.')
       return
     }
 
@@ -1779,7 +1781,7 @@ function App() {
       if (newLessonData.imageFile) {
         const errorMessage = validateImageFile(newLessonData.imageFile)
         if (errorMessage) {
-          alert(errorMessage)
+          showError(errorMessage)
           return
         }
         imageUrl = await uploadImageFile(newLessonData.imageFile)
@@ -1789,7 +1791,7 @@ function App() {
       if (newLessonData.videoFile) {
         const videoError = validateVideoFile(newLessonData.videoFile)
         if (videoError) {
-          alert(videoError)
+          showError(videoError)
           return
         }
         videoUrl = await uploadVideoFile(newLessonData.videoFile)
@@ -1802,7 +1804,7 @@ function App() {
         imageUrl,
         order: newLessonData.order
       })
-      alert(response.data.message || 'Đã thêm bài học.')
+      showSuccess(response.data.message || 'Đã thêm bài học.')
       setNewLessonData({
         title: '',
         content: '',
@@ -1814,7 +1816,7 @@ function App() {
       })
       fetchCourseLessons(selectedTeacherCourseId)
     } catch (error) {
-      alert(error.response?.data?.message || 'Không thêm được bài học.')
+      showError(error.response?.data?.message || 'Không thêm được bài học.')
     }
   }
 
@@ -1853,7 +1855,7 @@ function App() {
     }
 
     if (!editLessonData.title.trim()) {
-      alert('Cậu điền tiêu đề bài học trước nhé.')
+      showWarning('Cậu điền tiêu đề bài học trước nhé.')
       return
     }
 
@@ -1862,7 +1864,7 @@ function App() {
       if (editLessonData.imageFile) {
         const errorMessage = validateImageFile(editLessonData.imageFile)
         if (errorMessage) {
-          alert(errorMessage)
+          showError(errorMessage)
           return
         }
         imageUrl = await uploadImageFile(editLessonData.imageFile)
@@ -1872,7 +1874,7 @@ function App() {
       if (editLessonData.videoFile) {
         const videoError = validateVideoFile(editLessonData.videoFile)
         if (videoError) {
-          alert(videoError)
+          showError(videoError)
           return
         }
         videoUrl = await uploadVideoFile(editLessonData.videoFile)
@@ -1885,13 +1887,13 @@ function App() {
         imageUrl,
         order: editLessonData.order
       })
-      alert(response.data.message || 'Đã cập nhật bài học.')
+      showSuccess(response.data.message || 'Đã cập nhật bài học.')
       handleCancelEditLesson()
       if (selectedTeacherCourseId) {
         fetchCourseLessons(selectedTeacherCourseId)
       }
     } catch (error) {
-      alert(error.response?.data?.message || 'Không cập nhật được bài học.')
+      showError(error.response?.data?.message || 'Không cập nhật được bài học.')
     }
   }
 
@@ -1906,7 +1908,7 @@ function App() {
 
     try {
       const response = await api.delete(`/api/lessons/${lessonId}`)
-      alert(response.data.message || 'Đã xóa bài học.')
+      showSuccess(response.data.message || 'Đã xóa bài học.')
 
       if (lessonRouteLesson && String(lessonRouteLesson._id) === String(lessonId)) {
         closeLessonRoute()
@@ -1918,7 +1920,7 @@ function App() {
         fetchCourseLessons(refreshCourseId)
       }
     } catch (error) {
-      alert(error.response?.data?.message || 'Không xóa được bài học.')
+      showError(error.response?.data?.message || 'Không xóa được bài học.')
     }
   }
 
@@ -1943,7 +1945,7 @@ function App() {
     if (!file) return
     const err = validateVideoFile(file)
     if (err) {
-      alert(getApiErrorMessage(err, 'File không hợp lệ.'))
+      showError(getApiErrorMessage(err, 'File không hợp lệ.'))
       return
     }
     try {
@@ -1953,7 +1955,7 @@ function App() {
         description: `${prev.description || ''}<p><video controls src="${url}" style="max-width:100%"></video></p>`
       }))
     } catch {
-      alert('Không upload được video.')
+      showError('Không upload được video.')
     }
   }
 
@@ -1961,7 +1963,7 @@ function App() {
     if (!file) return
     const err = validateVideoFile(file)
     if (err) {
-      alert(getApiErrorMessage(err, 'File không hợp lệ.'))
+      showError(getApiErrorMessage(err, 'File không hợp lệ.'))
       return
     }
     try {
@@ -1971,7 +1973,7 @@ function App() {
         content: `${prev.content || ''}<p><video controls src="${url}" style="max-width:100%"></video></p>`
       }))
     } catch {
-      alert('Không upload được video.')
+      showError('Không upload được video.')
     }
   }
 
@@ -1979,7 +1981,7 @@ function App() {
     if (!file) return
     const err = validateVideoFile(file)
     if (err) {
-      alert(getApiErrorMessage(err, 'File không hợp lệ.'))
+      showError(getApiErrorMessage(err, 'File không hợp lệ.'))
       return
     }
     try {
@@ -1989,7 +1991,7 @@ function App() {
         content: `${prev.content || ''}<p><video controls src="${url}" style="max-width:100%"></video></p>`
       }))
     } catch {
-      alert('Không upload được video.')
+      showError('Không upload được video.')
     }
   }
 
@@ -2000,14 +2002,14 @@ function App() {
 
     try {
       const response = await api.post(`/api/courses/${courseId}/enroll`)
-      alert(response.data.message || 'Đã tham gia lớp học.')
+      showSuccess(response.data.message || 'Đã tham gia lớp học.')
       await Promise.all([
         fetchMyEnrollments(),
         fetchCourseLessons(courseId),
         fetchCourseAssignments(courseId)
       ])
     } catch (error) {
-      alert(error.response?.data?.message || 'Không tham gia được lớp học.')
+      showError(error.response?.data?.message || 'Không tham gia được lớp học.')
     }
   }
 
@@ -2018,7 +2020,7 @@ function App() {
 
     try {
       const response = await api.post(`/api/lessons/${lessonId}/complete`)
-      alert(response.data.message || 'Đã cập nhật tiến độ.')
+      showSuccess(response.data.message || 'Đã cập nhật tiến độ.')
       fetchMyEnrollments()
       if (currentUser) {
         setPointsByUser(prev => ({
@@ -2027,7 +2029,7 @@ function App() {
         }))
       }
     } catch (error) {
-      alert(error.response?.data?.message || 'Không cập nhật được tiến độ.')
+      showError(error.response?.data?.message || 'Không cập nhật được tiến độ.')
     }
   }
 
@@ -2043,7 +2045,7 @@ function App() {
     try {
       const response = await api.delete(`/api/forum/posts/${post.id}`)
 
-      alert(response.data.message || 'Đã xóa bài viết.')
+      showSuccess(response.data.message || 'Đã xóa bài viết.')
       setForumPosts(prev => prev.filter(item => String(item.id) !== String(post.id)))
       setCommentsByPost(prev => {
         const next = { ...prev }
@@ -2053,7 +2055,7 @@ function App() {
       fetchDeletedPosts()
       fetchDeletedComments()
     } catch (error) {
-      alert(error.response?.data?.message || 'Không xóa được bài viết.')
+      showError(error.response?.data?.message || 'Không xóa được bài viết.')
     }
   }
 
@@ -2072,13 +2074,13 @@ function App() {
         penalty,
         reason: 'manual_admin_review'
       })
-      alert(response.data?.message || 'Đã xử lý bình luận.')
+      showSuccess(response.data?.message || 'Đã xử lý bình luận.')
       setAdminForumComments(prev => prev.filter(item => String(item._id) !== String(comment._id)))
       fetchDeletedComments()
       fetchManagedUsers()
       fetchForumData()
     } catch (error) {
-      alert(error.response?.data?.message || 'Không xử lý được bình luận.')
+      showError(error.response?.data?.message || 'Không xử lý được bình luận.')
     }
   }
 
@@ -2090,12 +2092,12 @@ function App() {
     try {
       const response = await api.patch(`/api/forum/posts/${postId}/restore`, {})
 
-      alert(response.data.message || 'Đã khôi phục bài viết.')
+      showSuccess(response.data.message || 'Đã khôi phục bài viết.')
       fetchDeletedPosts()
       fetchDeletedComments()
       fetchForumData()
     } catch (error) {
-      alert(error.response?.data?.message || 'Không khôi phục được bài viết.')
+      showError(error.response?.data?.message || 'Không khôi phục được bài viết.')
     }
   }
 
@@ -2107,11 +2109,11 @@ function App() {
     try {
       const response = await api.patch(`/api/forum/comments/${commentId}/restore`, {})
 
-      alert(response.data.message || 'Đã khôi phục bình luận.')
+      showSuccess(response.data.message || 'Đã khôi phục bình luận.')
       fetchDeletedComments()
       fetchForumData()
     } catch (error) {
-      alert(error.response?.data?.message || 'Không khôi phục được bình luận.')
+      showError(error.response?.data?.message || 'Không khôi phục được bình luận.')
     }
   }
 
@@ -2127,12 +2129,12 @@ function App() {
     try {
       const response = await api.delete(`/api/forum/deleted/posts/${postId}`)
 
-      alert(response.data.message || 'Đã xóa vĩnh viễn bài viết.')
+      showSuccess(response.data.message || 'Đã xóa vĩnh viễn bài viết.')
       fetchDeletedPosts()
       fetchDeletedComments()
       fetchForumData()
     } catch (error) {
-      alert(error.response?.data?.message || 'Không xóa vĩnh viễn được bài viết.')
+      showError(error.response?.data?.message || 'Không xóa vĩnh viễn được bài viết.')
     }
   }
 
@@ -2148,11 +2150,11 @@ function App() {
     try {
       const response = await api.delete(`/api/forum/deleted/comments/${commentId}`)
 
-      alert(response.data.message || 'Đã xóa vĩnh viễn bình luận.')
+      showSuccess(response.data.message || 'Đã xóa vĩnh viễn bình luận.')
       fetchDeletedComments()
       fetchForumData()
     } catch (error) {
-      alert(error.response?.data?.message || 'Không xóa vĩnh viễn được bình luận.')
+      showError(error.response?.data?.message || 'Không xóa vĩnh viễn được bình luận.')
     }
   }
 
@@ -2168,10 +2170,10 @@ function App() {
     try {
       const response = await api.delete(`/api/moderation/reports/${reportId}`)
 
-      alert(response.data.message || 'Đã xóa report kiểm duyệt.')
+      showSuccess(response.data.message || 'Đã xóa report kiểm duyệt.')
       setModerationReports(prev => prev.filter(report => String(report._id) !== String(reportId)))
     } catch (error) {
-      alert(error.response?.data?.message || 'Không xóa được report kiểm duyệt.')
+      showError(error.response?.data?.message || 'Không xóa được report kiểm duyệt.')
     }
   }
 
@@ -2187,10 +2189,10 @@ function App() {
     try {
       const response = await api.delete('/api/moderation/reports')
 
-      alert(response.data.message || 'Đã xóa toàn bộ lịch sử kiểm duyệt.')
+      showSuccess(response.data.message || 'Đã xóa toàn bộ lịch sử kiểm duyệt.')
       setModerationReports([])
     } catch (error) {
-      alert(error.response?.data?.message || 'Không xóa được toàn bộ lịch sử kiểm duyệt.')
+      showError(error.response?.data?.message || 'Không xóa được toàn bộ lịch sử kiểm duyệt.')
     }
   }
 
@@ -2234,7 +2236,7 @@ function App() {
         payload.accountStatus && targetAuthor
           ? ` Tài khoản ${targetAuthor}: ${payload.accountStatus} (${payload.violationCount || 0} lỗi).`
           : ''
-      alert(`${payload.message || 'Đã gửi report.'} ${moderationText}${accountText}`)
+      showSuccess(`${payload.message || 'Đã gửi report.'} ${moderationText}${accountText}`)
 
       if (currentRole === 'admin' && activeTab === 'manage') {
         fetchManagedUsers()
@@ -2243,7 +2245,7 @@ function App() {
         fetchDeletedComments()
       }
     } catch (error) {
-      alert(error.response?.data?.message || 'Không gửi được report.')
+      showError(error.response?.data?.message || 'Không gửi được report.')
     }
   }
 
@@ -2254,7 +2256,7 @@ function App() {
     setProfileUser(null)
     setProfileMode('view')
     if (isInsideLesson) {
-      alert('Bạn phải đăng nhập để tiếp tục học bài.')
+      showWarning('Bạn phải đăng nhập để tiếp tục học bài.')
     }
     handleTabChange('home')
   }

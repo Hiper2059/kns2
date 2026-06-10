@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import gsap from 'gsap'
+import { useUI } from '../context/UIContext'
 import {
   BookOpen,
   CheckCircle2,
@@ -39,6 +40,7 @@ const LmsView = ({
   onLoadEnrollments,
   onDeleteLesson
 }) => {
+  const { showWarning } = useUI()
   const [quizDrafts, setQuizDrafts] = useState({})
   const [courseSearch, setCourseSearch] = useState('')
   const isTeacher = currentRole === 'teacher'
@@ -152,7 +154,7 @@ const LmsView = ({
     })
 
     if (hasMissingAnswer) {
-      alert('Cậu trả lời hết các câu trước khi nộp nhé.')
+      showWarning('Cậu trả lời hết các câu trước khi nộp nhé.')
       return
     }
 
