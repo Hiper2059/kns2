@@ -4,6 +4,7 @@ const {
 	listUsers,
 	updateUserRole,
 	updateUserStatus,
+	updateUserDetails,
 	deleteUser,
 	getPublicProfile,
 	getMyProfile,
@@ -18,6 +19,7 @@ router.post('/', requireAdmin, createUser);
 router.patch('/role', requireAdmin, updateUserRole);
 router.patch('/status', requireAdmin, updateUserStatus);
 router.delete('/:username', requireAdmin, deleteUser);
+router.patch('/:username', requireAdmin, updateUserDetails);
 
 router.get('/me/profile', requireActiveUser, getMyProfile);
 router.patch('/me/profile', requireActiveUser, updateMyProfile);

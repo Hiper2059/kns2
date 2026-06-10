@@ -162,6 +162,29 @@ const updateUserRole = catchAsync(async (req, res) => {
   res.json({ message: 'Cập nhật vai trò thành công.' });
 });
 
+const updateUserDetails = catchAsync(async (req, res) => {
+  const { username } = req.params;
+  const { displayName, password } = req.body;
+
+  const user = await User.findOne({ username: username.trim() });
+  if (!user) {
+    return res.status(404).json({ message: 'Không tìm thấy người dùng.' });
+  }
+
+  if (displayName && displayName.trim()) {
+    user.profile.displayName = displayName.trim();
+  }
+
+  if (password && password.trim()) {
+    const bcrypt = require('bcryptjs');
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(password.trim(), salt);
+  }
+
+  await user.save();
+  res.json({ message: 'Cập nhật thông tin người dùng thành công.' });
+});
+
 const updateUserStatus = catchAsync(async (req, res) => {
   const { username, status } = req.body;
 
@@ -281,6 +304,7 @@ module.exports = {
   listUsers,
   updateUserRole,
   updateUserStatus,
+  updateUserDetails,
   deleteUser,
   getPublicProfile,
   getMyProfile,

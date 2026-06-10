@@ -48,6 +48,7 @@ const ManageView = ({
   onRoleChange,
   onStatusChange,
   onDeleteUser,
+  onUpdateUserDetails,
   moderationReports,
   onDeleteModerationReport,
   onClearModerationReports,
@@ -74,6 +75,7 @@ const ManageView = ({
   const [lessonCommentsById, setLessonCommentsById] = useState({})
   const [expandedLessonId, setExpandedLessonId] = useState('')
   const [loadingLessonCommentsId, setLoadingLessonCommentsId] = useState('')
+  const [editingUser, setEditingUser] = useState(null)
   const formatCount = value => new Intl.NumberFormat('vi-VN').format(value || 0)
   const analyticsData = analytics || {}
 
@@ -84,8 +86,7 @@ const ManageView = ({
     { id: 'comments', label: 'Bình luận' },
     { id: 'moderation', label: 'Kiểm duyệt' },
     { id: 'reports', label: 'Báo cáo' },
-    { id: 'content', label: 'Nội dung' },
-    { id: 'settings', label: 'Cài đặt' }
+    { id: 'content', label: 'Nội dung' }
   ]
 
   const navMeta = {
@@ -95,8 +96,7 @@ const ManageView = ({
     comments: { label: 'Bình luận', icon: MessageSquare },
     moderation: { label: 'Kiểm duyệt', icon: ShieldCheck },
     reports: { label: 'Báo cáo', icon: Flag },
-    content: { label: 'Nội dung', icon: FileText },
-    settings: { label: 'Cài đặt', icon: Settings }
+    content: { label: 'Nội dung', icon: FileText }
   }
 
   const getReportTargetLabel = targetType => {
@@ -313,10 +313,36 @@ const ManageView = ({
                             <option value="suspended">suspended</option>
                             <option value="banned">banned</option>
                           </select>
+                          <button className={ghostButtonClass} onClick={() => setEditingUser(editingUser === user.username ? null : user.username)}>
+                            {editingUser === user.username ? 'Hủy' : 'Sửa'}
+                          </button>
                           <button className={dangerButtonClass} onClick={() => onDeleteUser(user.username)} disabled={user.username === currentUser}>
                             Xóa TK
                           </button>
                         </div>
+                      </div>
+                      {editingUser === user.username && (
+                        <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row gap-3 items-end">
+                          <div className="flex-1 w-full">
+                            <label className="block text-[12px] font-bold text-slate-500 mb-1">Tên hiển thị mới</label>
+                            <input type="text" id={`edit-name-${user.username}`} className={baseInputClass} defaultValue={user.profile?.displayName || ''} placeholder="Để trống nếu không đổi" />
+                          </div>
+                          <div className="flex-1 w-full">
+                            <label className="block text-[12px] font-bold text-slate-500 mb-1">Mật khẩu mới</label>
+                            <input type="password" id={`edit-pwd-${user.username}`} className={baseInputClass} placeholder="Để trống nếu không đổi" />
+                          </div>
+                          <button className={baseButtonClass} onClick={() => {
+                            const newName = document.getElementById(`edit-name-${user.username}`).value;
+                            const newPwd = document.getElementById(`edit-pwd-${user.username}`).value;
+                            if (!newName && !newPwd) {
+                              showError('Vui lòng nhập tên hiển thị hoặc mật khẩu mới.');
+                              return;
+                            }
+                            onUpdateUserDetails?.(user.username, newName, newPwd);
+                            setEditingUser(null);
+                          }}>Lưu thay đổi</button>
+                        </div>
+                      )}
                       </div>
                     )) : <div className="p-8 text-center text-slate-500 font-medium">Chưa có dữ liệu người dùng.</div>}
                   </div>
@@ -607,23 +633,6 @@ const ManageView = ({
                       </div>
                     )) : <div className="py-10 text-center text-slate-500 font-medium">Không có bài viết diễn đàn nào.</div>}
                   </div>
-                </div>
-              </div>
-            )}
-
-            {activeSection === 'settings' && (
-              <div className="flex flex-col gap-6">
-                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col items-center justify-center py-20 px-6 text-center">
-                  <div className="w-20 h-20 bg-slate-50 border border-slate-200 rounded-full flex items-center justify-center text-slate-400 mb-6 shadow-sm">
-                    <Settings size={32} />
-                  </div>
-                  <h4 className="text-2xl font-black text-slate-900 mb-2">Cài đặt hệ thống</h4>
-                  <p className="text-[15px] font-medium text-slate-500 max-w-md mx-auto leading-relaxed">
-                    Tính năng Cài đặt hệ thống hiện đang được phát triển. Trong các phiên bản tới, bạn có thể tùy chỉnh thông báo, phân quyền, giao diện hệ thống và nhiều tiện ích khác tại đây.
-                  </p>
-                  <button className="mt-8 px-6 py-3 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl font-bold text-[14px] hover:bg-blue-100 transition-colors" onClick={() => setActiveSection('overview')}>
-                    Trở lại Tổng quan
-                  </button>
                 </div>
               </div>
             )}

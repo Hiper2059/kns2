@@ -35,7 +35,10 @@ const ForumView = ({
   filteredForumPosts,
   forumScope,
   forumCourse
-}) => (
+}) => {
+  const [isComposerOpen, setIsComposerOpen] = React.useState(false)
+
+  return (
   <div className="w-full max-w-7xl mx-auto px-4 md:px-6 py-8 min-w-0">
     <div className="flex items-center gap-3 mb-8">
       <div className="grid place-items-center w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 shadow-inner">
@@ -283,6 +286,7 @@ const ForumView = ({
       </div>
     </div>
   </div>
-)
+  )
+}
 
 export default ForumView

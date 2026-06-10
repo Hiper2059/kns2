@@ -107,11 +107,11 @@ const completeLesson = catchAsync(async (req, res) => {
   let pointsEarned = 0;
   if (!enrollment.completedLessons.find(item => String(item) === String(lessonId))) {
     enrollment.completedLessons.push(lesson._id);
-    enrollment.points = (enrollment.points || 0) + 10;
-    pointsEarned = 10;
+    enrollment.points = (enrollment.points || 0) + 30;
+    pointsEarned = 30;
     
     await User.findByIdAndUpdate(req.currentUser._id, {
-      $inc: { points: 10 }
+      $inc: { points: 30 }
     });
   }
 

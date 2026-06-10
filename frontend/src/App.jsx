@@ -911,6 +911,18 @@ function App() {
     }
   }
 
+  const handleUpdateUserDetails = async (username, displayName, password) => {
+    if (!currentUser || currentRole !== 'admin') return
+
+    try {
+      const response = await api.patch(`/api/users/${encodeURIComponent(username)}`, { displayName, password })
+      showSuccess(getApiSuccessMessage(response))
+      fetchManagedUsers()
+    } catch (error) {
+      showError(error.response?.data?.message || 'Không cập nhật được thông tin tài khoản.')
+    }
+  }
+
   const handleAddVideo = async () => {
     if (!currentUser || currentRole !== 'admin') {
       return
@@ -2678,6 +2690,7 @@ function App() {
                       onRoleChange={handleRoleChange}
                       onStatusChange={handleStatusChange}
                       onDeleteUser={handleDeleteUser}
+                      onUpdateUserDetails={handleUpdateUserDetails}
                       moderationReports={moderationReports}
                       onDeleteModerationReport={handleDeleteModerationReport}
                       onClearModerationReports={handleClearModerationReports}

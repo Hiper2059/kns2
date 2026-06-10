@@ -318,11 +318,15 @@ const upsertSubmission = catchAsync(async (req, res) => {
     };
   }
 
-  let isNewPerfectScore = false;
-  if (assignment.type === 'quiz' && submissionPayload.score === 100) {
+  let pointsToAward = 0;
+  if (assignment.type === 'quiz') {
     const existingSubmission = await Submission.findOne({ assignment: assignment._id, student: req.currentUser._id });
-    if (!existingSubmission || existingSubmission.score !== 100) {
-      isNewPerfectScore = true;
+    const totalQuestions = assignment.questions?.length || 0;
+    const currentCorrect = submissionPayload.score != null ? Math.round((submissionPayload.score * totalQuestions) / 100) : 0;
+    const existingCorrect = (existingSubmission && existingSubmission.score != null) ? Math.round((existingSubmission.score * totalQuestions) / 100) : 0;
+    
+    if (currentCorrect > existingCorrect) {
+      pointsToAward = (currentCorrect - existingCorrect) * 10;
     }
   }
 
@@ -335,15 +339,15 @@ const upsertSubmission = catchAsync(async (req, res) => {
     { new: true, upsert: true }
   );
 
-  if (isNewPerfectScore) {
+  if (pointsToAward > 0) {
     await Enrollment.findOneAndUpdate(
       { course: assignment.course, student: req.currentUser._id },
-      { $inc: { points: 20 } }
+      { $inc: { points: pointsToAward } }
     );
-    await User.findByIdAndUpdate(req.currentUser._id, { $inc: { points: 20 } });
+    await User.findByIdAndUpdate(req.currentUser._id, { $inc: { points: pointsToAward } });
   }
 
-  res.json({ message: 'Da nop bai.', submission, pointsEarned: isNewPerfectScore ? 20 : 0 });
+  res.json({ message: 'Da nop bai.', submission, pointsEarned: pointsToAward });
 });
 
 const listSubmissions = catchAsync(async (req, res) => {
