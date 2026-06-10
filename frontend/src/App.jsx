@@ -417,7 +417,8 @@ function App() {
         scope: post.scope || 'general',
         courseId: post.course || null,
         heartCount: post.heartCount || 0,
-        isHearted: Boolean(post.isHearted)
+        isHearted: Boolean(post.isHearted),
+        authorDisplayName: post.authorDisplayName
       }))
 
       const groupedComments = (commentsResponse.data.comments || []).reduce((acc, comment) => {
@@ -428,6 +429,7 @@ function App() {
         acc[postId].push({
           id: comment._id,
           author: comment.author,
+          authorDisplayName: comment.authorDisplayName,
           text: comment.text
         })
         return acc
@@ -673,7 +675,8 @@ function App() {
           scope: createdPost.scope || postScope,
           courseId: createdPost.course || postCourseId || null,
           heartCount: createdPost.heartCount || 0,
-          isHearted: Boolean(createdPost.isHearted)
+          isHearted: Boolean(createdPost.isHearted),
+          authorDisplayName: createdPost.authorDisplayName || myProfile?.profile?.displayName || newPost.author
         },
         ...prevPosts
       ])
