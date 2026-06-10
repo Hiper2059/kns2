@@ -292,10 +292,6 @@ const ProfilePage = ({
                       <input type="date" className={baseInputClass} placeholder="Ngày sinh" value={profileDraft.student?.dob || ''} onChange={event => handleNestedChange('student', 'dob', event.target.value)} />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-[13px] font-bold text-slate-700">Lớp đang học</label>
-                      <input type="text" className={baseInputClass} placeholder="Lớp đang học" value={profileDraft.student?.className || ''} onChange={event => handleNestedChange('student', 'className', event.target.value)} />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
                       <label className="text-[13px] font-bold text-slate-700">Sở trường</label>
                       <input type="text" className={baseInputClass} placeholder="Sở trường" value={profileDraft.student?.strengths || ''} onChange={event => handleNestedChange('student', 'strengths', event.target.value)} />
                     </div>
@@ -307,15 +303,11 @@ const ProfilePage = ({
                       <label className="text-[13px] font-bold text-slate-700">Mục tiêu dài hạn</label>
                       <input type="text" className={baseInputClass} placeholder="Mục tiêu dài hạn" value={profileDraft.student?.goalsLong || ''} onChange={event => handleNestedChange('student', 'goalsLong', event.target.value)} />
                     </div>
-                    <div className="flex flex-col gap-1.5 col-span-full">
-                      <label className="text-[13px] font-bold text-slate-700">Nhận xét từ giáo viên</label>
-                      <textarea className={baseTextAreaClass} placeholder="Nhận xét giáo viên" value={profileDraft.student?.teacherNote || ''} onChange={event => handleNestedChange('student', 'teacherNote', event.target.value)} />
-                    </div>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FactItem icon={Calendar} label="Ngày sinh" value={profileUser.profile?.student?.dob} />
-                    <FactItem icon={BookOpen} label="Lớp đang học" value={profileUser.profile?.student?.className} />
+                    <FactItem icon={BookOpen} label="Lớp đang học" value={profileUser.enrolledCourses?.length ? profileUser.enrolledCourses.map(c => c.title).join(', ') : 'Chưa đăng ký lớp nào'} />
                     <FactItem icon={Award} label="Sở trường" value={profileUser.profile?.student?.strengths} />
                     
                     <div className="col-span-full mt-4 flex flex-col gap-4">
@@ -333,13 +325,6 @@ const ProfilePage = ({
                               <p className="text-[14px] font-bold text-slate-900">{profileUser.profile.student.goalsLong}</p>
                             </div>
                           )}
-                        </div>
-                      )}
-                      
-                      {profileUser.profile?.student?.teacherNote && (
-                        <div className="p-5 bg-emerald-50 border border-emerald-100 rounded-xl">
-                          <span className="block text-[12px] font-bold text-emerald-700 uppercase tracking-wide mb-2">Nhận xét từ giáo viên</span>
-                          <p className="text-[14px] text-emerald-900 font-medium leading-relaxed italic">"{profileUser.profile.student.teacherNote}"</p>
                         </div>
                       )}
                     </div>

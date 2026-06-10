@@ -2606,6 +2606,7 @@ function App() {
                     filteredForumPosts={filteredForumPosts}
                     forumScope={forumScope}
                     forumCourse={forumCourse}
+                    onOpenProfile={handleOpenProfile}
                   />
                 } />
 

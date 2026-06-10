@@ -34,7 +34,8 @@ const ForumView = ({
   onPageChange,
   filteredForumPosts,
   forumScope,
-  forumCourse
+  forumCourse,
+  onOpenProfile
 }) => {
   const [isComposerOpen, setIsComposerOpen] = React.useState(false)
 
@@ -174,7 +175,12 @@ const ForumView = ({
                       <UserCircle2 size={24} />
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span className="text-[14px] font-bold text-slate-800 truncate">{post.authorDisplayName || post.author}</span>
+                      <button 
+                        className="text-[14px] font-bold text-slate-800 truncate text-left hover:text-blue-600 hover:underline transition-colors"
+                        onClick={() => onOpenProfile?.(post.author)}
+                      >
+                        {post.authorDisplayName || post.author}
+                      </button>
                       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[11px] font-bold uppercase tracking-wide w-fit mt-0.5">
                         <Hash size={12} />
                         {post.category}
@@ -217,7 +223,12 @@ const ForumView = ({
                       (commentsByPost[post.id] || []).map(comment => (
                         <div key={comment.id} className="group relative flex flex-col gap-1 p-3.5 bg-white border border-slate-200 rounded-2xl shadow-sm">
                           <div className="flex items-center justify-between">
-                            <strong className="text-[13px] font-extrabold text-slate-800">{comment.authorDisplayName || comment.author}</strong>
+                            <button 
+                              className="text-[13px] font-extrabold text-slate-800 hover:text-blue-600 hover:underline transition-colors text-left"
+                              onClick={() => onOpenProfile?.(comment.author)}
+                            >
+                              {comment.authorDisplayName || comment.author}
+                            </button>
                             <button
                               className="opacity-0 cursor-pointer group-hover:opacity-100 inline-flex items-center text-[11px] font-bold text-slate-400 hover:text-red-500 transition-all"
                               onClick={() => onReportContent({ targetType: 'comment', targetId: comment.id, targetAuthor: comment.author, content: comment.text })}

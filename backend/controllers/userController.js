@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const Course = require('../models/Course');
+const Enrollment = require('../models/Enrollment');
 const { normalizeRole, allowedStatuses } = require('../utils/userUtils');
 const { hashPassword } = require('../utils/password');
 const { getPaginationParams, buildPagination } = require('../utils/pagination');
@@ -238,6 +239,11 @@ const buildPublicProfile = async user => {
   if (user.role === 'teacher') {
     const courses = await Course.find({ teacher: user._id }, { title: 1 }).lean();
     profilePayload.managedCourses = courses.map(course => ({ _id: course._id, title: course.title }));
+  } else if (user.role === 'student' || user.role === 'user') {
+    const enrollments = await Enrollment.find({ student: user._id }).populate('course', 'title').lean();
+    profilePayload.enrolledCourses = enrollments
+      .filter(e => e.course)
+      .map(e => ({ _id: e.course._id, title: e.course.title }));
   }
 
   return profilePayload;
