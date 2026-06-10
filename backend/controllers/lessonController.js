@@ -76,21 +76,27 @@ const listLessons = catchAsync(async (req, res) => {
     return res.status(404).json({ message: 'Khong tim thay lop hoc.' });
   }
 
-  if (isStudentRole(req.currentUser.role)) {
-    const enrolled = await Enrollment.findOne({
-      course: courseId,
-      student: req.currentUser._id
-    }).lean();
-
-    if (!enrolled) {
-      return res.status(403).json({ message: 'Cau can tham gia lop truoc khi xem bai hoc.' });
+  let hasFullAccess = false;
+  if (req.currentUser) {
+    if (req.currentUser.role === 'admin' || (req.currentUser.role === 'teacher' && String(course.teacher) === String(req.currentUser._id))) {
+      hasFullAccess = true;
+    } else if (isStudentRole(req.currentUser.role)) {
+      const enrolled = await Enrollment.findOne({
+        course: courseId,
+        student: req.currentUser._id
+      }).lean();
+      if (enrolled) {
+        hasFullAccess = true;
+      }
     }
   }
 
   const filter = { course: courseId };
   const { page, limit, skip } = getPaginationParams(req.query);
+  const projection = hasFullAccess ? {} : { content: 0, videoUrl: 0 };
+
   const [lessons, totalItems] = await Promise.all([
-    Lesson.find(filter)
+    Lesson.find(filter, projection)
       .sort({ order: 1, createdAt: 1 })
       .skip(skip)
       .limit(limit)

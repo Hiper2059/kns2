@@ -10,7 +10,7 @@ const {
 const { listLessons, createLesson } = require('../controllers/lessonController');
 const { listAssignments, createAssignment } = require('../controllers/assignmentController');
 const { enrollCourse, listCourseEnrollments } = require('../controllers/enrollmentController');
-const { requireActiveUser, requireTeacherOrAdmin } = require('../middleware/auth');
+const { requireActiveUser, requireTeacherOrAdmin, optionalAuth } = require('../middleware/auth');
 const validate = require('../middleware/validate');
 const { createCourseSchema, updateCourseSchema } = require('../validations/courseValidation');
 
@@ -23,7 +23,7 @@ router.post('/', requireTeacherOrAdmin, validate(createCourseSchema), createCour
 router.patch('/:courseId', requireTeacherOrAdmin, validate(updateCourseSchema), updateCourse);
 router.delete('/:courseId', requireTeacherOrAdmin, deleteCourse);
 
-router.get('/:courseId/lessons', requireActiveUser, listLessons);
+router.get('/:courseId/lessons', optionalAuth, listLessons);
 router.post('/:courseId/lessons', requireTeacherOrAdmin, createLesson);
 
 router.get('/:courseId/assignments', requireActiveUser, listAssignments);

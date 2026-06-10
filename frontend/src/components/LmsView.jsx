@@ -287,8 +287,13 @@ const LmsView = ({
                   }`}
                   onClick={() => onSelectCourse(course)}
                 >
-                  <div>
-                    <div className="mb-5 inline-flex rounded-md bg-emerald-50 px-3 py-1 text-[12px] font-black text-emerald-700">
+                  <div className="flex flex-col h-full">
+                    {course.imageUrl && (
+                      <div className="mb-4 h-36 w-full shrink-0 overflow-hidden rounded-xl bg-slate-100">
+                        <img src={course.imageUrl} alt={course.title} className="h-full w-full object-cover" />
+                      </div>
+                    )}
+                    <div className="mb-4 inline-flex w-fit rounded-md bg-emerald-50 px-3 py-1 text-[12px] font-black text-emerald-700">
                       {course.category}
                     </div>
                     <div className="min-h-[46px] text-[18px] font-black leading-snug tracking-normal text-slate-950">
@@ -318,6 +323,11 @@ const LmsView = ({
               <div className="flex flex-col gap-8">
                 <div className="relative p-8 md:p-10 bg-slate-50 border border-slate-200 rounded-[24px] shadow-sm flex flex-col md:flex-row gap-8">
                   <div className="flex-1 flex flex-col gap-4 min-w-0">
+                    {selectedCourse.imageUrl && (
+                      <div className="w-full h-48 md:h-64 rounded-xl overflow-hidden mb-2 bg-slate-100">
+                        <img src={selectedCourse.imageUrl} alt={selectedCourse.title} className="w-full h-full object-cover" />
+                      </div>
+                    )}
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-[12px] font-black uppercase tracking-wide w-fit">
                       <Sparkles size={14} /> {selectedCourse.category}
                     </span>
@@ -412,12 +422,16 @@ const LmsView = ({
                       sortedLessons.map(lesson => (
                         <div
                           key={lesson._id}
-                          className="group flex cursor-pointer items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-2xl hover:border-blue-300 hover:shadow-md transition-all"
+                          className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-2xl hover:border-blue-300 hover:shadow-md transition-all gap-4"
                           onClick={() => onOpenLesson?.(lesson)}
                         >
                           <div className="flex items-center gap-4">
-                            <div className="grid place-items-center w-10 h-10 rounded-xl bg-blue-100 text-blue-700 font-black text-[15px]">{lesson.order}</div>
-                            <span className="text-[16px] font-bold text-slate-800">{lesson.title}</span>
+                            {lesson.imageUrl ? (
+                              <img src={lesson.imageUrl} alt={lesson.title} className="w-14 h-10 rounded-lg object-cover bg-slate-200 shrink-0" />
+                            ) : (
+                              <div className="grid place-items-center w-10 h-10 rounded-xl bg-blue-100 text-blue-700 font-black text-[15px] shrink-0">{lesson.order}</div>
+                            )}
+                            <span className="text-[16px] font-bold text-slate-800 line-clamp-2">{lesson.title}</span>
                           </div>
 
                           <div className="flex items-center gap-4">
@@ -441,11 +455,7 @@ const LmsView = ({
                       ))
                     ) : (
                       <div className="py-10 text-center text-[15px] font-medium text-slate-500 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
-                        {needsLoginToViewLessons
-                          ? 'Đăng nhập và tham gia lớp để xem bài học.'
-                          : needsEnrollmentToViewLessons
-                            ? 'Tham gia lớp để xem bài học.'
-                            : 'Lớp học chưa có bài học nào.'}
+                        Lớp học chưa có bài học nào.
                       </div>
                     )}
                   </div>
