@@ -2778,6 +2778,7 @@ function App() {
                     onLessonUpdated={handleLessonUpdated}
                     api={api}
                     currentUser={currentUser}
+                    onOpenProfile={handleOpenProfile}
                     currentRole={currentRole}
                     onReportContent={handleReportContent}
                   />

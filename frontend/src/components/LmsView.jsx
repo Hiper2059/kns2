@@ -278,13 +278,13 @@ const LmsView = ({
             </div>
           </div>
 
-          <div className="mt-6 grid grid-cols-[repeat(auto-fit,minmax(250px,250px))] gap-6 max-md:grid-cols-1">
+          <div className="mt-6 flex overflow-x-auto gap-6 pb-6 snap-x hide-scrollbar">
             {visibleCourses.length ? (
               visibleCourses.map(course => (
                 <button
                   key={course._id}
                   type="button"
-                  className={`gsap-animate grid cursor-pointer min-h-[230px] rounded-2xl border bg-white p-5 text-left shadow-[0_10px_26px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-[0_18px_38px_rgba(37,99,235,0.12)] ${
+                  className={`gsap-animate shrink-0 w-[280px] snap-start flex flex-col cursor-pointer min-h-[230px] rounded-2xl border bg-white p-5 text-left shadow-[0_10px_26px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-[0_18px_38px_rgba(37,99,235,0.12)] ${
                     selectedCourse?._id === course._id ? 'border-blue-400 ring-4 ring-blue-50' : 'border-slate-200'
                   }`}
                   onClick={() => onSelectCourse(course)}
@@ -305,7 +305,7 @@ const LmsView = ({
                       {stripHtml(course.description) || 'Chưa có mô tả lớp học.'}
                     </div>
                   </div>
-                  <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-[13px] font-black text-slate-500">
+                  <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-4 text-[13px] font-black text-slate-500 w-full">
                     <span className="inline-flex items-center gap-1.5"><BookOpen size={15} /> {course.lessonCount || course.lessonsCount || 0} bài</span>
                     <span className="inline-flex items-center gap-1.5"><Users size={15} /> {course.studentCount || 0}</span>
                   </div>

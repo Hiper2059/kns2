@@ -67,7 +67,8 @@ const LessonFullPage = ({
   api,
   currentUser,
   currentRole,
-  onReportContent
+  onReportContent,
+  onOpenProfile
 }) => {
   const { showWarning, showError, showSuccess } = useUI()
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false)
@@ -728,7 +729,13 @@ const LessonFullPage = ({
                                     {(item.authorName || 'K').slice(0, 1).toUpperCase()}
                                   </div>
                                   <div>
-                                    <strong className="text-[14px] font-black text-slate-900">{item.authorName || 'Khách'}</strong>
+                                    <button 
+                                      className="text-[14px] font-black text-slate-900 text-left hover:text-blue-600 hover:underline transition-colors disabled:hover:no-underline disabled:hover:text-slate-900 cursor-pointer disabled:cursor-default"
+                                      onClick={() => onOpenProfile?.(item.authorName)}
+                                      disabled={!item.authorName}
+                                    >
+                                      {item.authorName || 'Khách'}
+                                    </button>
                                     <span className="text-[12px] font-medium text-slate-400 ml-2">{new Date(item.createdAt).toLocaleString()}</span>
                                   </div>
                                 </div>
