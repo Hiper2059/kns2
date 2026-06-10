@@ -6,7 +6,9 @@ const connectDatabase = async () => {
     throw new Error('MONGODB_URI chua duoc cau hinh trong file .env');
   }
 
-  await mongoose.connect(config.mongoUri);
+  await mongoose.connect(config.mongoUri, {
+    serverSelectionTimeoutMS: 30000
+  });
   console.log('Da ket noi MongoDB thanh cong.');
 };
 

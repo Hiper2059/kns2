@@ -5,6 +5,8 @@ const Enrollment = require('../models/Enrollment');
 const LessonComment = require('../models/LessonComment');
 const LessonView = require('../models/LessonView');
 const { isStudentRole } = require('../utils/userUtils');
+const { getPaginationParams, buildPagination } = require('../utils/pagination');
+const catchAsync = require('../utils/catchAsync');
 
 const slugify = value =>
   String(value || '')
@@ -66,295 +68,276 @@ const ensureCourseAccess = async (req, res, course, actionLabel = 'truy cap lop 
   return false;
 };
 
-const listLessons = async (req, res) => {
-  try {
-    const { courseId } = req.params;
-    const course = await Course.findById(courseId).lean();
+const listLessons = catchAsync(async (req, res) => {
+  const { courseId } = req.params;
+  const course = await Course.findById(courseId).lean();
 
-    if (!course) {
-      return res.status(404).json({ message: 'Khong tim thay lop hoc.' });
-    }
-
-    if (isStudentRole(req.currentUser.role)) {
-      const enrolled = await Enrollment.findOne({
-        course: courseId,
-        student: req.currentUser._id
-      }).lean();
-
-      if (!enrolled) {
-        return res.status(403).json({ message: 'Cau can tham gia lop truoc khi xem bai hoc.' });
-      }
-    }
-
-    const lessons = await Lesson.find({ course: courseId })
-      .sort({ order: 1, createdAt: 1 })
-      .lean();
-
-    res.json({ lessons });
-  } catch (error) {
-    console.error('Loi lay bai hoc:', error);
-    res.status(500).json({ message: 'Khong tai duoc danh sach bai hoc.' });
+  if (!course) {
+    return res.status(404).json({ message: 'Khong tim thay lop hoc.' });
   }
-};
 
-const createLesson = async (req, res) => {
-  try {
-    const { courseId } = req.params;
-    const { title, content, videoUrl, imageUrl, order } = req.body || {};
-    const trimmedTitle = String(title || '').trim();
-
-    if (!trimmedTitle) {
-      return res.status(400).json({ message: 'Thieu tieu de bai hoc.' });
-    }
-
-    const course = await Course.findById(courseId).lean();
-    if (!course) {
-      return res.status(404).json({ message: 'Khong tim thay lop hoc.' });
-    }
-
-    if (req.currentUser.role === 'teacher' && String(course.teacher) !== String(req.currentUser._id)) {
-      return res.status(403).json({ message: 'Ban khong co quyen them bai hoc cho lop nay.' });
-    }
-
-    let normalizedOrder = Number(order);
-    if (!normalizedOrder || Number.isNaN(normalizedOrder)) {
-      const lastLesson = await Lesson.findOne({ course: courseId })
-        .sort({ order: -1 })
-        .lean();
-      normalizedOrder = lastLesson ? lastLesson.order + 1 : 1;
-    }
-
-    const baseSlug = slugify(`${course.title} ${trimmedTitle}`);
-    const uniqueSlug = await ensureUniqueSlug(baseSlug);
-
-    const created = await Lesson.create({
+  if (isStudentRole(req.currentUser.role)) {
+    const enrolled = await Enrollment.findOne({
       course: courseId,
-      title: trimmedTitle,
-      content: String(content || '').trim(),
-      videoUrl: String(videoUrl || '').trim(),
-      imageUrl: String(imageUrl || '').trim(),
-      slug: uniqueSlug,
-      order: normalizedOrder,
-      createdBy: req.currentUser._id,
-      createdByName: req.currentUser.username
-    });
+      student: req.currentUser._id
+    }).lean();
 
-    res.status(201).json({ message: 'Da them bai hoc.', lesson: created });
-  } catch (error) {
-    console.error('Loi tao bai hoc:', error);
-    res.status(500).json({ message: 'Khong tao duoc bai hoc.' });
+    if (!enrolled) {
+      return res.status(403).json({ message: 'Cau can tham gia lop truoc khi xem bai hoc.' });
+    }
   }
-};
 
-const updateLesson = async (req, res) => {
-  try {
-    const { lessonId } = req.params;
-    const { title, content, videoUrl, imageUrl, order } = req.body || {};
+  const filter = { course: courseId };
+  const { page, limit, skip } = getPaginationParams(req.query);
+  const [lessons, totalItems] = await Promise.all([
+    Lesson.find(filter)
+      .sort({ order: 1, createdAt: 1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Lesson.countDocuments(filter)
+  ]);
 
-    const lesson = await Lesson.findById(lessonId);
-    if (!lesson) {
-      return res.status(404).json({ message: 'Khong tim thay bai hoc.' });
-    }
+  res.json({
+    data: lessons,
+    lessons,
+    pagination: buildPagination({ totalItems, page, limit })
+  });
+});
 
-    const course = await Course.findById(lesson.course).lean();
-    if (!course) {
-      return res.status(404).json({ message: 'Khong tim thay lop hoc.' });
-    }
+const createLesson = catchAsync(async (req, res) => {
+  const { courseId } = req.params;
+  const { title, content, videoUrl, imageUrl, order } = req.body || {};
+  const trimmedTitle = String(title || '').trim();
 
-    if (req.currentUser.role === 'teacher' && String(course.teacher) !== String(req.currentUser._id)) {
-      return res.status(403).json({ message: 'Ban khong co quyen sua bai hoc nay.' });
-    }
-
-    if (title !== undefined) {
-      const trimmedTitle = String(title || '').trim();
-      if (!trimmedTitle) {
-        return res.status(400).json({ message: 'Tieu de bai hoc khong duoc rong.' });
-      }
-      lesson.title = trimmedTitle;
-      const baseSlug = slugify(`${course.title} ${lesson.title}`);
-      lesson.slug = await ensureUniqueSlug(baseSlug, lesson._id);
-    }
-    if (content !== undefined) lesson.content = String(content || '').trim();
-    if (videoUrl !== undefined) lesson.videoUrl = String(videoUrl || '').trim();
-    if (imageUrl !== undefined) lesson.imageUrl = String(imageUrl || '').trim();
-    if (order !== undefined && !Number.isNaN(Number(order))) lesson.order = Number(order);
-
-    await lesson.save();
-    res.json({ message: 'Da cap nhat bai hoc.', lesson });
-  } catch (error) {
-    console.error('Loi cap nhat bai hoc:', error);
-    res.status(500).json({ message: 'Khong cap nhat duoc bai hoc.' });
+  if (!trimmedTitle) {
+    return res.status(400).json({ message: 'Thieu tieu de bai hoc.' });
   }
-};
 
-const deleteLesson = async (req, res) => {
-  try {
-    const { lessonId } = req.params;
-    const lesson = await Lesson.findById(lessonId);
-    if (!lesson) {
-      return res.status(404).json({ message: 'Khong tim thay bai hoc.' });
+  const course = await Course.findById(courseId).lean();
+  if (!course) {
+    return res.status(404).json({ message: 'Khong tim thay lop hoc.' });
+  }
+
+  if (req.currentUser.role === 'teacher' && String(course.teacher) !== String(req.currentUser._id)) {
+    return res.status(403).json({ message: 'Ban khong co quyen them bai hoc cho lop nay.' });
+  }
+
+  let normalizedOrder = Number(order);
+  if (!normalizedOrder || Number.isNaN(normalizedOrder)) {
+    const lastLesson = await Lesson.findOne({ course: courseId })
+      .sort({ order: -1 })
+      .lean();
+    normalizedOrder = lastLesson ? lastLesson.order + 1 : 1;
+  }
+
+  const baseSlug = slugify(`${course.title} ${trimmedTitle}`);
+  const uniqueSlug = await ensureUniqueSlug(baseSlug);
+
+  const created = await Lesson.create({
+    course: courseId,
+    title: trimmedTitle,
+    content: String(content || '').trim(),
+    videoUrl: String(videoUrl || '').trim(),
+    imageUrl: String(imageUrl || '').trim(),
+    slug: uniqueSlug,
+    order: normalizedOrder,
+    createdBy: req.currentUser._id,
+    createdByName: req.currentUser.username
+  });
+
+  res.status(201).json({ message: 'Da them bai hoc.', lesson: created });
+});
+
+const updateLesson = catchAsync(async (req, res) => {
+  const { lessonId } = req.params;
+  const { title, content, videoUrl, imageUrl, order } = req.body || {};
+
+  const lesson = await Lesson.findById(lessonId);
+  if (!lesson) {
+    return res.status(404).json({ message: 'Khong tim thay bai hoc.' });
+  }
+
+  const course = await Course.findById(lesson.course).lean();
+  if (!course) {
+    return res.status(404).json({ message: 'Khong tim thay lop hoc.' });
+  }
+
+  if (req.currentUser.role === 'teacher' && String(course.teacher) !== String(req.currentUser._id)) {
+    return res.status(403).json({ message: 'Ban khong co quyen sua bai hoc nay.' });
+  }
+
+  if (title !== undefined) {
+    const trimmedTitle = String(title || '').trim();
+    if (!trimmedTitle) {
+      return res.status(400).json({ message: 'Tieu de bai hoc khong duoc rong.' });
     }
+    lesson.title = trimmedTitle;
+    const baseSlug = slugify(`${course.title} ${lesson.title}`);
+    lesson.slug = await ensureUniqueSlug(baseSlug, lesson._id);
+  }
+  if (content !== undefined) lesson.content = String(content || '').trim();
+  if (videoUrl !== undefined) lesson.videoUrl = String(videoUrl || '').trim();
+  if (imageUrl !== undefined) lesson.imageUrl = String(imageUrl || '').trim();
+  if (order !== undefined && !Number.isNaN(Number(order))) lesson.order = Number(order);
 
-    const course = await Course.findById(lesson.course).lean();
-    if (!course) {
-      return res.status(404).json({ message: 'Khong tim thay lop hoc.' });
-    }
+  await lesson.save();
+  res.json({ message: 'Da cap nhat bai hoc.', lesson });
+});
 
-    if (req.currentUser.role === 'teacher' && String(course.teacher) !== String(req.currentUser._id)) {
-      return res.status(403).json({ message: 'Ban khong co quyen xoa bai hoc nay.' });
-    }
+const deleteLesson = catchAsync(async (req, res) => {
+  const { lessonId } = req.params;
+  const lesson = await Lesson.findById(lessonId);
+  if (!lesson) {
+    return res.status(404).json({ message: 'Khong tim thay bai hoc.' });
+  }
 
-    await Promise.all([
-      lesson.deleteOne(),
-      LessonComment.deleteMany({ lesson: lesson._id }),
-      LessonView.deleteMany({ lesson: lesson._id })
-    ]);
+  const course = await Course.findById(lesson.course).lean();
+  if (!course) {
+    return res.status(404).json({ message: 'Khong tim thay lop hoc.' });
+  }
 
-    const totalLessons = await Lesson.countDocuments({ course: course._id });
+  if (req.currentUser.role === 'teacher' && String(course.teacher) !== String(req.currentUser._id)) {
+    return res.status(403).json({ message: 'Ban khong co quyen xoa bai hoc nay.' });
+  }
 
-    if (totalLessons === 0) {
-      await Enrollment.updateMany(
-        { course: course._id },
-        {
-          $set: {
-            completedLessons: [],
-            progressPercent: 0,
-            status: 'enrolled'
-          }
+  await Promise.all([
+    lesson.deleteOne(),
+    LessonComment.deleteMany({ lesson: lesson._id }),
+    LessonView.deleteMany({ lesson: lesson._id })
+  ]);
+
+  const totalLessons = await Lesson.countDocuments({ course: course._id });
+
+  if (totalLessons === 0) {
+    await Enrollment.updateMany(
+      { course: course._id },
+      {
+        $set: {
+          completedLessons: [],
+          progressPercent: 0,
+          status: 'enrolled'
         }
-      );
-    } else {
-      const affectedEnrollments = await Enrollment.find(
-        { course: course._id, completedLessons: lesson._id },
-        { completedLessons: 1 }
-      ).lean();
+      }
+    );
+  } else {
+    const affectedEnrollments = await Enrollment.find(
+      { course: course._id, completedLessons: lesson._id },
+      { completedLessons: 1 }
+    ).lean();
 
-      if (affectedEnrollments.length) {
-        await Enrollment.bulkWrite(
-          affectedEnrollments.map(enrollment => {
-            const completedCount = (enrollment.completedLessons || []).filter(
-              item => String(item) !== String(lessonId)
-            ).length;
+    if (affectedEnrollments.length) {
+      await Enrollment.bulkWrite(
+        affectedEnrollments.map(enrollment => {
+          const completedCount = (enrollment.completedLessons || []).filter(
+            item => String(item) !== String(lessonId)
+          ).length;
 
-            return {
-              updateOne: {
-                filter: { _id: enrollment._id },
-                update: {
-                  $pull: { completedLessons: lesson._id },
-                  $set: {
-                    progressPercent: Math.round((completedCount / totalLessons) * 100)
-                  }
+          return {
+            updateOne: {
+              filter: { _id: enrollment._id },
+              update: {
+                $pull: { completedLessons: lesson._id },
+                $set: {
+                  progressPercent: Math.round((completedCount / totalLessons) * 100)
                 }
               }
-            };
-          })
-        );
-      }
+            }
+          };
+        })
+      );
     }
-
-    res.json({ message: 'Da xoa bai hoc.' });
-  } catch (error) {
-    console.error('Loi xoa bai hoc:', error);
-    res.status(500).json({ message: 'Khong xoa duoc bai hoc.' });
   }
-};
 
-const getLessonBySlug = async (req, res) => {
+  res.json({ message: 'Da xoa bai hoc.' });
+});
+
+const getLessonBySlug = catchAsync(async (req, res) => {
+  const { slug } = req.params;
+  let lesson = await Lesson.findOne({ slug }).lean();
+  if (!lesson && mongoose.Types.ObjectId.isValid(slug)) {
+    lesson = await Lesson.findById(slug).lean();
+  }
+  if (!lesson) {
+    return res.status(404).json({ message: 'Khong tim thay bai hoc.' });
+  }
+
+  const course = await Course.findById(lesson.course).lean();
+  if (!course) {
+    return res.status(404).json({ message: 'Khong tim thay lop hoc.' });
+  }
+
+  if (isStudentRole(req.currentUser.role)) {
+    const enrolled = await Enrollment.findOne({
+      course: lesson.course,
+      student: req.currentUser._id
+    }).lean();
+
+    if (!enrolled) {
+      return res.status(403).json({ message: 'Cau can tham gia lop truoc khi xem bai hoc.' });
+    }
+  }
+
   try {
-    const { slug } = req.params;
-    let lesson = await Lesson.findOne({ slug }).lean();
-    if (!lesson && mongoose.Types.ObjectId.isValid(slug)) {
-      lesson = await Lesson.findById(slug).lean();
-    }
-    if (!lesson) {
-      return res.status(404).json({ message: 'Khong tim thay bai hoc.' });
-    }
-
-    const course = await Course.findById(lesson.course).lean();
-    if (!course) {
-      return res.status(404).json({ message: 'Khong tim thay lop hoc.' });
-    }
-
-    if (isStudentRole(req.currentUser.role)) {
-      const enrolled = await Enrollment.findOne({
-        course: lesson.course,
-        student: req.currentUser._id
-      }).lean();
-
-      if (!enrolled) {
-        return res.status(403).json({ message: 'Cau can tham gia lop truoc khi xem bai hoc.' });
-      }
-    }
-
-    try {
-      const userId = mongoose.Types.ObjectId.isValid(req.currentUser?._id)
-        ? req.currentUser._id
-        : null;
-      await LessonView.create({
-        lesson: lesson._id,
-        course: lesson.course,
-        user: userId,
-        userRole: req.currentUser?.role || ''
-      });
-    } catch (error) {
-      console.error('Loi ghi luot xem bai hoc:', error);
-    }
-
-    const userKey = req.currentUser?._id ? String(req.currentUser._id) : '';
-    const heartUserIds = lesson.heartUserIds || [];
-    const heartCount = heartUserIds.length;
-    const isHearted = userKey ? heartUserIds.some(item => String(item) === userKey) : false;
-
-    res.json({
-      lesson: {
-        ...lesson,
-        heartCount,
-        isHearted
-      },
-      course
+    const userId = mongoose.Types.ObjectId.isValid(req.currentUser?._id)
+      ? req.currentUser._id
+      : null;
+    await LessonView.create({
+      lesson: lesson._id,
+      course: lesson.course,
+      user: userId,
+      userRole: req.currentUser?.role || ''
     });
-  } catch (error) {
-    console.error('Loi lay bai hoc theo slug:', error);
-    res.status(500).json({ message: 'Khong tai duoc bai hoc.' });
+    } catch {
+      // View tracking should not block lesson reads.
+    }
+
+  const userKey = req.currentUser?._id ? String(req.currentUser._id) : '';
+  const heartUserIds = lesson.heartUserIds || [];
+  const heartCount = heartUserIds.length;
+  const isHearted = userKey ? heartUserIds.some(item => String(item) === userKey) : false;
+
+  res.json({
+    lesson: {
+      ...lesson,
+      heartCount,
+      isHearted
+    },
+    course
+  });
+});
+
+const toggleLessonReaction = catchAsync(async (req, res) => {
+  const { lessonId } = req.params;
+  const lesson = await Lesson.findById(lessonId);
+  if (!lesson) {
+    return res.status(404).json({ message: 'Khong tim thay bai hoc.' });
   }
-};
 
-const toggleLessonReaction = async (req, res) => {
-  try {
-    const { lessonId } = req.params;
-    const lesson = await Lesson.findById(lessonId);
-    if (!lesson) {
-      return res.status(404).json({ message: 'Khong tim thay bai hoc.' });
-    }
-
-    const course = await Course.findById(lesson.course).lean();
-    const canAccess = await ensureCourseAccess(req, res, course, 'tha tim bai giang');
-    if (!canAccess) {
-      return;
-    }
-
-    const userKey = req.currentUser?._id ? String(req.currentUser._id) : '';
-    if (!userKey) {
-      return res.status(401).json({ message: 'Can dang nhap de tha tim.' });
-    }
-
-    const existingIndex = (lesson.heartUserIds || []).findIndex(item => String(item) === userKey);
-    if (existingIndex >= 0) {
-      lesson.heartUserIds.splice(existingIndex, 1);
-    } else {
-      lesson.heartUserIds.push(userKey);
-    }
-
-    await lesson.save();
-
-    const heartCount = lesson.heartUserIds.length;
-    const isHearted = lesson.heartUserIds.some(item => String(item) === userKey);
-    res.json({ heartCount, isHearted });
-  } catch (error) {
-    console.error('Loi tha tim bai hoc:', error);
-    res.status(500).json({ message: 'Khong tha tim duoc.' });
+  const course = await Course.findById(lesson.course).lean();
+  const canAccess = await ensureCourseAccess(req, res, course, 'tha tim bai giang');
+  if (!canAccess) {
+    return;
   }
-};
+
+  const userKey = req.currentUser?._id ? String(req.currentUser._id) : '';
+  if (!userKey) {
+    return res.status(401).json({ message: 'Can dang nhap de tha tim.' });
+  }
+
+  const existingIndex = (lesson.heartUserIds || []).findIndex(item => String(item) === userKey);
+  if (existingIndex >= 0) {
+    lesson.heartUserIds.splice(existingIndex, 1);
+  } else {
+    lesson.heartUserIds.push(userKey);
+  }
+
+  await lesson.save();
+
+  const heartCount = lesson.heartUserIds.length;
+  const isHearted = lesson.heartUserIds.some(item => String(item) === userKey);
+  res.json({ heartCount, isHearted });
+});
 
 module.exports = {
   listLessons,

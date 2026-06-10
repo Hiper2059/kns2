@@ -7,10 +7,10 @@ import {
   Layers3,
   MessageCircle,
   PlayCircle,
+  Search,
   Sparkles,
   Users
 } from 'lucide-react'
-import './LmsView.css'
 
 const answerLabel = index => String.fromCharCode(65 + index)
 
@@ -40,15 +40,27 @@ const LmsView = ({
   onDeleteLesson
 }) => {
   const [quizDrafts, setQuizDrafts] = useState({})
+  const [courseSearch, setCourseSearch] = useState('')
   const isTeacher = currentRole === 'teacher'
   const isAdmin = currentRole === 'admin'
   const canManageLearning = isTeacher || isAdmin
   const coursePool = isTeacher ? teacherCourses : courses
+  function stripHtml(value) {
+    return String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+  }
   const visibleCourses = useMemo(() => {
-    return selectedCategory
+    const keyword = courseSearch.trim().toLowerCase()
+    const byCategory = selectedCategory
       ? coursePool.filter(course => course.category === selectedCategory)
       : coursePool
-  }, [coursePool, selectedCategory])
+    if (!keyword) {
+      return byCategory
+    }
+    return byCategory.filter(course => {
+      const haystack = `${course.title || ''} ${course.category || ''} ${course.teacherName || ''} ${stripHtml(course.description)}`.toLowerCase()
+      return haystack.includes(keyword)
+    })
+  }, [coursePool, courseSearch, selectedCategory])
 
   const categoryStats = useMemo(() => {
     const counts = coursePool.reduce((acc, course) => {
@@ -78,8 +90,6 @@ const LmsView = ({
   const completedLessonIds = useMemo(() => {
     return new Set((enrollment?.completedLessons || []).map(item => String(item)))
   }, [enrollment])
-
-  const stripHtml = value => String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
 
   useEffect(() => {
     const scope = containerRef.current
@@ -166,28 +176,29 @@ const LmsView = ({
     }
 
     return (
-      <div className="lms-quiz-preview">
+      <div className="flex flex-col gap-6 mt-4 p-5 bg-slate-50 border border-slate-200 rounded-xl">
         {questions.map((question, index) => (
-          <div key={`${assignment._id}-question-${index}`} className="lms-quiz-question">
-            <strong>Câu {index + 1}: {question.question}</strong>
+          <div key={`${assignment._id}-question-${index}`}>
+            <strong className="block text-[15px] font-bold text-slate-800 mb-3">Câu {index + 1}: {question.question}</strong>
             {currentUser && !canManageLearning && !assignment.mySubmission ? (
-              <div className="lms-quiz-options">
+              <div className="flex flex-col gap-2.5">
                 {(question.options || []).map((option, optionIndex) => (
-                  <label key={`${assignment._id}-option-${index}-${optionIndex}`} className="lms-quiz-option">
+                  <label key={`${assignment._id}-option-${index}-${optionIndex}`} className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg cursor-pointer hover:border-blue-300 transition-colors">
                     <input
                       type="radio"
+                      className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 focus:ring-blue-500"
                       name={`${assignment._id}-${index}`}
                       checked={draftAnswers[index] === optionIndex}
                       onChange={() => handleQuizAnswer(assignment._id, index, optionIndex)}
                     />
-                    <span>{answerLabel(optionIndex)}. {option}</span>
+                    <span className="text-[14px] text-slate-700 font-medium">{answerLabel(optionIndex)}. {option}</span>
                   </label>
                 ))}
               </div>
             ) : (
-              <div>
+              <div className="flex flex-col gap-2">
                 {(question.options || []).map((option, optionIndex) => (
-                  <span key={`${assignment._id}-option-${index}-${optionIndex}`}>
+                  <span key={`${assignment._id}-option-${index}-${optionIndex}`} className="text-[14px] text-slate-600 font-medium">
                     {answerLabel(optionIndex)}. {option}
                   </span>
                 ))}
@@ -200,168 +211,221 @@ const LmsView = ({
   }
 
   return (
-    <div ref={containerRef} className="lms-learning-surface">
-      <nav className="gsap-animate lms-catalog-rail" aria-label="Mục lục lớp học">
-        {categoryStats.map(category => (
-          <button
-            key={category.name}
-            className={selectedCategory === category.name ? 'lms-catalog-pill active' : 'lms-catalog-pill'}
-            onClick={() => onSelectCategory(category.name)}
-          >
-            <span>{category.name}</span>
-            <strong>{category.count}</strong>
-          </button>
-        ))}
+    <div ref={containerRef} className="mx-auto mt-10 w-[min(1176px,calc(100vw-48px))] rounded-[14px] border border-slate-200 bg-white px-12 py-12 shadow-[0_18px_46px_rgba(15,23,42,0.08)] max-md:mt-5 max-md:w-[calc(100vw-24px)] max-md:px-4 max-md:py-6">
+      <div className="gsap-animate rounded-2xl border border-slate-200 bg-white px-6 py-6 shadow-[0_16px_32px_rgba(15,23,42,0.12)]">
+        <div className="grid items-center gap-6 md:grid-cols-[1fr_432px]">
+          <div>
+            <div className="flex items-center gap-2 text-[14px] font-black uppercase text-slate-500">
+              <Layers3 size={16} />
+              Bộ lọc khóa học
+            </div>
+            <div className="mt-2 text-[30px] font-black uppercase leading-none tracking-normal text-slate-950 max-md:text-[24px]">
+              Khám phá lớp học
+            </div>
+          </div>
+          <label className="flex h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-slate-400">
+            <Search size={17} />
+            <input
+              type="search"
+              value={courseSearch}
+              onChange={event => setCourseSearch(event.target.value)}
+              placeholder="Tìm khóa học, giáo viên, danh mục..."
+              className="h-full w-full min-w-0 border-0 bg-transparent text-[14px] font-semibold text-slate-700 outline-none placeholder:text-slate-400"
+            />
+          </label>
+        </div>
+      </div>
+
+      <nav className="gsap-animate mt-7 flex gap-2 overflow-x-auto border-b border-slate-100 pb-2" aria-label="Mục lục lớp học">
+        {categoryStats.map(category => {
+          const isActive = selectedCategory === category.name
+          return (
+            <button
+              key={category.name}
+              type="button"
+              className={`flex h-11 shrink-0 cursor-pointer items-center gap-3 border-b-2 px-5 text-[15px] font-black transition ${
+                isActive ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-900'
+              }`}
+              onClick={() => onSelectCategory(category.name)}
+            >
+              <span>{category.name}</span>
+              <span className={`grid min-w-6 place-items-center rounded-md px-2 py-0.5 text-[12px] font-bold ${isActive ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'}`}>
+                {category.count}
+              </span>
+            </button>
+          )
+        })}
       </nav>
 
-      <div className="lms-workspace">
-        <section className="lms-course-gallery" aria-label="Danh sách lớp học">
-          <div className="gsap-animate lms-section-heading">
+      <div className="mt-10">
+        <section aria-label="Danh sách lớp học">
+          <div className="gsap-animate flex items-start justify-between gap-5">
             <div>
-              <span className="lms-eyebrow"><Layers3 size={16} /> {selectedCategory || 'Tất cả lớp'}</span>
-              <h2>Lớp học phù hợp</h2>
+              <div className="flex items-center gap-2 text-[14px] font-black uppercase text-slate-500">
+                <Layers3 size={16} />
+                {selectedCategory || 'Tất cả lớp'}
+              </div>
+              <div className="mt-2 text-[28px] font-black uppercase leading-tight tracking-normal text-slate-950">
+                Lớp học phù hợp
+              </div>
             </div>
-            <span className="lms-count">{visibleCourses.length} lớp</span>
+            <div className="rounded-full bg-orange-50 px-4 py-2 text-[13px] font-black text-orange-700">
+              {visibleCourses.length} lớp
+            </div>
           </div>
 
-          <div className="lms-course-grid">
+          <div className="mt-6 grid grid-cols-[repeat(auto-fit,minmax(250px,250px))] gap-6 max-md:grid-cols-1">
             {visibleCourses.length ? (
               visibleCourses.map(course => (
                 <button
                   key={course._id}
-                  className={selectedCourse?._id === course._id ? 'gsap-animate lms-course-tile active' : 'gsap-animate lms-course-tile'}
+                  type="button"
+                  className={`gsap-animate grid cursor-pointer min-h-[230px] rounded-2xl border bg-white p-5 text-left shadow-[0_10px_26px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-[0_18px_38px_rgba(37,99,235,0.12)] ${
+                    selectedCourse?._id === course._id ? 'border-blue-400 ring-4 ring-blue-50' : 'border-slate-200'
+                  }`}
                   onClick={() => onSelectCourse(course)}
                 >
-                  <div className="lms-course-thumb">
-                    {course.imageUrl ? (
-                      <img src={course.imageUrl} alt={course.title} loading="lazy" />
-                    ) : (
-                      <div className="lms-course-placeholder"><BookOpen size={28} /> Ảnh lớp</div>
-                    )}
-                  </div>
-                  <div className="lms-course-copy">
-                    <span className="lms-course-category">{course.category}</span>
-                    <h3>{course.title}</h3>
-                    <p>{stripHtml(course.description) || 'Chưa có mô tả lớp học.'}</p>
-                    <div className="lms-course-meta">
-                      <span><Users size={15} /> {course.studentCount || 0} học viên</span>
-                      <span
-                        className="lms-teacher-link"
-                        onClick={event => {
-                          event.stopPropagation()
-                          onOpenProfile?.(course.teacher)
-                        }}
-                      >
-                        {course.teacherName || 'Giảng viên'}
-                      </span>
+                  <div>
+                    <div className="mb-5 inline-flex rounded-md bg-emerald-50 px-3 py-1 text-[12px] font-black text-emerald-700">
+                      {course.category}
                     </div>
+                    <div className="min-h-[46px] text-[18px] font-black leading-snug tracking-normal text-slate-950">
+                      {course.title}
+                    </div>
+                    <div className="mt-6 line-clamp-3 min-h-[62px] text-[14px] font-semibold leading-6 text-slate-500">
+                      {stripHtml(course.description) || 'Chưa có mô tả lớp học.'}
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-[13px] font-black text-slate-500">
+                    <span className="inline-flex items-center gap-1.5"><BookOpen size={15} /> {course.lessonCount || course.lessonsCount || 0} bài</span>
+                    <span className="inline-flex items-center gap-1.5"><Users size={15} /> {course.studentCount || 0}</span>
                   </div>
                 </button>
               ))
             ) : (
-              <div className="gsap-animate lms-empty">Chưa có lớp học nào.</div>
+              <div className="gsap-animate col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center text-[15px] font-bold text-slate-500">
+                Chưa có lớp học nào.
+              </div>
             )}
           </div>
         </section>
 
-        <section className="lms-course-detail-shell" aria-label="Chi tiết lớp học">
-          <div className="gsap-animate lms-course-detail-modern">
+        <section className="mt-12 pt-12 border-t border-slate-200" aria-label="Chi tiết lớp học">
+          <div className="gsap-animate rounded-[24px] overflow-hidden">
             {selectedCourse ? (
-              <div className="lms-detail-stack">
-                <div className="lms-detail-hero">
-                  <div className="lms-detail-copy">
-                    <span className="lms-eyebrow"><Sparkles size={16} /> {selectedCourse.category}</span>
-                    <h1>{selectedCourse.title}</h1>
+              <div className="flex flex-col gap-8">
+                <div className="relative p-8 md:p-10 bg-slate-50 border border-slate-200 rounded-[24px] shadow-sm flex flex-col md:flex-row gap-8">
+                  <div className="flex-1 flex flex-col gap-4 min-w-0">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-[12px] font-black uppercase tracking-wide w-fit">
+                      <Sparkles size={14} /> {selectedCourse.category}
+                    </span>
+                    <h1 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight">{selectedCourse.title}</h1>
                     <div
-                      className="rich-text lms-detail-description"
+                      className="prose prose-slate max-w-none text-[15px] leading-relaxed text-slate-600 mt-2"
                       dangerouslySetInnerHTML={{ __html: selectedCourse.description || 'Chưa có mô tả chi tiết.' }}
                     />
-                    <div className="lms-detail-meta">
-                      <button className="lms-profile-chip" onClick={() => onOpenProfile?.(selectedCourse.teacher)}>
+                    <div className="flex flex-wrap items-center gap-4 mt-4 text-[14px] font-bold text-slate-500">
+                      <button className="inline-flex cursor-pointer items-center px-3 py-1.5 rounded-lg bg-slate-200 text-slate-800 hover:bg-slate-300 transition-colors" onClick={() => onOpenProfile?.(selectedCourse.teacher)}>
                         {selectedCourse.teacherName || 'Giảng viên'}
                       </button>
-                      <span><BookOpen size={16} /> {sortedLessons.length} bài học</span>
-                      <span><Users size={16} /> {selectedCourse.studentCount || 0} học viên</span>
+                      <span className="inline-flex items-center gap-1.5"><BookOpen size={16} /> {sortedLessons.length} bài học</span>
+                      <span className="inline-flex items-center gap-1.5"><Users size={16} /> {selectedCourse.studentCount || 0} học viên</span>
                     </div>
 
                     {enrollment && (
-                      <div className="lms-progress-panel">
-                        <div className="lms-progress-head">
-                          <span>Tiến độ của bạn</span>
-                          <strong>{enrollment.progressPercent || 0}% - {getProgressLabel(enrollment.progressPercent)}</strong>
+                      <div className="mt-6 p-5 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                        <div className="flex items-center justify-between text-[14px] font-bold mb-3">
+                          <span className="text-slate-600">Tiến độ của bạn</span>
+                          <strong className="text-emerald-600">{enrollment.progressPercent || 0}% - {getProgressLabel(enrollment.progressPercent)}</strong>
                         </div>
-                        <div className="lms-progress-track">
+                        <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
                           <div
-                            className="lms-progress-fill"
+                            className="h-full bg-emerald-500 rounded-full transition-all duration-500"
                             style={{ width: `${Math.min(100, enrollment.progressPercent || 0)}%` }}
                           />
                         </div>
-                        <div className="lms-progress-note">
+                        <div className="mt-3 text-[13px] font-bold text-slate-500">
                           {enrollment.evaluation?.score != null ? `Điểm đánh giá: ${enrollment.evaluation.score}` : 'Chưa có điểm đánh giá'}
                         </div>
-                        {enrollment?.evaluation?.note && <p>{enrollment.evaluation.note}</p>}
+                        {enrollment?.evaluation?.note && <p className="mt-1 text-[14px] text-slate-600">{enrollment.evaluation.note}</p>}
                       </div>
                     )}
                   </div>
 
-                  <div className="lms-detail-actions">
-                    {!currentUser && !canManageLearning && <div className="lms-login-note">Đăng nhập để tham gia</div>}
+                  <div className="flex flex-col gap-3 md:w-64 flex-shrink-0">
+                    {!currentUser && !canManageLearning && (
+                      <div className="text-[13px] font-bold text-amber-600 bg-amber-50 p-3 rounded-xl text-center border border-amber-200">
+                        Đăng nhập để tham gia
+                      </div>
+                    )}
 
                     {canEnroll && !isEnrolled && (
-                      <button className="lms-primary-action" onClick={() => onEnroll(selectedCourse._id)}>
+                      <button className="inline-flex cursor-pointer items-center justify-center h-12 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-[0_4px_14px_0_rgb(37,99,235,0.39)]" onClick={() => onEnroll(selectedCourse._id)}>
                         Tham gia lớp học
                       </button>
                     )}
 
-                    {isEnrolled && <div className="lms-enrolled"><CheckCircle2 size={18} /> Đã tham gia</div>}
+                    {isEnrolled && (
+                      <div className="inline-flex items-center justify-center gap-2 h-12 px-6 rounded-xl bg-emerald-50 text-emerald-600 font-bold border border-emerald-200">
+                        <CheckCircle2 size={18} /> Đã tham gia
+                      </div>
+                    )}
 
-                    <button className="lms-secondary-action" onClick={() => onOpenCourseForum?.(selectedCourse)}>
+                    <button className="inline-flex cursor-pointer items-center justify-center gap-2 h-12 px-6 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold transition-all" onClick={() => onOpenCourseForum?.(selectedCourse)}>
                       <MessageCircle size={18} /> Diễn đàn lớp
                     </button>
                   </div>
                 </div>
 
                 {canManageLearning && (
-                  <div className="gsap-animate lms-detail-section">
-                    <h3><span><Users size={18} /></span> Học viên tham gia</h3>
-                    <div className="lms-student-list">
+                  <div className="gsap-animate p-6 md:p-8 bg-white border border-slate-200 rounded-[24px] shadow-sm">
+                    <h3 className="flex items-center gap-3 text-xl font-black text-slate-900 mb-6 pb-4 border-b border-slate-100">
+                      <span className="grid place-items-center w-10 h-10 rounded-xl bg-blue-50 text-blue-600"><Users size={18} /></span>
+                      Học viên tham gia
+                    </h3>
+                    <div className="flex flex-col gap-4">
                       {teacherEnrollments?.length ? (
                         teacherEnrollments.map(enItem => (
-                          <div key={enItem._id} className="lms-student-row">
-                            <span>{enItem.studentName}</span>
-                            <strong>{enItem.progressPercent || 0}% hoàn thành</strong>
+                          <div key={enItem._id} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                            <span className="text-[15px] font-bold text-slate-800">{enItem.studentName}</span>
+                            <strong className="px-3 py-1 rounded-lg bg-emerald-100 text-emerald-700 text-[13px] font-bold">{enItem.progressPercent || 0}% hoàn thành</strong>
                           </div>
                         ))
                       ) : (
-                        <div className="lms-empty compact">Chưa có học viên.</div>
+                        <div className="py-8 text-center text-[15px] font-medium text-slate-500 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+                          Chưa có học viên.
+                        </div>
                       )}
                     </div>
                   </div>
                 )}
 
-                <div className="gsap-animate lms-detail-section">
-                  <h3><span><PlayCircle size={18} /></span> Nội dung bài học</h3>
-                  <div className="lms-lesson-list">
+                <div className="gsap-animate p-6 md:p-8 bg-white border border-slate-200 rounded-[24px] shadow-sm">
+                  <h3 className="flex items-center gap-3 text-xl font-black text-slate-900 mb-6 pb-4 border-b border-slate-100">
+                    <span className="grid place-items-center w-10 h-10 rounded-xl bg-blue-50 text-blue-600"><PlayCircle size={18} /></span>
+                    Nội dung bài học
+                  </h3>
+                  <div className="flex flex-col gap-4">
                     {sortedLessons.length ? (
                       sortedLessons.map(lesson => (
                         <div
                           key={lesson._id}
-                          className="lms-lesson-row"
+                          className="group flex cursor-pointer items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-2xl hover:border-blue-300 hover:shadow-md transition-all"
                           onClick={() => onOpenLesson?.(lesson)}
                         >
-                          <div className="lms-lesson-title">
-                            <div>{lesson.order}</div>
-                            <span>{lesson.title}</span>
+                          <div className="flex items-center gap-4">
+                            <div className="grid place-items-center w-10 h-10 rounded-xl bg-blue-100 text-blue-700 font-black text-[15px]">{lesson.order}</div>
+                            <span className="text-[16px] font-bold text-slate-800">{lesson.title}</span>
                           </div>
 
-                          <div className="lms-lesson-actions">
-                            <span className={completedLessonIds.has(String(lesson._id)) ? 'lms-status done' : 'lms-status'}>
+                          <div className="flex items-center gap-4">
+                            <span className={`px-3 py-1.5 rounded-full text-[13px] font-bold ${completedLessonIds.has(String(lesson._id)) ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>
                               {completedLessonIds.has(String(lesson._id)) ? 'Đã xong' : 'Chưa học'}
                             </span>
 
                             {canManageLearning && (
                               <button
-                                className="lms-delete-lesson"
+                                className="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-[13px] font-bold transition-colors opacity-0 group-hover:opacity-100"
                                 onClick={event => {
                                   event.stopPropagation()
                                   onDeleteLesson?.(lesson._id)
@@ -374,7 +438,7 @@ const LmsView = ({
                         </div>
                       ))
                     ) : (
-                      <div className="lms-empty">
+                      <div className="py-10 text-center text-[15px] font-medium text-slate-500 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
                         {needsLoginToViewLessons
                           ? 'Đăng nhập và tham gia lớp để xem bài học.'
                           : needsEnrollmentToViewLessons
@@ -385,51 +449,59 @@ const LmsView = ({
                   </div>
                 </div>
 
-                <div className="gsap-animate lms-detail-section">
-                  <h3><span><ClipboardList size={18} /></span> Bài tập thực hành</h3>
-                  <div className="lms-assignment-list">
+                <div className="gsap-animate p-6 md:p-8 bg-white border border-slate-200 rounded-[24px] shadow-sm">
+                  <h3 className="flex items-center gap-3 text-xl font-black text-slate-900 mb-6 pb-4 border-b border-slate-100">
+                    <span className="grid place-items-center w-10 h-10 rounded-xl bg-blue-50 text-blue-600"><ClipboardList size={18} /></span>
+                    Bài tập thực hành
+                  </h3>
+                  <div className="flex flex-col gap-6">
                     {visibleAssignments.length ? (
                       visibleAssignments.map(assignment => {
                         const isQuiz = assignment.type === 'quiz'
                         return (
-                          <div key={assignment._id} className="lms-assignment-card">
-                            <div className="lms-assignment-meta">
-                              <h4>{assignment.title}</h4>
-                              <p>{assignment.description || 'Không có mô tả.'}</p>
+                          <div key={assignment._id} className="flex flex-col gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                            <div>
+                              <h4 className="text-xl font-black text-slate-900 mb-2">{assignment.title}</h4>
+                              <p className="text-[15px] text-slate-600">{assignment.description || 'Không có mô tả.'}</p>
                               {renderAssignmentBody(assignment)}
                               {assignment.dueAt && (
-                                <div className="lms-due-date">Hạn nộp: {new Date(assignment.dueAt).toLocaleString()}</div>
+                                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-[13px] font-bold mt-4">
+                                  Hạn nộp: {new Date(assignment.dueAt).toLocaleString()}
+                                </div>
                               )}
                             </div>
 
                             {assignment.mySubmission && (
-                              <div className="lms-submission-box">
-                                <div className="lms-submission-head">
-                                  <span>Trạng thái bài làm:</span>
-                                  <strong className={assignment.mySubmission.status === 'graded' ? 'graded' : ''}>
+                              <div className="mt-2 p-5 bg-slate-50 border border-slate-200 rounded-xl">
+                                <div className="flex items-center justify-between text-[14px] mb-3">
+                                  <span className="font-bold text-slate-600">Trạng thái bài làm:</span>
+                                  <strong className={`px-3 py-1 rounded-lg font-bold ${assignment.mySubmission.status === 'graded' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700'}`}>
                                     {assignment.mySubmission.status === 'graded'
                                       ? `Đã chấm - ${assignment.mySubmission.score} điểm`
                                       : 'Đang chờ chấm'}
                                   </strong>
                                 </div>
                                 {assignment.mySubmission.content && (
-                                  <div className="lms-submitted-content">{assignment.mySubmission.content}</div>
+                                  <div className="p-4 bg-white border border-slate-200 rounded-lg text-[14px] font-medium text-slate-700 mt-3">{assignment.mySubmission.content}</div>
                                 )}
                                 {assignment.mySubmission.status === 'graded' && assignment.mySubmission.feedback && (
-                                  <div className="lms-feedback">Kết quả: {assignment.mySubmission.feedback}</div>
+                                  <div className="mt-3 p-4 bg-blue-50 border border-blue-100 rounded-lg text-[14px] font-bold text-blue-800">
+                                    Kết quả: {assignment.mySubmission.feedback}
+                                  </div>
                                 )}
                               </div>
                             )}
 
                             {currentUser && !canManageLearning && !isQuiz && (
-                              <div className="lms-submit-box">
+                              <div className="mt-4 flex flex-col gap-4">
                                 <textarea
+                                  className="w-full min-h-[120px] p-4 bg-white border border-slate-200 rounded-xl text-[14px] font-medium text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 resize-y"
                                   value={assignmentDrafts?.[assignment._id] || ''}
                                   onChange={event => onAssignmentDraftChange?.(assignment._id, event.target.value)}
                                   placeholder="Nhập nội dung bài làm của bạn..."
                                 />
                                 <button
-                                  className="lms-secondary-action dark"
+                                  className="inline-flex cursor-pointer self-start items-center justify-center gap-2 h-11 px-6 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold transition-all"
                                   onClick={() => onSubmitAssignment?.(assignment._id)}
                                 >
                                   {assignment.mySubmission ? 'Nộp lại bài' : 'Gửi bài nộp'}
@@ -438,9 +510,9 @@ const LmsView = ({
                             )}
 
                             {currentUser && !canManageLearning && isQuiz && !assignment.mySubmission && (
-                              <div className="lms-submit-box">
+                              <div className="mt-4 flex flex-col gap-3">
                                 <button
-                                  className="lms-secondary-action dark"
+                                  className="inline-flex cursor-pointer self-start items-center justify-center gap-2 h-11 px-6 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold transition-all"
                                   onClick={() => handleSubmitQuiz(assignment)}
                                 >
                                   Nộp trắc nghiệm
@@ -451,15 +523,20 @@ const LmsView = ({
                         )
                       })
                     ) : (
-                      <div className="lms-empty compact">Chưa có bài tập nào.</div>
+                      <div className="py-10 text-center text-[15px] font-medium text-slate-500 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+                        Chưa có bài tập nào.
+                      </div>
                     )}
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="lms-pick-empty">
-                <BookOpen size={56} />
-                <p>Chọn một lớp học để xem chi tiết.</p>
+              <div className="flex flex-col items-center justify-center py-32 px-4 text-center bg-slate-50 border border-dashed border-slate-300 rounded-[24px] text-slate-400">
+                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-sm mb-6">
+                  <BookOpen size={40} className="text-slate-300" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-700 mb-2">Chưa chọn lớp học</h3>
+                <p className="text-[15px] text-slate-500">Hãy chọn một lớp học ở danh sách bên trên để xem chi tiết.</p>
               </div>
             )}
           </div>

@@ -6,3 +6,24 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+
+# AI Agent and IDE artifacts
+.agents/
+.gemini/
+skills-lock.json
+skill.lock
+
+# Logs
+backend-dev.err.log
+backend-dev.out.log
+*.log
+
+# Scratch scripts
+frontend/fix_mojibake.cjs
+frontend/fix_mojibake.py
+frontend/inject_app_routes.py
+frontend/old_manage.jsx
+frontend/refactor_routing.py
+frontend/run_ftfy.py
+frontend/scripts/
+temp.css

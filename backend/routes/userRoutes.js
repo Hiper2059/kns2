@@ -13,14 +13,14 @@ const { requireAdmin, requireActiveUser } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/users', requireAdmin, listUsers);
-router.post('/users', requireAdmin, createUser);
-router.patch('/users/role', requireAdmin, updateUserRole);
-router.patch('/users/status', requireAdmin, updateUserStatus);
-router.delete('/users/:username', requireAdmin, deleteUser);
+router.get('/', requireAdmin, listUsers);
+router.post('/', requireAdmin, createUser);
+router.patch('/role', requireAdmin, updateUserRole);
+router.patch('/status', requireAdmin, updateUserStatus);
+router.delete('/:username', requireAdmin, deleteUser);
 
-router.get('/users/me/profile', requireActiveUser, getMyProfile);
-router.patch('/users/me/profile', requireActiveUser, updateMyProfile);
-router.get('/users/:userId/profile', getPublicProfile);
+router.get('/me/profile', requireActiveUser, getMyProfile);
+router.patch('/me/profile', requireActiveUser, updateMyProfile);
+router.get('/:userId/profile', getPublicProfile);
 
 module.exports = router;

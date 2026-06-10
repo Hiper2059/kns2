@@ -23,6 +23,7 @@ const isAllowedOrigin = requestOrigin =>
   allowedOriginRegexes.some(regex => regex.test(requestOrigin));
 
 const corsOptions = {
+  credentials: true,
   origin(origin, callback) {
     const requestOrigin = normalizeOrigin(origin);
     if (!requestOrigin || isAllowedOrigin(requestOrigin)) {

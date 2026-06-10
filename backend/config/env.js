@@ -1,8 +1,17 @@
 require('dotenv').config();
 
+const requireEnv = key => {
+  const value = process.env[key];
+  if (!value) {
+    throw new Error(`${key} chua duoc cau hinh trong file .env`);
+  }
+  return value;
+};
+
 const config = {
+  nodeEnv: process.env.NODE_ENV || 'development',
   port: process.env.PORT || 5000,
-  mongoUri: process.env.MONGODB_URI || '',
+  mongoUri: requireEnv('MONGODB_URI'),
   frontendOrigin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173',
   adminUsername: process.env.ADMIN_USERNAME || 'admin',
   adminPassword: process.env.ADMIN_PASSWORD || 'admin123',
@@ -14,9 +23,9 @@ const config = {
     folder: process.env.CLOUDINARY_FOLDER || 'kns'
   },
   jwt: {
-    accessSecret: process.env.JWT_ACCESS_SECRET || 'dev_access_secret',
-    refreshSecret: process.env.JWT_REFRESH_SECRET || 'dev_refresh_secret',
-    signatureSecret: process.env.JWT_SIGNATURE_SECRET || 'dev_signature_secret',
+    accessSecret: requireEnv('JWT_ACCESS_SECRET'),
+    refreshSecret: requireEnv('JWT_REFRESH_SECRET'),
+    signatureSecret: requireEnv('JWT_SIGNATURE_SECRET'),
     accessTtl: '15m',
     refreshTtl: '7d',
     signatureTtl: '30d'

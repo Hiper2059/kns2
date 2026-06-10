@@ -5,7 +5,7 @@ const { imageUpload, videoUpload } = require('../middleware/upload');
 
 const router = express.Router();
 
-router.post('/uploads/image', requireTeacherOrAdmin, (req, res, next) => {
+router.post('/image', requireTeacherOrAdmin, (req, res, next) => {
   imageUpload.single('image')(req, res, err => {
     if (err) {
       return res.status(400).json({ message: err.message || 'Upload that bai.' });
@@ -14,7 +14,7 @@ router.post('/uploads/image', requireTeacherOrAdmin, (req, res, next) => {
   });
 }, uploadImage);
 
-router.post('/uploads/video', requireTeacherOrAdmin, (req, res, next) => {
+router.post('/video', requireTeacherOrAdmin, (req, res, next) => {
   videoUpload.single('video')(req, res, err => {
     if (err) {
       return res.status(400).json({ message: err.message || 'Upload that bai.' });

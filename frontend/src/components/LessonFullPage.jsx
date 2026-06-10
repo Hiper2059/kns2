@@ -3,7 +3,7 @@ import Hls from 'hls.js'
 import dashjs from 'dashjs'
 import RichTextEditor from './RichTextEditor'
 import { getApiErrorMessage } from '../utils/apiMessages'
-import './LessonFullPage.css'
+import { ArrowLeft, Heart, Edit3, CheckCircle2, AlertCircle, MessageSquare, Reply, Flag, Trash2, ListVideo } from 'lucide-react'
 
 const loadYouTubeApi = (() => {
   let promise = null
@@ -47,6 +47,11 @@ const getYouTubeId = url => {
   return ''
 }
 
+const baseInputClass = "w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-[14px] font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+const baseButtonClass = "inline-flex items-center justify-center gap-2 h-11 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-[0_4px_14px_0_rgb(37,99,235,0.39)] cursor-pointer"
+const ghostButtonClass = "inline-flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-all cursor-pointer text-[13px]"
+const dangerButtonClass = "inline-flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-bold transition-all cursor-pointer text-[13px]"
+
 const LessonFullPage = ({
   lesson,
   course,
@@ -68,6 +73,7 @@ const LessonFullPage = ({
   const [hasSeeked, setHasSeeked] = useState(false)
   const [videoReady, setVideoReady] = useState(false)
   const [youtubeContainerEl, setYoutubeContainerEl] = useState(null)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const playerRef = useRef(null)
   const videoElRef = useRef(null)
   const contentRef = useRef(null)
@@ -77,10 +83,11 @@ const LessonFullPage = ({
   const sortedLessons = [...lessons].sort((a, b) => (a.order || 1) - (b.order || 1))
   const currentLessonId = String(lesson?._id || '')
 
-  const handleLessonSelect = event => {
-    const nextLesson = sortedLessons.find(item => String(item._id) === event.target.value)
+  const handleLessonSelect = (lessonId) => {
+    const nextLesson = sortedLessons.find(item => String(item._id) === lessonId)
     if (nextLesson) {
       onOpenLesson?.(nextLesson)
+      if (window.innerWidth < 1024) setIsSidebarOpen(false)
     }
   }
 
@@ -145,11 +152,21 @@ const LessonFullPage = ({
     }
 
     handleScroll()
+    // Find the main scrollable container. It could be window or a specific div.
+    // For a fullscreen view, usually it's the window or a specific wrapper.
+    // We'll attach to both window and the .lesson-main-scroll wrapper just in case.
     window.addEventListener('scroll', handleScroll, { passive: true })
     window.addEventListener('resize', handleScroll)
+    
+    const scrollContainer = document.querySelector('.lesson-main-scroll')
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', handleScroll, { passive: true })
+    }
+
     return () => {
       window.removeEventListener('scroll', handleScroll)
       window.removeEventListener('resize', handleScroll)
+      if (scrollContainer) scrollContainer.removeEventListener('scroll', handleScroll)
     }
   }, [lesson?.content])
 
@@ -277,7 +294,6 @@ const LessonFullPage = ({
       try {
         dashPlayer = dashjs.MediaPlayer().create()
         dashPlayer.initialize(video, src, false)
-        // dashjs doesn't expose loadedmetadata event in same way; listen timeupdate
         video.addEventListener('loadedmetadata', handleLoaded)
       } catch (err) {
         console.warn('dash init error', err)
@@ -305,7 +321,6 @@ const LessonFullPage = ({
         try { dashPlayer.reset() } catch (err) { console.warn('dash reset error', err) }
         dashPlayer = null
       }
-      // clear src for cleanup
       try { video.removeAttribute('src'); video.load() } catch (err) { console.warn('video cleanup error', err) }
     }
   }, [isDirectVideo, isHls, isDash, lesson?._id, lesson?.videoUrl])
@@ -392,9 +407,7 @@ const LessonFullPage = ({
   }, [api, lesson?._id])
 
   useEffect(() => {
-    if (!lesson?._id) {
-      return
-    }
+    if (!lesson?._id) return
     setEditDraft({
       title: lesson.title || '',
       content: lesson.content || '',
@@ -418,9 +431,7 @@ const LessonFullPage = ({
       return
     }
 
-    if (!lesson?._id) {
-      return
-    }
+    if (!lesson?._id) return
 
     try {
       const response = await api.patch(`/api/lessons/${lesson._id}/reaction`)
@@ -435,9 +446,7 @@ const LessonFullPage = ({
 
   const handleSubmitComment = async parentCommentId => {
     const text = parentCommentId ? (replyDrafts[parentCommentId] || '').trim() : newComment.trim()
-    if (!text) {
-      return
-    }
+    if (!text) return
 
     setPosting(true)
     try {
@@ -464,9 +473,7 @@ const LessonFullPage = ({
   }
 
   const handleSaveLessonEdit = async () => {
-    if (!lesson?._id) {
-      return
-    }
+    if (!lesson?._id) return
 
     if (!editDraft.title.trim()) {
       alert('Cậu điền tiêu đề bài học trước nhé.')
@@ -494,287 +501,342 @@ const LessonFullPage = ({
   }
 
   return (
-    <div className="lesson-full-page">
-      <aside className="lesson-sidebar">
-        <div className="lesson-sidebar-header">
-          <h4>Mục lục bài học</h4>
-        </div>
+    <div className="flex h-screen bg-white overflow-hidden">
+      
+      {/* Sidebar Overlay for mobile */}
+      {isSidebarOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 z-40 lg:hidden" onClick={() => setIsSidebarOpen(false)}></div>
+      )}
 
-        <div className="lesson-combobox">
-          <label htmlFor="lesson-selector">Bài học</label>
-          <select
-            id="lesson-selector"
-            value={currentLessonId}
-            onChange={handleLessonSelect}
-            disabled={!sortedLessons.length}
-          >
-            {!sortedLessons.length && <option value="">Chưa có bài học</option>}
-            {sortedLessons.map(item => (
-              <option key={item._id} value={String(item._id)}>
-                {item.order}. {item.title}
-              </option>
-            ))}
-          </select>
+      {/* Sidebar */}
+      <aside className={`fixed lg:static top-0 left-0 bottom-0 z-50 w-[300px] bg-slate-50 border-r border-slate-200 flex flex-col transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+        <div className="h-[72px] flex items-center justify-between px-6 border-b border-slate-200 bg-white flex-shrink-0">
+          <h4 className="text-[16px] font-black text-slate-900">Mục lục bài học</h4>
+          <button className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors" onClick={() => setIsSidebarOpen(false)}>
+            <ArrowLeft size={16} />
+          </button>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
+          {!sortedLessons.length && <p className="text-center text-[14px] text-slate-500 p-4">Chưa có bài học</p>}
+          {sortedLessons.map(item => {
+            const isCurrent = String(item._id) === currentLessonId
+            return (
+              <button
+                key={item._id}
+                className={`flex items-start gap-3 p-3 text-left rounded-xl transition-all cursor-pointer border ${isCurrent ? 'bg-blue-50 border-blue-200 shadow-sm' : 'bg-white border-slate-200 hover:border-blue-300 hover:bg-slate-50'}`}
+                onClick={() => handleLessonSelect(String(item._id))}
+              >
+                <span className={`flex items-center justify-center w-6 h-6 rounded-md text-[12px] font-black flex-shrink-0 ${isCurrent ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                  {item.order}
+                </span>
+                <span className={`text-[14px] font-bold mt-0.5 ${isCurrent ? 'text-blue-900' : 'text-slate-700'}`}>
+                  {item.title}
+                </span>
+              </button>
+            )
+          })}
         </div>
       </aside>
 
-      <section className="lesson-body">
-        <div className="lesson-topbar">
-          <div>
-            <h2>{course?.title || 'Bài học'}</h2>
-            <div
-              className="rich-text"
-              dangerouslySetInnerHTML={{ __html: course?.description || '' }}
-            ></div>
-          </div>
-          <div className="lesson-topbar-actions">
-            <button
-              className={lessonHeart.isHearted ? 'btn-heart active' : 'btn-heart'}
-              onClick={handleToggleHeart}
-            >
-              ❤ {lessonHeart.count}
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col min-w-0 bg-white h-full relative">
+        {/* Topbar */}
+        <header className="h-[72px] px-4 md:px-6 flex items-center justify-between border-b border-slate-200 bg-white flex-shrink-0 sticky top-0 z-30 shadow-sm">
+          <div className="flex items-center gap-4 min-w-0 flex-1">
+            <button className="lg:hidden w-10 h-10 flex items-center justify-center rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors cursor-pointer" onClick={() => setIsSidebarOpen(true)}>
+              <ListVideo size={20} />
             </button>
-            {canEditLesson && lesson && (
-              <button className="btn-ghost" onClick={() => setEditMode(prev => !prev)}>
-                {editMode ? 'Đóng sửa bài' : 'Sửa bài học'}
-              </button>
-            )}
-            <button className="btn-ghost" onClick={onClose}>Quay lại trang khóa học</button>
-          </div>
-        </div>
-
-        {isLoading && <p>Đang tải bài học...</p>}
-
-        {!isLoading && lesson && (
-          <div className="lesson-content card-panel">
-            {lesson.videoUrl ? (
-              <div className="lesson-video">
-                {videoId ? (
-                  <div className="lesson-video-embed" ref={setYoutubeContainerEl}></div>
-                ) : isDirectVideo ? (
-                  <div className="lesson-video-embed">
-                    <video ref={videoElRef} controls src={lesson.videoUrl} style={{ width: '100%', height: 'auto' }} />
-                  </div>
-                ) : isHls ? (
-                  <div className="lesson-video-embed">
-                    <video ref={videoElRef} controls style={{ width: '100%', height: 'auto' }} />
-                  </div>
-                ) : isDash ? (
-                  <div className="lesson-video-embed">
-                    <video ref={videoElRef} controls style={{ width: '100%', height: 'auto' }} />
-                  </div>
-                ) : (
-                  <>
-                    {getVideoEmbedUrl(lesson.videoUrl) ? (
-                      <iframe
-                        src={getVideoEmbedUrl(lesson.videoUrl)}
-                        title={lesson.title}
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        style={{ width: '100%', height: '600px', minHeight: '400px' }}
-                      ></iframe>
-                    ) : (
-                      <p style={{ color: 'red' }}>
-                        Video URL không hợp lệ: {lesson.videoUrl}
-                      </p>
-                    )}
-                  </>
-                )}
-              </div>
-            ) : (
-              <p>Chưa có video cho bài học này.</p>
-            )}
-
-            <h3>{lesson.title}</h3>
-
-            {canEditLesson && editMode && (
-              <div className="card-panel lesson-edit-panel">
-                <div className="form-grid">
-                  <input
-                    type="text"
-                    placeholder="Tiêu đề bài học"
-                    value={editDraft.title}
-                    onChange={e => setEditDraft(prev => ({ ...prev, title: e.target.value }))}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Video URL"
-                    value={editDraft.videoUrl}
-                    onChange={e => setEditDraft(prev => ({ ...prev, videoUrl: e.target.value }))}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Ảnh minh họa (URL - tùy chọn)"
-                    value={editDraft.imageUrl}
-                    onChange={e => setEditDraft(prev => ({ ...prev, imageUrl: e.target.value }))}
-                  />
-                  <input
-                    type="number"
-                    placeholder="Thứ tự bài"
-                    value={editDraft.order}
-                    onChange={e => setEditDraft(prev => ({ ...prev, order: Number(e.target.value) || 1 }))}
-                  />
-                  <RichTextEditor
-                    toolbarId="lesson-full-editor"
-                    value={editDraft.content}
-                    onChange={value => setEditDraft(prev => ({ ...prev, content: value }))}
-                    placeholder="Nội dung bài học"
-                  />
-                  <div className="lesson-edit-actions">
-                    <button className="btn-post" onClick={handleSaveLessonEdit} disabled={isSavingLesson}>
-                      {isSavingLesson ? 'Đang lưu...' : 'Lưu bài học'}
-                    </button>
-                    <button className="btn-ghost" onClick={() => setEditMode(false)}>
-                      Hủy
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div
-              ref={contentRef}
-              className="lesson-text rich-text card-panel"
-              dangerouslySetInnerHTML={{ __html: lesson.content || '' }}
-            ></div>
-
-            {canComplete && (
-              <div className="lesson-complete-block">
-                <button
-                  className="btn-post"
-                  onClick={() => onCompleteLesson?.(lesson._id)}
-                  disabled={!canMarkComplete}
-                >
-                  {isCompleted ? 'Đã hoàn thành' : 'Đánh dấu hoàn thành'}
-                </button>
-                {!isCompleted && !canMarkComplete && (
-                  <p className="completion-hint">
-                    {requiresVideo && (!videoId || !videoReady)
-                      ? 'Không thể kiểm tra video, vui lòng thử lại.'
-                      : requiresVideo && hasSeeked
-                        ? 'Vui lòng xem video từ đầu đến cuối, không tua.'
-                        : requiresVideo && !hasVideoEnded
-                          ? 'Hãy xem hết video trước khi hoàn thành.'
-                          : 'Hãy cuộn hết nội dung bài học.'}
-                  </p>
-                )}
-              </div>
-            )}
-
-            <div className="lesson-comments">
-              <h4>Bình luận / Hỏi đáp</h4>
-              {commentsTree.length === 0 && <p>Chưa có bình luận nào.</p>}
-
-              {commentsTree.map(comment => {
-                const renderComment = (item, depth = 0) => {
-                  const canManage = currentRole === 'admin' || currentRole === 'teacher' || item.authorName === currentUser
-                  const isReplyOpen = replyingTo === item._id
-                  const replyValue = replyDrafts[item._id] || ''
-
-                  return (
-                    <div key={item._id} className={`comment-item ${depth > 0 ? 'is-reply' : ''}`}>
-                      <div className="comment-meta">
-                        <strong>{item.authorName || 'Khách'}</strong>
-                        <span className="comment-time">{new Date(item.createdAt).toLocaleString()}</span>
-                        {currentUser && (
-                          <button
-                            className="btn-ghost btn-reply-comment"
-                            onClick={() => {
-                              setReplyingTo(prev => (prev === item._id ? null : item._id))
-                              setReplyDrafts(prev => ({ ...prev, [item._id]: prev[item._id] || '' }))
-                            }}
-                          >
-                            Trả lời
-                          </button>
-                        )}
-                        {currentUser && onReportContent && (
-                          <button
-                            className="btn-ghost btn-report-comment"
-                            onClick={() =>
-                              onReportContent({
-                                targetType: 'lesson_comment',
-                                targetId: item._id,
-                                targetAuthor: item.authorName,
-                                content: item.content
-                              })
-                            }
-                          >
-                            Báo cáo
-                          </button>
-                        )}
-                        {canManage && (
-                          <button
-                            className="btn-ghost btn-delete-comment"
-                            onClick={async () => {
-                              if (!confirm('Xác nhận xóa bình luận này?')) return
-                              try {
-                                await api.delete(`/api/comments/${item._id}`)
-                                removeCommentBranch(item._id)
-                              } catch (err) {
-                                console.error('Delete comment error', err)
-                                alert(getApiErrorMessage(err, 'Không xóa được bình luận.'))
-                              }
-                            }}
-                          >
-                            Xóa
-                          </button>
-                        )}
-                      </div>
-                      <div className="comment-content">{item.content}</div>
-
-                      {isReplyOpen && (
-                        <div className="comment-reply-box">
-                          <textarea
-                            value={replyValue}
-                            onChange={e => setReplyDrafts(prev => ({ ...prev, [item._id]: e.target.value }))}
-                            placeholder="Viết trả lời..."
-                          />
-                          <div className="comment-actions">
-                            <button className="btn-post" onClick={() => handleSubmitComment(item._id)} disabled={posting}>
-                              Gửi trả lời
-                            </button>
-                            <button className="btn-ghost" onClick={() => setReplyingTo(null)}>
-                              Hủy
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {Array.isArray(item.replies) && item.replies.length > 0 && (
-                        <div className="comment-replies">
-                          {item.replies.map(reply => renderComment(reply, depth + 1))}
-                        </div>
-                      )}
-                    </div>
-                  )
-                }
-
-                return renderComment(comment)
-              })}
-
-              {currentUser ? (
-                <div className="comment-form">
-                  <textarea
-                    value={newComment}
-                    onChange={e => setNewComment(e.target.value)}
-                    placeholder="Viết câu hỏi hoặc bình luận..."
-                  />
-                  <div className="comment-actions">
-                    <button className="btn-post" onClick={() => handleSubmitComment(null)} disabled={posting}>
-                      Gửi
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <p>Vui lòng đăng nhập để tham gia thảo luận.</p>
-              )}
+            <div className="min-w-0">
+              <h2 className="text-[16px] md:text-xl font-black text-slate-900 truncate">{course?.title || 'Bài học'}</h2>
+              <div className="text-[12px] text-slate-500 truncate hidden md:block">Khóa học hiện tại</div>
             </div>
           </div>
-        )}
+          
+          <div className="flex items-center gap-2 md:gap-3 flex-shrink-0">
+            <button
+              className={`inline-flex items-center justify-center gap-1.5 h-10 px-3 md:px-4 rounded-lg font-bold transition-all cursor-pointer text-[13px] ${lessonHeart.isHearted ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-600 hover:bg-rose-50 hover:text-rose-600'}`}
+              onClick={handleToggleHeart}
+            >
+              <Heart size={16} className={lessonHeart.isHearted ? "fill-rose-500 text-rose-500" : ""} />
+              <span className="hidden sm:inline">{lessonHeart.count}</span>
+            </button>
+            
+            {canEditLesson && lesson && (
+              <button className="hidden sm:inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold transition-all cursor-pointer text-[13px]" onClick={() => setEditMode(prev => !prev)}>
+                <Edit3 size={16} /> {editMode ? 'Đóng sửa' : 'Sửa bài'}
+              </button>
+            )}
+            
+            <button className={ghostButtonClass} onClick={onClose}>
+              <span className="hidden sm:inline">Thoát</span>
+              <ArrowLeft size={16} className="sm:hidden" />
+            </button>
+          </div>
+        </header>
 
-        {!isLoading && !lesson && <p>Không tìm thấy bài học.</p>}
-      </section>
+        {/* Scrollable Body */}
+        <div className="lesson-main-scroll flex-1 overflow-y-auto w-full">
+          {isLoading && (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+              <p className="text-[15px] font-bold text-slate-500">Đang tải bài học...</p>
+            </div>
+          )}
+
+          {!isLoading && lesson && (
+            <div className="w-full max-w-5xl mx-auto pb-20">
+              {/* Video Player Section */}
+              {lesson.videoUrl ? (
+                <div className="w-full bg-slate-900 aspect-video relative group">
+                  {videoId ? (
+                    <div className="absolute inset-0 w-full h-full" ref={setYoutubeContainerEl}></div>
+                  ) : isDirectVideo || isHls || isDash ? (
+                    <div className="absolute inset-0 w-full h-full flex items-center justify-center">
+                      <video ref={videoElRef} controls className="max-w-full max-h-full w-full h-full" playsInline />
+                    </div>
+                  ) : (
+                    <>
+                      {getVideoEmbedUrl(lesson.videoUrl) ? (
+                        <iframe
+                          src={getVideoEmbedUrl(lesson.videoUrl)}
+                          title={lesson.title}
+                          className="absolute inset-0 w-full h-full border-0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        ></iframe>
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-red-400 bg-red-950/30 p-6 text-center">
+                          Video URL không hợp lệ: {lesson.videoUrl}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="w-full bg-slate-100 aspect-[21/9] flex items-center justify-center text-slate-400 border-b border-slate-200">
+                  <span className="text-[14px] font-bold">Chưa có video cho bài học này.</span>
+                </div>
+              )}
+
+              {/* Lesson Content Area */}
+              <div className="px-4 md:px-8 xl:px-12 py-8 md:py-12 flex flex-col min-w-0">
+                <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-8">{lesson.title}</h1>
+
+                {/* Edit Mode Panel */}
+                {canEditLesson && editMode && (
+                  <div className="mb-10 p-6 bg-amber-50 border border-amber-200 rounded-2xl shadow-inner">
+                    <h4 className="text-lg font-black text-amber-900 mb-6 flex items-center gap-2"><Edit3 size={18} /> Chỉnh sửa bài học</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[13px] font-bold text-amber-900/70">Tiêu đề</label>
+                        <input type="text" className="w-full h-11 px-4 bg-white border border-amber-200 rounded-xl text-[14px] font-semibold focus:outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/20" value={editDraft.title} onChange={e => setEditDraft(prev => ({ ...prev, title: e.target.value }))} />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[13px] font-bold text-amber-900/70">Video URL</label>
+                        <input type="text" className="w-full h-11 px-4 bg-white border border-amber-200 rounded-xl text-[14px] font-semibold focus:outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/20" value={editDraft.videoUrl} onChange={e => setEditDraft(prev => ({ ...prev, videoUrl: e.target.value }))} />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[13px] font-bold text-amber-900/70">Ảnh minh họa (URL)</label>
+                        <input type="text" className="w-full h-11 px-4 bg-white border border-amber-200 rounded-xl text-[14px] font-semibold focus:outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/20" value={editDraft.imageUrl} onChange={e => setEditDraft(prev => ({ ...prev, imageUrl: e.target.value }))} />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[13px] font-bold text-amber-900/70">Thứ tự</label>
+                        <input type="number" className="w-full h-11 px-4 bg-white border border-amber-200 rounded-xl text-[14px] font-semibold focus:outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/20" value={editDraft.order} onChange={e => setEditDraft(prev => ({ ...prev, order: Number(e.target.value) || 1 }))} />
+                      </div>
+                    </div>
+                    <div className="mb-6 bg-white rounded-xl border border-amber-200 overflow-hidden">
+                      <RichTextEditor
+                        toolbarId="lesson-full-editor"
+                        value={editDraft.content}
+                        onChange={value => setEditDraft(prev => ({ ...prev, content: value }))}
+                      />
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 border-t border-amber-200/50 pt-5">
+                      <button className="inline-flex items-center justify-center h-11 px-6 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold transition-all shadow-sm" onClick={handleSaveLessonEdit} disabled={isSavingLesson}>
+                        {isSavingLesson ? 'Đang lưu...' : 'Lưu cập nhật'}
+                      </button>
+                      <button className="inline-flex items-center justify-center h-11 px-4 rounded-xl bg-white hover:bg-amber-100 text-amber-800 font-bold transition-all border border-amber-200" onClick={() => setEditMode(false)}>
+                        Hủy
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Lesson Rich Text Content */}
+                <div 
+                  ref={contentRef}
+                  className="prose prose-slate md:prose-lg max-w-none prose-headings:font-black prose-a:text-blue-600 prose-img:rounded-2xl prose-img:shadow-sm"
+                  dangerouslySetInnerHTML={{ __html: lesson.content || '' }}
+                ></div>
+
+                {/* Completion Block */}
+                {canComplete && (
+                  <div className="mt-16 pt-10 border-t border-slate-200 flex flex-col items-center text-center">
+                    <button
+                      className={`inline-flex items-center justify-center gap-2 h-14 px-8 rounded-[16px] font-black text-[16px] transition-all duration-300 shadow-lg ${isCompleted ? 'bg-emerald-500 text-white shadow-emerald-500/30' : canMarkComplete ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/30 hover:scale-105 cursor-pointer' : 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none'}`}
+                      onClick={() => onCompleteLesson?.(lesson._id)}
+                      disabled={!canMarkComplete && !isCompleted}
+                    >
+                      <CheckCircle2 size={24} />
+                      {isCompleted ? 'Đã hoàn thành xuất sắc' : 'Hoàn thành bài học'}
+                    </button>
+                    
+                    {!isCompleted && !canMarkComplete && (
+                      <div className="mt-4 flex items-center justify-center gap-2 text-[14px] font-bold text-amber-600 bg-amber-50 px-4 py-2 rounded-lg">
+                        <AlertCircle size={16} />
+                        <span>
+                          {requiresVideo && (!videoId || !videoReady)
+                            ? 'Không thể tải trạng thái video, vui lòng thử lại.'
+                            : requiresVideo && hasSeeked
+                              ? 'Vui lòng xem video từ đầu đến cuối, không tua.'
+                              : requiresVideo && !hasVideoEnded
+                                ? 'Hãy xem hết video trước khi hoàn thành.'
+                                : 'Hãy đọc và cuộn hết nội dung bài học.'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Comments Section */}
+                <div className="mt-16 pt-10 border-t border-slate-200">
+                  <h4 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-3">
+                    <MessageSquare className="text-blue-600" /> Thảo luận bài học
+                  </h4>
+                  
+                  <div className="flex flex-col gap-8">
+                    {commentsTree.length === 0 ? (
+                      <div className="py-12 bg-slate-50 rounded-2xl border border-slate-200 border-dashed text-center">
+                        <p className="text-[15px] font-bold text-slate-500">Chưa có bình luận nào. Trở thành người đầu tiên thảo luận!</p>
+                      </div>
+                    ) : (
+                      commentsTree.map(comment => {
+                        const renderComment = (item, depth = 0) => {
+                          const canManage = currentRole === 'admin' || currentRole === 'teacher' || item.authorName === currentUser
+                          const isReplyOpen = replyingTo === item._id
+                          const replyValue = replyDrafts[item._id] || ''
+
+                          return (
+                            <div key={item._id} className={`flex flex-col gap-3 ${depth > 0 ? 'ml-6 md:ml-12 pl-4 md:pl-6 border-l-2 border-slate-100 mt-4' : 'mt-6'}`}>
+                              <div className="flex flex-col md:flex-row md:items-start justify-between gap-2">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-[12px]">
+                                    {(item.authorName || 'K').slice(0, 1).toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <strong className="text-[14px] font-black text-slate-900">{item.authorName || 'Khách'}</strong>
+                                    <span className="text-[12px] font-medium text-slate-400 ml-2">{new Date(item.createdAt).toLocaleString()}</span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 ml-11 md:ml-0">
+                                  {currentUser && (
+                                    <button
+                                      className="text-[12px] font-bold text-slate-500 hover:text-blue-600 transition-colors flex items-center gap-1 cursor-pointer"
+                                      onClick={() => {
+                                        setReplyingTo(prev => (prev === item._id ? null : item._id))
+                                        setReplyDrafts(prev => ({ ...prev, [item._id]: prev[item._id] || '' }))
+                                      }}
+                                    >
+                                      <Reply size={14} /> Phản hồi
+                                    </button>
+                                  )}
+                                  {currentUser && onReportContent && (
+                                    <button
+                                      className="text-[12px] font-bold text-slate-500 hover:text-amber-600 transition-colors flex items-center gap-1 cursor-pointer"
+                                      onClick={() => onReportContent({ targetType: 'lesson_comment', targetId: item._id, targetAuthor: item.authorName, content: item.content })}
+                                    >
+                                      <Flag size={14} /> Báo cáo
+                                    </button>
+                                  )}
+                                  {canManage && (
+                                    <button
+                                      className="text-[12px] font-bold text-slate-500 hover:text-red-600 transition-colors flex items-center gap-1 cursor-pointer"
+                                      onClick={async () => {
+                                        if (!confirm('Xác nhận xóa bình luận này?')) return
+                                        try {
+                                          await api.delete(`/api/comments/${item._id}`)
+                                          removeCommentBranch(item._id)
+                                        } catch (err) {
+                                          console.error('Delete comment error', err)
+                                          alert(getApiErrorMessage(err, 'Không xóa được bình luận.'))
+                                        }
+                                      }}
+                                    >
+                                      <Trash2 size={14} /> Xóa
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                              <p className="text-[15px] text-slate-700 ml-11 bg-slate-50 p-4 rounded-xl rounded-tl-none border border-slate-100">{item.content}</p>
+
+                              {isReplyOpen && (
+                                <div className="ml-11 mt-2 bg-white border border-blue-200 rounded-xl p-4 shadow-sm">
+                                  <textarea
+                                    className="w-full min-h-[80px] p-3 bg-slate-50 border border-slate-200 rounded-lg text-[14px] font-medium focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-y mb-3"
+                                    value={replyValue}
+                                    onChange={e => setReplyDrafts(prev => ({ ...prev, [item._id]: e.target.value }))}
+                                    placeholder="Viết câu trả lời của cậu..."
+                                  />
+                                  <div className="flex items-center gap-2 justify-end">
+                                    <button className="h-9 px-4 rounded-lg bg-slate-100 text-slate-600 font-bold text-[13px] hover:bg-slate-200" onClick={() => setReplyingTo(null)}>Hủy</button>
+                                    <button className="h-9 px-4 rounded-lg bg-blue-600 text-white font-bold text-[13px] hover:bg-blue-700" onClick={() => handleSubmitComment(item._id)} disabled={posting}>
+                                      Gửi trả lời
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {Array.isArray(item.replies) && item.replies.length > 0 && (
+                                <div className="ml-2">
+                                  {item.replies.map(reply => renderComment(reply, depth + 1))}
+                                </div>
+                              )}
+                            </div>
+                          )
+                        }
+
+                        return renderComment(comment)
+                      })
+                    )}
+
+                    {currentUser ? (
+                      <div className="mt-8 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                        <h5 className="text-[14px] font-black uppercase text-slate-800 tracking-wide mb-4">Để lại bình luận mới</h5>
+                        <textarea
+                          className="w-full min-h-[120px] p-4 bg-white border border-slate-200 rounded-xl text-[14px] font-medium focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 resize-y mb-4 shadow-sm"
+                          value={newComment}
+                          onChange={e => setNewComment(e.target.value)}
+                          placeholder="Chia sẻ suy nghĩ hoặc câu hỏi của cậu về bài học này..."
+                        />
+                        <div className="flex justify-end">
+                          <button className={baseButtonClass} onClick={() => handleSubmitComment(null)} disabled={posting}>
+                            Gửi bình luận
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-8 py-6 text-center bg-blue-50 text-blue-800 rounded-xl border border-blue-100 font-bold">
+                        Vui lòng đăng nhập để tham gia thảo luận.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!isLoading && !lesson && (
+            <div className="flex items-center justify-center py-32 h-full">
+              <div className="text-center p-8 bg-slate-50 rounded-2xl border border-slate-200">
+                <AlertCircle size={48} className="text-slate-400 mx-auto mb-4" />
+                <h3 className="text-xl font-black text-slate-800 mb-2">Không tìm thấy bài học</h3>
+                <p className="text-slate-500">Vui lòng chọn một bài học khác từ danh sách bên trái.</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
     </div>
   )
 }

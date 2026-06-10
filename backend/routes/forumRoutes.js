@@ -20,23 +20,23 @@ const { requireActiveUser, requireAdmin, optionalAuth } = require('../middleware
 
 const router = express.Router();
 
-router.get('/forum/posts', optionalAuth, getPosts);
-router.post('/forum/posts', requireActiveUser, createPost);
-router.delete('/forum/posts/:id', requireActiveUser, deletePost);
-router.patch('/forum/posts/:id/reaction', requireActiveUser, togglePostReaction);
+router.get('/posts', optionalAuth, getPosts);
+router.post('/posts', requireActiveUser, createPost);
+router.delete('/posts/:id', requireActiveUser, deletePost);
+router.patch('/posts/:id/reaction', requireActiveUser, togglePostReaction);
 
-router.get('/forum/comments', optionalAuth, getComments);
-router.post('/forum/comments', requireActiveUser, createComment);
-router.delete('/forum/comments/:id', requireActiveUser, deleteComment);
-router.get('/forum/admin/comments', requireAdmin, listAllCommentsForAdmin);
-router.patch('/forum/comments/:id/punish', requireAdmin, punishCommentAuthor);
+router.get('/comments', optionalAuth, getComments);
+router.post('/comments', requireActiveUser, createComment);
+router.delete('/comments/:id', requireActiveUser, deleteComment);
+router.get('/admin/comments', requireAdmin, listAllCommentsForAdmin);
+router.patch('/comments/:id/punish', requireAdmin, punishCommentAuthor);
 
-router.get('/forum/deleted/posts', requireAdmin, getDeletedPosts);
-router.get('/forum/deleted/comments', requireAdmin, getDeletedComments);
-router.delete('/forum/deleted/posts/:id', requireAdmin, deleteDeletedPost);
-router.delete('/forum/deleted/comments/:id', requireAdmin, deleteDeletedComment);
+router.get('/deleted/posts', requireAdmin, getDeletedPosts);
+router.get('/deleted/comments', requireAdmin, getDeletedComments);
+router.delete('/deleted/posts/:id', requireAdmin, deleteDeletedPost);
+router.delete('/deleted/comments/:id', requireAdmin, deleteDeletedComment);
 
-router.patch('/forum/posts/:id/restore', requireAdmin, restorePost);
-router.patch('/forum/comments/:id/restore', requireAdmin, restoreComment);
+router.patch('/posts/:id/restore', requireAdmin, restorePost);
+router.patch('/comments/:id/restore', requireAdmin, restoreComment);
 
 module.exports = router;

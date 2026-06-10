@@ -28,15 +28,14 @@ export const AuthProvider = ({ children }) => {
     setAuthNotifications([{ type, title, message }]);
   }, []);
 
-  const login = (user, role, token) => {
+  const login = (user, role, tokens) => {
     setCurrentUser(user);
     const normalizedRole = normalizeClientRole(role);
     setCurrentRole(normalizedRole);
     localStorage.setItem('zmate_current_user', user);
     localStorage.setItem('zmate_current_role', normalizedRole);
-    if (token) {
-        localStorage.setItem('zmate_token', token);
-        setTokens(token);
+    if (tokens) {
+        setTokens(tokens);
     }
     setIsAuthOpen(false);
   };

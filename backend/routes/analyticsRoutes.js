@@ -4,6 +4,6 @@ const { requireTeacherOrAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/analytics/lessons/overview', requireTeacherOrAdmin, getAdminLessonAnalytics);
+router.get('/lessons/overview', requireTeacherOrAdmin, getAdminLessonAnalytics);
 
 module.exports = router;

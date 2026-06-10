@@ -1,10 +1,12 @@
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 const multer = require('multer');
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024;
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-// Video settings
-const VIDEO_MAX_FILE_SIZE = 200 * 1024 * 1024; // 200 MB
+const VIDEO_MAX_FILE_SIZE = 200 * 1024 * 1024;
 const VIDEO_ALLOWED_TYPES = [
   'video/mp4',
   'video/webm',
@@ -12,7 +14,26 @@ const VIDEO_ALLOWED_TYPES = [
   'video/quicktime'
 ];
 
-const storage = multer.memoryStorage();
+const UPLOAD_TMP_DIR =
+  process.env.UPLOAD_TMP_DIR || path.join(os.tmpdir(), 'kns-uploads');
+
+fs.mkdirSync(UPLOAD_TMP_DIR, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, UPLOAD_TMP_DIR);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname || '');
+    const basename = path
+      .basename(file.originalname || 'upload', ext)
+      .replace(/[^a-zA-Z0-9_-]/g, '-')
+      .slice(0, 48);
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+
+    cb(null, `${basename || 'upload'}-${uniqueSuffix}${ext}`);
+  }
+});
 
 const imageFileFilter = (req, file, cb) => {
   if (!ALLOWED_TYPES.includes(file.mimetype)) {
@@ -46,5 +67,6 @@ module.exports = {
   ALLOWED_TYPES,
   videoUpload,
   VIDEO_MAX_FILE_SIZE,
-  VIDEO_ALLOWED_TYPES
+  VIDEO_ALLOWED_TYPES,
+  UPLOAD_TMP_DIR
 };

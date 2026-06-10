@@ -74,9 +74,8 @@ const ensureAdminUser = async () => {
       shouldSave = true;
     }
 
-    if (!existingAdmin.passwordHash || existingAdmin.password) {
+    if (!existingAdmin.passwordHash) {
       existingAdmin.passwordHash = await bcrypt.hash(config.adminPassword, 10);
-      existingAdmin.password = undefined;
       shouldSave = true;
     }
 
@@ -98,6 +97,8 @@ const ensureAdminUser = async () => {
     if (shouldSave) {
       await existingAdmin.save();
     }
+
+    await User.updateOne({ _id: existingAdmin._id }, { $unset: { password: '' } });
     return;
   }
 

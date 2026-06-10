@@ -3,6 +3,6 @@ const { sendChat } = require('../controllers/chatController');
 
 const router = express.Router();
 
-router.post('/chat', sendChat);
+router.post('/', sendChat);
 
 module.exports = router;

@@ -1,8 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
-import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
+import { Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import { clearTokens, createApiClient, setTokens } from './api/apiClient'
 import AppShell from './components/AppShell'
-import AuthModal from './components/AuthModal'
+import { useAuth } from './context/AuthContext'
 import ChatWidget from './components/ChatWidget'
 import Navbar from './components/Navbar'
 import PageFallback from './components/PageFallback'
@@ -23,6 +23,7 @@ const LmsView = lazy(() => import('./components/LmsView'))
 const ManageView = lazy(() => import('./components/ManageView'))
 const ProfilePage = lazy(() => import('./components/ProfilePage'))
 const TeacherView = lazy(() => import('./components/TeacherView'))
+const AuthPage = lazy(() => import('./pages/AuthPage'))
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
@@ -39,36 +40,26 @@ const normalizeClientRole = role => {
   return role === 'user' ? 'student' : role
 }
 
-const getAuthGateFromPath = pathname => {
-  if (pathname === '/admin') {
-    return { role: 'admin', label: 'Admin' }
-  }
-  if (pathname === '/teacher') {
-    return { role: 'teacher', label: 'Giảng viên' }
-  }
-  if (pathname === '/student') {
-    return { role: 'student', label: 'Học sinh' }
-  }
-  return null
-}
 
 const isCoursePath = pathname => pathname === '/courses' || pathname === '/lms' || pathname.startsWith('/courses/')
 
+const ProtectedRoute = ({ children }) => {
+  const { currentUser } = useAuth()
+  const location = useLocation()
+
+  if (!currentUser) {
+    return <Navigate to="/login" state={{ from: location }} replace />
+  }
+
+  return children
+}
 
 function App() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [isAuthOpen, setIsAuthOpen] = useState(false)
-  const [authMode, setAuthMode] = useState('login')
-  const [authNotifications, setAuthNotifications] = useState([])
-  const [currentUser, setCurrentUser] = useState(() => {
-    const storedUser = localStorage.getItem('zmate_current_user')
-    return storedUser || null
-  })
-  const [currentRole, setCurrentRole] = useState(() =>
-    normalizeClientRole(localStorage.getItem('zmate_current_role') || 'student')
-  )
-  const [authData, setAuthData] = useState({ username: '', password: '' })
+
+  const { currentUser, currentRole, logout } = useAuth()
+
   const getInitialTab = () => {
     if (window.location.pathname === '/admin') {
       return 'manage'
@@ -85,15 +76,10 @@ function App() {
     return 'home'
   }
   const [activeTab, setActiveTab] = useState(getInitialTab)
-  const [authGate, setAuthGate] = useState(() => getAuthGateFromPath(window.location.pathname))
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [forumPage, setForumPage] = useState(1)
-  const [isAuthLoading, setIsAuthLoading] = useState(false)
 
-  const pushAuthNotice = useCallback((message, type = 'info', title = 'Thông báo') => {
-    setAuthNotifications([{ type, title, message }])
-  }, [])
 
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState([
@@ -282,31 +268,26 @@ function App() {
   const updatePathForTab = tab => {
     if (tab === 'manage') {
       navigate('/admin')
-      setAuthGate(getAuthGateFromPath('/admin'))
       return
     }
 
     if (tab === 'teacher') {
       navigate('/teacher')
-      setAuthGate(getAuthGateFromPath('/teacher'))
       return
     }
 
     if (tab === 'profile') {
       navigate('/profile')
-      setAuthGate(null)
       return
     }
 
     if (['/admin', '/teacher', '/student'].includes(location.pathname)) {
       navigate('/')
-      setAuthGate(null)
       return
     }
 
     if (location.pathname === '/profile') {
       navigate('/')
-      setAuthGate(null)
     }
   }
 
@@ -331,10 +312,8 @@ function App() {
     // Update path after setting tab
     if (tab === 'manage') {
       navigate('/admin')
-      setAuthGate(getAuthGateFromPath('/admin'))
     } else if (tab === 'teacher') {
       navigate('/teacher')
-      setAuthGate(getAuthGateFromPath('/teacher'))
     } else if (tab === 'lms') {
       navigate('/courses')
     } else if (tab === 'forum') {
@@ -343,12 +322,10 @@ function App() {
       setForumCourse(null)
       setForumPage(1)
       navigate('/forum')
-      setAuthGate(null)
     } else {
       if (location.pathname !== '/') {
         navigate('/')
       }
-      setAuthGate(null)
     }
   }
 
@@ -382,16 +359,6 @@ function App() {
     setForumPage(1)
   }, [searchTerm])
 
-  useEffect(() => {
-    if (!authGate) {
-      return
-    }
-
-    if (!currentUser || currentRole !== authGate.role) {
-      setAuthMode('login')
-      setIsAuthOpen(true)
-    }
-  }, [authGate, currentUser, currentRole])
 
   const filteredForumPosts = useMemo(() => {
     const keyword = searchTerm.trim().toLowerCase()
@@ -421,98 +388,6 @@ function App() {
       setForumPage(forumTotalPages)
     }
   }, [forumPage, forumTotalPages])
-
-  const handleAuth = async () => {
-    if (!authData.username.trim() || !authData.password.trim()) {
-      pushAuthNotice('Cậu điền đầy đủ tên đăng nhập và mật khẩu nhé!', 'error', 'Thiếu dữ liệu')
-      return
-    }
-
-    if (authGate && authMode === 'register') {
-      pushAuthNotice('Trang này chỉ hỗ trợ đăng nhập theo vai trò.', 'warning', 'Không hỗ trợ')
-      return
-    }
-
-    const endpoint = authMode === 'login' ? '/api/login' : '/api/register'
-    setIsAuthLoading(true)
-    try {
-      const payload = {
-        username: authData.username.trim(),
-        password: authData.password.trim()
-      }
-
-      if (authMode === 'login' && authGate?.role) {
-        payload.loginAs = authGate.role
-      }
-
-      const res = await api.post(endpoint, payload)
-
-      pushAuthNotice(res.data.message || 'Xử lý xong.', 'success', 'Thành công')
-      if (authMode === 'login') {
-        setCurrentUser(res.data.username)
-        const normalizedRole = normalizeClientRole(res.data.role || 'student')
-        if (authGate && normalizedRole !== authGate.role) {
-          clearTokens()
-          localStorage.removeItem('zmate_current_user')
-          localStorage.removeItem('zmate_current_role')
-          setCurrentUser(null)
-          setCurrentRole('student')
-          pushAuthNotice(`Tài khoản không thuộc vai trò ${authGate.label}.`, 'error', 'Sai vai trò')
-          return
-        }
-
-        if (!authGate && window.location.pathname === '/' && normalizedRole === 'admin') {
-          clearTokens()
-          localStorage.removeItem('zmate_current_user')
-          localStorage.removeItem('zmate_current_role')
-          setCurrentUser(null)
-          setCurrentRole('student')
-          pushAuthNotice('Tài khoản hoặc mật khẩu không đúng.', 'error', 'Không đăng nhập được')
-          return
-        }
-
-        if (!authGate && window.location.pathname === '/' && normalizedRole === 'teacher') {
-          clearTokens()
-          localStorage.removeItem('zmate_current_user')
-          localStorage.removeItem('zmate_current_role')
-          setCurrentUser(null)
-          setCurrentRole('student')
-          pushAuthNotice('Tài khoản hoặc mật khẩu không đúng.', 'error', 'Không đăng nhập được')
-          return
-        }
-
-
-        setCurrentRole(normalizedRole)
-        setTokens({
-          accessToken: res.data.accessToken,
-          refreshToken: res.data.refreshToken,
-          signatureToken: res.data.signatureToken
-        })
-        localStorage.setItem('zmate_current_user', res.data.username)
-        localStorage.setItem('zmate_current_role', normalizedRole)
-
-        if (authGate?.role === 'admin') {
-          setActiveTab('manage')
-          updatePathForTab('manage')
-        } else if (authGate?.role === 'teacher') {
-          setActiveTab('teacher')
-          updatePathForTab('teacher')
-        } else if (authGate?.role === 'student') {
-          setActiveTab('home')
-        }
-
-        setIsAuthOpen(false)
-        setAuthData({ username: '', password: '' })
-      } else {
-        setAuthMode('login')
-        pushAuthNotice('Đăng ký thành công. Giờ cậu có thể đăng nhập.', 'success', 'Hoàn tất')
-      }
-    } catch (err) {
-      pushAuthNotice(err.response?.data?.message || 'Có lỗi xảy ra!', 'error', 'Lỗi')
-    } finally {
-      setIsAuthLoading(false)
-    }
-  }
 
   const fetchForumData = useCallback(async () => {
     if (forumScope === 'course' && !forumCourseId) {
@@ -677,14 +552,12 @@ function App() {
     }
 
     if (actionId === 'login') {
-      setIsAuthOpen(true)
-      setAuthMode('login')
+      navigate('/login')
       return
     }
 
     if (actionId === 'register') {
-      setIsAuthOpen(true)
-      setAuthMode('register')
+      navigate('/register')
       return
     }
 
@@ -736,8 +609,7 @@ function App() {
     }
 
     alert(`Cậu cần đăng nhập để ${actionLabel}.`)
-    setIsAuthOpen(true)
-    setAuthMode('login')
+    navigate('/login')
     return false
   }
 
@@ -1577,7 +1449,6 @@ function App() {
     if (pathname.startsWith('/lesson/')) {
       const slug = decodeURIComponent(pathname.replace('/lesson/', ''))
       setActiveTab('lms')
-      setAuthGate(null)
       if (lessonRouteSlug !== slug) {
         setLessonRouteSlug(slug)
         fetchLessonRoute(slug)
@@ -1589,7 +1460,6 @@ function App() {
       resetLessonRoute()
     }
 
-    setAuthGate(getAuthGateFromPath(pathname))
 
     if (isCoursePath(pathname)) {
       setActiveTab('lms')
@@ -1618,7 +1488,6 @@ function App() {
 
     if (pathname.startsWith('/profile/')) {
       setActiveTab('profile')
-      setAuthGate(null)
       return
     }
 
@@ -1727,17 +1596,12 @@ function App() {
     setProfileUser(null)
     navigate(`/profile/${encodeURIComponent(userId)}`)
     setActiveTab('profile')
-    setAuthGate(null)
   }
 
   const handleOpenMyProfile = () => {
     if (!currentUser) {
       alert('Bạn phải đăng nhập để xem hồ sơ.')
-      navigate('/')
-      setActiveTab('home')
-      setAuthGate(null)
-      setIsAuthOpen(true)
-      setAuthMode('login')
+      navigate('/login')
       return
     }
     setProfileMode('view')
@@ -2385,14 +2249,10 @@ function App() {
 
   const handleLogout = () => {
     const isInsideLesson = location.pathname.startsWith('/lesson/')
-    setCurrentUser(null)
-    setCurrentRole('student')
+    if (logout) logout()
     setMyProfile(null)
     setProfileUser(null)
     setProfileMode('view')
-    clearTokens()
-    localStorage.removeItem('zmate_current_user')
-    localStorage.removeItem('zmate_current_role')
     if (isInsideLesson) {
       alert('Bạn phải đăng nhập để tiếp tục học bài.')
     }
@@ -2552,15 +2412,7 @@ function App() {
     : false
 
   const handleOpenAuth = mode => {
-    setAuthNotifications([])
-    if (authGate) {
-      setAuthMode('login')
-      setIsAuthOpen(true)
-      return
-    }
-
-    setIsAuthOpen(true)
-    setAuthMode(mode)
+    navigate(mode === 'register' ? '/register' : '/login')
   }
 
   const handleCommentDraftChange = (postId, value) => {
@@ -2570,354 +2422,361 @@ function App() {
     }))
   }
 
+  useEffect(() => {
+    if (location.pathname === '/admin' && activeTab !== 'manage') {
+      setActiveTab('manage')
+    } else if (location.pathname === '/teacher' && activeTab !== 'teacher') {
+      setActiveTab('teacher')
+    } else if ((location.pathname === '/courses' || location.pathname.startsWith('/courses/')) && activeTab !== 'lms') {
+      setActiveTab('lms')
+    } else if (location.pathname === '/forum' && activeTab !== 'forum') {
+      setActiveTab('forum')
+    } else if (location.pathname === '/profile' && activeTab !== 'profile') {
+      setActiveTab('profile')
+    } else if (location.pathname === '/' && activeTab !== 'home') {
+      setActiveTab('home')
+    }
+  }, [location.pathname, activeTab])
+
   return (
-    <AppShell
-      sidebarCollapsed={sidebarCollapsed}
-      pageKey={`${activeTab}:${lessonRouteSlug || 'index'}`}
-      navigation={
-        <>
-      <Navbar
-        currentRole={currentRole}
-        currentUser={currentUser}
-        currentUserLabel={myProfile?.profile?.displayName || currentUser}
-        currentUserAvatar={myProfile?.profile?.avatarUrl || ''}
-        currentRank={currentRank}
-        currentUserPoints={currentUserPoints}
-        onLogout={handleLogout}
-        onOpenAuth={handleOpenAuth}
-        onBrandClick={handleBrandClick}
-        onOpenForum={openGeneralForum}
-        onOpenProfile={handleOpenMyProfile}
-        sidebarCollapsed={sidebarCollapsed}
-        sidebarOpen={sidebarOpen}
-        onToggleSidebar={() => {
-          if (typeof window !== 'undefined' && window.innerWidth < 900) {
-            setSidebarOpen(v => !v)
-          } else {
-            setSidebarCollapsed(v => !v)
-          }
-        }}
-        onCloseSidebar={() => setSidebarOpen(false)}
-      />
-      {!sidebarOpen && (
-        <button
-          className="mobile-sidebar-dock"
-          onClick={() => setSidebarOpen(true)}
-          aria-label="Mở menu điều hướng"
-        >
-          <span className="mobile-sidebar-dock__bar" />
-          <span className="mobile-sidebar-dock__bar" />
-          <span className="mobile-sidebar-dock__bar" />
-        </button>
-      )}
-      {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
-        </>
-      }
-    >
-
-      <AuthModal
-        isOpen={isAuthOpen}
-        authMode={authMode}
-        authData={authData}
-        isAuthLoading={isAuthLoading}
-        title={authGate ? `Đăng nhập ${authGate.label}` : undefined}
-        disableRegister={Boolean(authGate)}
-        notifications={authNotifications}
-        onClose={() => setIsAuthOpen(false)}
-        onAuth={handleAuth}
-        onSwitchMode={() => {
-          if (authGate) {
-            return
-          }
-          setAuthMode(prev => {
-            const next = prev === 'login' ? 'register' : 'login'
-            setAuthNotifications([])
-            return next
-          })
-        }}
-        onChange={setAuthData}
-      />
-
-      <Suspense fallback={<PageFallback />}>
-        <Routes>
-          <Route path='/' element={
-            <HomeView
-              categories={allCategories}
+    <Suspense fallback={<PageFallback />}>
+      <Routes>
+        <Route path='/login' element={<AuthPage />} />
+        <Route path='/register' element={<AuthPage />} />
+        <Route path='/*' element={
+          <ProtectedRoute>
+            <AppShell
+            sidebarCollapsed={sidebarCollapsed}
+            pageKey={`${activeTab}:${lessonRouteSlug || 'index'}`}
+            fullWidth={activeTab === 'manage'}
+            navigation={
+              <>
+            <Navbar
+              currentRole={currentRole}
               currentUser={currentUser}
+              currentUserLabel={myProfile?.profile?.displayName || currentUser}
+              currentUserAvatar={myProfile?.profile?.avatarUrl || ''}
               currentRank={currentRank}
               currentUserPoints={currentUserPoints}
-              nextRank={nextRank}
-              pointsToNext={pointsToNext}
-              rankLeaderboard={rankLeaderboard}
-              categoryVideos={categoryVideos}
-              currentRole={currentRole}
-              onDeleteVideo={handleDeleteVideo}
-            />
-          } />
-
-          <Route path='/courses' element={
-            <LmsView
-              categories={allCategories}
-              selectedCategory={lmsCategory}
-              onSelectCategory={handleSelectLmsCategory}
-              courses={courses}
-              teacherCourses={teacherCourses}
-              selectedCourse={selectedCourse}
-              onSelectCourse={handleSelectLmsCourse}
-              lessons={courseLessons}
-              assignments={courseAssignments}
-              assignmentDrafts={assignmentDrafts}
-              onAssignmentDraftChange={handleAssignmentDraftChange}
-              onSubmitAssignment={handleSubmitAssignment}
-              onSubmitQuizAssignment={handleSubmitQuizAssignment}
-              enrollmentByCourse={enrollmentByCourse}
-              teacherEnrollments={teacherEnrollments}
-              onEnroll={handleEnroll}
-              currentRole={currentRole}
-              currentUser={currentUser}
-              onOpenProfile={handleOpenProfile}
-              onOpenLesson={openLessonRoute}
-              onOpenCourseForum={handleOpenCourseForum}
-              onLoadEnrollments={fetchTeacherEnrollments}
-              onDeleteLesson={handleDeleteLesson}
-            />
-          } />
-
-          <Route path='/courses/:courseId' element={
-            <LmsView
-              categories={allCategories}
-              selectedCategory={lmsCategory}
-              onSelectCategory={handleSelectLmsCategory}
-              courses={courses}
-              teacherCourses={teacherCourses}
-              selectedCourse={selectedCourse}
-              onSelectCourse={handleSelectLmsCourse}
-              lessons={courseLessons}
-              assignments={courseAssignments}
-              assignmentDrafts={assignmentDrafts}
-              onAssignmentDraftChange={handleAssignmentDraftChange}
-              onSubmitAssignment={handleSubmitAssignment}
-              onSubmitQuizAssignment={handleSubmitQuizAssignment}
-              enrollmentByCourse={enrollmentByCourse}
-              teacherEnrollments={teacherEnrollments}
-              onEnroll={handleEnroll}
-              currentRole={currentRole}
-              currentUser={currentUser}
-              onOpenProfile={handleOpenProfile}
-              onOpenLesson={openLessonRoute}
-              onOpenCourseForum={handleOpenCourseForum}
-              onLoadEnrollments={fetchTeacherEnrollments}
-              onDeleteLesson={handleDeleteLesson}
-            />
-          } />
-
-          <Route path='/forum' element={
-            <ForumView
-              newPost={newPost}
-              onNewPostChange={setNewPost}
-              categories={allCategories}
-              onPostSubmit={handlePostSubmit}
-              paginatedForumPosts={paginatedForumPosts}
-              commentsByPost={commentsByPost}
-              commentDrafts={commentDrafts}
-              onCommentDraftChange={handleCommentDraftChange}
-              onAddComment={handleAddComment}
-              onReportContent={handleReportContent}
-              onTogglePostReaction={handleTogglePostReaction}
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              forumPage={forumPage}
-              forumTotalPages={forumTotalPages}
-              onPageChange={setForumPage}
-              filteredForumPosts={filteredForumPosts}
-              forumScope={forumScope}
-              forumCourse={forumCourse}
-            />
-          } />
-
-          <Route path='/teacher' element={
-            currentRole === 'teacher' ? (
-              <TeacherView
-              categories={allCategories}
-              courses={teacherCourses}
-              lessons={courseLessons}
-              selectedCourseId={selectedTeacherCourseId}
-              onSelectCourseId={handleSelectTeacherCourse}
-              newCourseData={newCourseData}
-              onNewCourseDataChange={setNewCourseData}
-              onCreateCourse={handleCreateCourse}
-              newLessonData={newLessonData}
-              onNewLessonDataChange={setNewLessonData}
-              onCreateLesson={handleCreateLesson}
-              assignments={courseAssignments}
-              newAssignmentData={newAssignmentData}
-              onNewAssignmentDataChange={setNewAssignmentData}
-              onCreateAssignment={handleCreateAssignment}
-              editAssignmentId={editAssignmentId}
-              editAssignmentData={editAssignmentData}
-              onEditAssignmentStart={handleEditAssignmentStart}
-              onEditAssignmentChange={setEditAssignmentData}
-              onEditAssignmentCancel={handleEditAssignmentCancel}
-              onUpdateAssignment={handleUpdateAssignment}
-              onDeleteAssignment={handleDeleteAssignment}
-              assignmentSubmissions={assignmentSubmissions}
-              onLoadAssignmentSubmissions={handleLoadAssignmentSubmissions}
-              onGradeSubmission={handleGradeSubmission}
-              editLessonId={editLessonId}
-              editLessonData={editLessonData}
-              onEditLessonStart={handleStartEditLesson}
-              onEditLessonChange={setEditLessonData}
-              onEditLessonCancel={handleCancelEditLesson}
-              onUpdateLesson={handleUpdateLesson}
-              onDeleteLesson={handleDeleteLesson}
-              onUploadCourseEditorVideo={handleUploadCourseEditorVideo}
-              onUploadLessonEditorVideo={handleUploadLessonEditorVideo}
-              onUploadEditLessonEditorVideo={handleUploadEditLessonEditorVideo}
-            />
-            ) : (
-              <div className="empty-state">Chỉ tài khoản giảng viên mới truy cập được Studio giảng viên.</div>
-            )
-          } />
-
-          <Route path='/admin' element={
-            currentRole === 'admin' ? (
-              <ManageView
-                isLoadingUsers={isLoadingUsers}
-                isLoadingReports={isLoadingReports}
-                isLoadingDeletedPosts={isLoadingDeletedPosts}
-                isLoadingDeletedComments={isLoadingDeletedComments}
-                isLoadingAnalytics={isLoadingAnalytics}
-                courses={courses}
-                selectedCourse={selectedCourse}
-                onSelectCourse={handleSelectCourse}
-                courseLessons={courseLessons}
-                onOpenLesson={openLessonRoute}
-                onDeleteLesson={handleDeleteLesson}
-                onFetchUsers={fetchManagedUsers}
-                onFetchReports={fetchModerationReports}
-              onFetchDeletedPosts={fetchDeletedPosts}
-              onFetchDeletedComments={fetchDeletedComments}
-              onFetchForumComments={fetchAdminForumComments}
-              isLoadingForumComments={isLoadingForumComments}
-                deletedReasonFilter={deletedReasonFilter}
-                onReasonChange={setDeletedReasonFilter}
-                newUserData={newUserData}
-                onNewUserDataChange={setNewUserData}
-                onCreateUser={handleCreateUser}
-                newVideoData={newVideoData}
-                onVideoDataChange={setNewVideoData}
-                onAddVideo={handleAddVideo}
-                categories={allCategories}
-                customCategories={customCategories}
-                onAddCategory={handleAddCategory}
-                onRemoveCategory={handleRemoveCategory}
-                managedUsers={managedUsers}
-                currentUser={currentUser}
-                onRoleChange={handleRoleChange}
-                onStatusChange={handleStatusChange}
-                onDeleteUser={handleDeleteUser}
-                moderationReports={moderationReports}
-                onDeleteModerationReport={handleDeleteModerationReport}
-                onClearModerationReports={handleClearModerationReports}
-              forumPosts={forumPosts}
-              forumComments={adminForumComments}
-              onAdminDeletePost={handleAdminDeletePost}
-              onPunishForumComment={handlePunishForumComment}
-                deletedPosts={deletedPosts}
-                onRestorePost={handleRestorePost}
-                onPermanentDeletePost={handlePermanentDeletePost}
-                deletedComments={deletedComments}
-                onRestoreComment={handleRestoreComment}
-                onPermanentDeleteComment={handlePermanentDeleteComment}
-                analytics={adminAnalytics}
-                adminUploadUrl={adminUploadUrl}
-                isAdminUploadLoading={isAdminUploadLoading}
-                onAdminUploadVideo={handleAdminUploadVideo}
-                onClearAdminUploadUrl={() => setAdminUploadUrl('')}
-                onOpenProfile={handleOpenProfile}
-                api={api}
-              />
-            ) : (
-              <div className="empty-state">Cậu cần đăng nhập bằng tài khoản admin để vào trang /admin.</div>
-            )
-          } />
-
-          <Route path='/profile' element={
-            <ProfilePage
-              profileUser={myProfile}
-              profileDraft={profileDraft}
-              isLoading={myProfileLoading}
-              mode={profileMode}
-              currentUser={currentUser}
-              isOwnProfile
-              onClose={() => {
-                navigate('/')
-                setActiveTab('home')
+              onLogout={handleLogout}
+              onOpenAuth={handleOpenAuth}
+              onBrandClick={handleBrandClick}
+              onOpenForum={openGeneralForum}
+              onOpenProfile={handleOpenMyProfile}
+              sidebarCollapsed={sidebarCollapsed}
+              sidebarOpen={sidebarOpen}
+              onToggleSidebar={() => {
+                if (typeof window !== 'undefined' && window.innerWidth < 900) {
+                  setSidebarOpen(v => !v)
+                } else {
+                  setSidebarCollapsed(v => !v)
+                }
               }}
-              onEdit={() => {
-                setProfileMode('edit')
-                fetchMyProfile()
-              }}
-              onSave={handleSaveProfile}
-              onChange={setProfileDraft}
-              onAvatarChange={handleProfileAvatarChange}
+              onCloseSidebar={() => setSidebarOpen(false)}
             />
-          } />
+            {!sidebarOpen && (
+              <button
+                className="mobile-sidebar-dock"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Mở menu điều hướng"
+              >
+                <span className="mobile-sidebar-dock__bar" />
+                <span className="mobile-sidebar-dock__bar" />
+                <span className="mobile-sidebar-dock__bar" />
+              </button>
+            )}
+            {sidebarOpen && <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />}
+              </>
+            }
+          >
+            <Suspense fallback={<PageFallback />}>
+              <Routes>
+                <Route path='/' element={
+                  <HomeView
+                    categories={allCategories}
+                    currentUser={currentUser}
+                    currentRank={currentRank}
+                    currentUserPoints={currentUserPoints}
+                    nextRank={nextRank}
+                    pointsToNext={pointsToNext}
+                    rankLeaderboard={rankLeaderboard}
+                    categoryVideos={categoryVideos}
+                    currentRole={currentRole}
+                    onDeleteVideo={handleDeleteVideo}
+                  />
+                } />
 
-          <Route path='/profile/:userId' element={
-            <ProfilePage
-              profileUser={profileUser}
-              profileDraft={profileUser?.profile || {}}
-              isLoading={profileLoading}
-              mode="view"
-              currentUser={currentUser}
-              isOwnProfile={profileUser?.username === currentUser}
-              onClose={() => {
-                navigate(-1)
-              }}
-              onEdit={handleOpenMyProfile}
-              onSave={handleSaveProfile}
-              onChange={setProfileDraft}
-              onAvatarChange={handleProfileAvatarChange}
+                <Route path='/courses' element={
+                  <LmsView
+                    categories={allCategories}
+                    selectedCategory={lmsCategory}
+                    onSelectCategory={handleSelectLmsCategory}
+                    courses={courses}
+                    teacherCourses={teacherCourses}
+                    selectedCourse={selectedCourse}
+                    onSelectCourse={handleSelectLmsCourse}
+                    lessons={courseLessons}
+                    assignments={courseAssignments}
+                    assignmentDrafts={assignmentDrafts}
+                    onAssignmentDraftChange={handleAssignmentDraftChange}
+                    onSubmitAssignment={handleSubmitAssignment}
+                    onSubmitQuizAssignment={handleSubmitQuizAssignment}
+                    enrollmentByCourse={enrollmentByCourse}
+                    teacherEnrollments={teacherEnrollments}
+                    onEnroll={handleEnroll}
+                    currentRole={currentRole}
+                    currentUser={currentUser}
+                    onOpenProfile={handleOpenProfile}
+                    onOpenLesson={openLessonRoute}
+                    onOpenCourseForum={handleOpenCourseForum}
+                    onLoadEnrollments={fetchTeacherEnrollments}
+                    onDeleteLesson={handleDeleteLesson}
+                  />
+                } />
+
+                <Route path='/courses/:courseId' element={
+                  <LmsView
+                    categories={allCategories}
+                    selectedCategory={lmsCategory}
+                    onSelectCategory={handleSelectLmsCategory}
+                    courses={courses}
+                    teacherCourses={teacherCourses}
+                    selectedCourse={selectedCourse}
+                    onSelectCourse={handleSelectLmsCourse}
+                    lessons={courseLessons}
+                    assignments={courseAssignments}
+                    assignmentDrafts={assignmentDrafts}
+                    onAssignmentDraftChange={handleAssignmentDraftChange}
+                    onSubmitAssignment={handleSubmitAssignment}
+                    onSubmitQuizAssignment={handleSubmitQuizAssignment}
+                    enrollmentByCourse={enrollmentByCourse}
+                    teacherEnrollments={teacherEnrollments}
+                    onEnroll={handleEnroll}
+                    currentRole={currentRole}
+                    currentUser={currentUser}
+                    onOpenProfile={handleOpenProfile}
+                    onOpenLesson={openLessonRoute}
+                    onOpenCourseForum={handleOpenCourseForum}
+                    onLoadEnrollments={fetchTeacherEnrollments}
+                    onDeleteLesson={handleDeleteLesson}
+                  />
+                } />
+
+                <Route path='/forum' element={
+                  <ForumView
+                    newPost={newPost}
+                    onNewPostChange={setNewPost}
+                    categories={allCategories}
+                    onPostSubmit={handlePostSubmit}
+                    paginatedForumPosts={paginatedForumPosts}
+                    commentsByPost={commentsByPost}
+                    commentDrafts={commentDrafts}
+                    onCommentDraftChange={handleCommentDraftChange}
+                    onAddComment={handleAddComment}
+                    onReportContent={handleReportContent}
+                    onTogglePostReaction={handleTogglePostReaction}
+                    searchTerm={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    forumPage={forumPage}
+                    forumTotalPages={forumTotalPages}
+                    onPageChange={setForumPage}
+                    filteredForumPosts={filteredForumPosts}
+                    forumScope={forumScope}
+                    forumCourse={forumCourse}
+                  />
+                } />
+
+                <Route path='/teacher' element={
+                  currentRole === 'teacher' ? (
+                    <TeacherView
+                      categories={allCategories}
+                      courses={teacherCourses}
+                      lessons={courseLessons}
+                      selectedCourseId={selectedTeacherCourseId}
+                      onSelectCourseId={handleSelectTeacherCourse}
+                      newCourseData={newCourseData}
+                      onNewCourseDataChange={setNewCourseData}
+                      onCreateCourse={handleCreateCourse}
+                      newLessonData={newLessonData}
+                      onNewLessonDataChange={setNewLessonData}
+                      onCreateLesson={handleCreateLesson}
+                      assignments={courseAssignments}
+                      newAssignmentData={newAssignmentData}
+                      onNewAssignmentDataChange={setNewAssignmentData}
+                      onCreateAssignment={handleCreateAssignment}
+                      editAssignmentId={editAssignmentId}
+                      editAssignmentData={editAssignmentData}
+                      onEditAssignmentStart={handleEditAssignmentStart}
+                      onEditAssignmentChange={setEditAssignmentData}
+                      onEditAssignmentCancel={handleEditAssignmentCancel}
+                      onUpdateAssignment={handleUpdateAssignment}
+                      onDeleteAssignment={handleDeleteAssignment}
+                      assignmentSubmissions={assignmentSubmissions}
+                      onLoadAssignmentSubmissions={handleLoadAssignmentSubmissions}
+                      onGradeSubmission={handleGradeSubmission}
+                      editLessonId={editLessonId}
+                      editLessonData={editLessonData}
+                      onEditLessonStart={handleStartEditLesson}
+                      onEditLessonChange={setEditLessonData}
+                      onEditLessonCancel={handleCancelEditLesson}
+                      onUpdateLesson={handleUpdateLesson}
+                      onDeleteLesson={handleDeleteLesson}
+                      onUploadCourseEditorVideo={handleUploadCourseEditorVideo}
+                      onUploadLessonEditorVideo={handleUploadLessonEditorVideo}
+                      onUploadEditLessonEditorVideo={handleUploadEditLessonEditorVideo}
+                    />
+                  ) : (
+                    <Navigate to="/login" replace state={{ from: location }} />
+                  )
+                } />
+
+                <Route path='/admin' element={
+                  currentRole === 'admin' ? (
+                    <ManageView
+                      isLoadingUsers={isLoadingUsers}
+                      isLoadingReports={isLoadingReports}
+                      isLoadingDeletedPosts={isLoadingDeletedPosts}
+                      isLoadingDeletedComments={isLoadingDeletedComments}
+                      isLoadingAnalytics={isLoadingAnalytics}
+                      courses={courses}
+                      selectedCourse={selectedCourse}
+                      onSelectCourse={handleSelectCourse}
+                      courseLessons={courseLessons}
+                      onOpenLesson={openLessonRoute}
+                      onDeleteLesson={handleDeleteLesson}
+                      onFetchUsers={fetchManagedUsers}
+                      onFetchReports={fetchModerationReports}
+                      onFetchDeletedPosts={fetchDeletedPosts}
+                      onFetchDeletedComments={fetchDeletedComments}
+                      onFetchForumComments={fetchAdminForumComments}
+                      isLoadingForumComments={isLoadingForumComments}
+                      deletedReasonFilter={deletedReasonFilter}
+                      onReasonChange={setDeletedReasonFilter}
+                      newUserData={newUserData}
+                      onNewUserDataChange={setNewUserData}
+                      onCreateUser={handleCreateUser}
+                      newVideoData={newVideoData}
+                      onVideoDataChange={setNewVideoData}
+                      onAddVideo={handleAddVideo}
+                      categories={allCategories}
+                      customCategories={customCategories}
+                      onAddCategory={handleAddCategory}
+                      onRemoveCategory={handleRemoveCategory}
+                      managedUsers={managedUsers}
+                      currentUser={currentUser}
+                      onRoleChange={handleRoleChange}
+                      onStatusChange={handleStatusChange}
+                      onDeleteUser={handleDeleteUser}
+                      moderationReports={moderationReports}
+                      onDeleteModerationReport={handleDeleteModerationReport}
+                      onClearModerationReports={handleClearModerationReports}
+                      forumPosts={forumPosts}
+                      forumComments={adminForumComments}
+                      onAdminDeletePost={handleAdminDeletePost}
+                      onPunishForumComment={handlePunishForumComment}
+                      deletedPosts={deletedPosts}
+                      onRestorePost={handleRestorePost}
+                      onPermanentDeletePost={handlePermanentDeletePost}
+                      deletedComments={deletedComments}
+                      onRestoreComment={handleRestoreComment}
+                      onPermanentDeleteComment={handlePermanentDeleteComment}
+                      analytics={adminAnalytics}
+                      adminUploadUrl={adminUploadUrl}
+                      isAdminUploadLoading={isAdminUploadLoading}
+                      onAdminUploadVideo={handleAdminUploadVideo}
+                      onClearAdminUploadUrl={() => setAdminUploadUrl('')}
+                      onOpenProfile={handleOpenProfile}
+                      api={api}
+                    />
+                  ) : (
+                    <Navigate to="/login" replace state={{ from: location }} />
+                  )
+                } />
+
+                <Route path='/profile' element={
+                  currentUser ? (
+                    <ProfilePage
+                      profileUser={myProfile}
+                      profileDraft={profileDraft}
+                      isLoading={myProfileLoading}
+                      mode={profileMode}
+                      currentUser={currentUser}
+                      isOwnProfile
+                      onClose={() => {
+                        navigate('/')
+                        setActiveTab('home')
+                      }}
+                      onEdit={() => {
+                        setProfileMode('edit')
+                        fetchMyProfile()
+                      }}
+                      onSave={handleSaveProfile}
+                      onChange={setProfileDraft}
+                      onAvatarChange={handleProfileAvatarChange}
+                    />
+                  ) : (
+                    <Navigate to="/login" replace state={{ from: location }} />
+                  )
+                } />
+
+                <Route path='/profile/:userId' element={
+                  <ProfilePage
+                    profileUser={profileUser}
+                    profileDraft={profileUser?.profile || {}}
+                    isLoading={profileLoading}
+                    mode="view"
+                    currentUser={currentUser}
+                    isOwnProfile={profileUser?.username === currentUser}
+                    onClose={() => {
+                      navigate(-1)
+                    }}
+                    onEdit={handleOpenMyProfile}
+                    onSave={handleSaveProfile}
+                    onChange={setProfileDraft}
+                    onAvatarChange={handleProfileAvatarChange}
+                  />
+                } />
+
+                <Route path='/lesson/:slug' element={
+                  <LessonFullPage
+                    lesson={lessonRouteLesson}
+                    course={lessonRouteCourse}
+                    lessons={lessonRouteLessons}
+                    courses={courses}
+                    isLoading={lessonRouteLoading}
+                    onClose={closeLessonRoute}
+                    onOpenLesson={openLessonRoute}
+                    onSelectCourse={handleSelectLmsCourse}
+                    onCompleteLesson={handleCompleteLesson}
+                    canComplete={canCompleteLesson}
+                    isCompleted={isLessonCompleted}
+                    onLessonUpdated={handleLessonUpdated}
+                    api={api}
+                    currentUser={currentUser}
+                    currentRole={currentRole}
+                    onReportContent={handleReportContent}
+                  />
+                } />
+              </Routes>
+            </Suspense>
+
+            <ChatWidget
+              isOpen={isChatOpen}
+              messages={messages}
+              isLoading={isLoading}
+              input={input}
+              onInputChange={setInput}
+              onSend={sendMessage}
+              onToggle={() => setIsChatOpen(!isChatOpen)}
+              onClose={() => setIsChatOpen(false)}
+              onActionClick={handleChatAction}
             />
-          } />
 
-          <Route path='/lesson/:slug' element={
-            <LessonFullPage
-              lesson={lessonRouteLesson}
-              course={lessonRouteCourse}
-              lessons={lessonRouteLessons}
-              courses={courses}
-              isLoading={lessonRouteLoading}
-              onClose={closeLessonRoute}
-              onOpenLesson={openLessonRoute}
-              onSelectCourse={handleSelectLmsCourse}
-              onCompleteLesson={handleCompleteLesson}
-              canComplete={canCompleteLesson}
-              isCompleted={isLessonCompleted}
-              onLessonUpdated={handleLessonUpdated}
-              api={api}
-              currentUser={currentUser}
-              currentRole={currentRole}
-              onReportContent={handleReportContent}
-            />
-          } />
-        </Routes>
-      </Suspense>
-
-      <ChatWidget
-        isOpen={isChatOpen}
-        messages={messages}
-        isLoading={isLoading}
-        input={input}
-        onInputChange={setInput}
-        onSend={sendMessage}
-        onToggle={() => setIsChatOpen(!isChatOpen)}
-        onClose={() => setIsChatOpen(false)}
-        onActionClick={handleChatAction}
-      />
-
-    </AppShell>
+            </AppShell>
+          </ProtectedRoute>
+        } />
+      </Routes>
+    </Suspense>
   )
 }
 

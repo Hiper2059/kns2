@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const config = require('../config/env');
 const User = require('../models/User');
 const { extractBearerToken } = require('../utils/token');
@@ -17,15 +18,20 @@ const getUserFromRequest = async req => {
     return { error: { status: 401, message: 'Access token không hợp lệ hoặc đã hết hạn.' } };
   }
 
-  if (payload.role === 'admin' && payload.sub === 'admin') {
+  if (payload.sub === 'admin' && payload.role === 'admin' && payload.username === config.adminUsername) {
     return {
       user: {
         _id: 'admin',
-        username: payload.username || config.adminUsername,
+        username: config.adminUsername,
         role: 'admin',
-        status: 'active'
+        status: 'active',
+        violationCount: 0
       }
     };
+  }
+
+  if (!mongoose.isValidObjectId(payload.sub)) {
+    return { error: { status: 401, message: 'Access token không hợp lệ.' } };
   }
 
   const user = await User.findById(payload.sub).lean();
@@ -48,10 +54,9 @@ const requireActiveUser = async (req, res, next) => {
     }
 
     req.currentUser = user;
-    next();
+    return next();
   } catch (error) {
-    console.error('Loi xac thuc user:', error);
-    res.status(500).json({ message: 'Lỗi hệ thống khi xác thực user.' });
+    return next(error);
   }
 };
 
@@ -67,17 +72,15 @@ const requireRoles = allowedRoles => async (req, res, next) => {
     }
 
     req.currentUser = user;
-    next();
+    return next();
   } catch (error) {
-    console.error('Loi kiem tra quyen:', error);
-    res.status(500).json({ message: 'Loi he thong khi kiem tra quyen.' });
+    return next(error);
   }
 };
 
 const requireAdmin = requireRoles(['admin']);
 const requireTeacherOrAdmin = requireRoles(['teacher', 'admin']);
 
-// optionalAuth: do not error if no token, but attach currentUser when present and valid
 const optionalAuth = async (req, res, next) => {
   try {
     const token = extractBearerToken(req);
@@ -85,14 +88,13 @@ const optionalAuth = async (req, res, next) => {
       return next();
     }
 
-    const { user, error } = await getUserFromRequest(req);
+    const { user } = await getUserFromRequest(req);
     if (user) {
       req.currentUser = user;
     }
-    // if error, ignore and continue as anonymous
+
     return next();
-  } catch (err) {
-    // don't block public endpoints on auth parsing errors
+  } catch {
     return next();
   }
 };

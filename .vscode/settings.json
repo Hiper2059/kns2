@@ -1,5 +1,8 @@
 {
   "plantuml.render": "Local",
   "plantuml.dot": "C:\\Program Files\\Graphviz\\bin\\dot.exe",
-  "plantuml.java": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.17.10-hotspot\\bin\\java.exe"
+  "plantuml.java": "C:\\Program Files\\Eclipse Adoptium\\jdk-17.0.17.10-hotspot\\bin\\java.exe",
+  "css.lint.unknownAtRules": "ignore",
+  "scss.lint.unknownAtRules": "ignore",
+  "less.lint.unknownAtRules": "ignore"
 }

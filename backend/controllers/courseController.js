@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Course = require('../models/Course');
 const Lesson = require('../models/Lesson');
 const Enrollment = require('../models/Enrollment');
@@ -7,152 +8,166 @@ const ForumPost = require('../models/ForumPost');
 const ForumComment = require('../models/ForumComment');
 const LessonComment = require('../models/LessonComment');
 const LessonView = require('../models/LessonView');
+const { getPaginationParams, buildPagination } = require('../utils/pagination');
+const catchAsync = require('../utils/catchAsync');
 
-const listCourses = async (req, res) => {
-  try {
-    const { category } = req.query;
-    const filter = {};
-    if (category) {
-      filter.category = category.trim();
-    }
+const listCourses = catchAsync(async (req, res) => {
+  const { category } = req.query;
+  const filter = {};
+  if (category) {
+    filter.category = category.trim();
+  }
 
-    const courses = await Course.find(filter)
+  const { page, limit, skip } = getPaginationParams(req.query);
+  const [courses, totalItems] = await Promise.all([
+    Course.find(filter)
       .sort({ createdAt: -1 })
-      .lean();
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Course.countDocuments(filter)
+  ]);
 
-    res.json({ courses });
-  } catch (error) {
-    console.error('Loi lay danh sach lop hoc:', error);
-    res.status(500).json({ message: 'Không tải được danh sách lớp học.' });
-  }
-};
+  res.json({
+    data: courses,
+    courses,
+    pagination: buildPagination({ totalItems, page, limit })
+  });
+});
 
-const listMyCourses = async (req, res) => {
-  try {
-    const teacherId = req.currentUser?._id;
-    const courses = await Course.find({ teacher: teacherId })
+const listMyCourses = catchAsync(async (req, res) => {
+  const teacherId = req.currentUser?._id;
+  const filter = { teacher: teacherId };
+  const { page, limit, skip } = getPaginationParams(req.query);
+  const [courses, totalItems] = await Promise.all([
+    Course.find(filter)
       .sort({ createdAt: -1 })
-      .lean();
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Course.countDocuments(filter)
+  ]);
 
-    res.json({ courses });
-  } catch (error) {
-    console.error('Loi lay lop cua giao vien:', error);
-    res.status(500).json({ message: 'Không tải được lớp học của giáo viên.' });
+  res.json({
+    data: courses,
+    courses,
+    pagination: buildPagination({ totalItems, page, limit })
+  });
+});
+
+const getCourse = catchAsync(async (req, res) => {
+  const course = await Course.findById(req.params.courseId).lean();
+  if (!course) {
+    return res.status(404).json({ message: 'Không tìm thấy lớp học.' });
   }
-};
 
-const getCourse = async (req, res) => {
+  res.json({ course });
+});
+
+const createCourse = catchAsync(async (req, res) => {
+  const { title, category, description, imageUrl, status } = req.body;
+
+  if (!title || !category) {
+    return res.status(400).json({ message: 'Thiếu tiêu đề hoặc danh mục.' });
+  }
+
+  const teacher = req.currentUser;
+  const created = await Course.create({
+    title: title.trim(),
+    category: category.trim(),
+    description: description?.trim() || '',
+    imageUrl: imageUrl?.trim() || '',
+    status: status === 'draft' ? 'draft' : 'published',
+    teacher: teacher._id,
+    teacherName: teacher.username
+  });
+
+  res.status(201).json({
+    message: 'Đã tạo lớp học.',
+    course: created
+  });
+});
+
+const updateCourse = catchAsync(async (req, res) => {
+  const { title, category, description, imageUrl, status } = req.body;
+  const course = await Course.findById(req.params.courseId);
+
+  if (!course) {
+    return res.status(404).json({ message: 'Không tìm thấy lớp học.' });
+  }
+
+  if (req.currentUser.role === 'teacher' && String(course.teacher) !== String(req.currentUser._id)) {
+    return res.status(403).json({ message: 'Bạn không có quyền sửa lớp học này.' });
+  }
+
+  if (title) course.title = title.trim();
+  if (category) course.category = category.trim();
+  if (description !== undefined) course.description = description.trim();
+  if (imageUrl !== undefined) course.imageUrl = imageUrl.trim();
+  if (status) course.status = status === 'draft' ? 'draft' : 'published';
+
+  await course.save();
+
+  res.json({ message: 'Đã cập nhật lớp học.', course });
+});
+
+const deleteCourse = catchAsync(async (req, res) => {
+  const session = await mongoose.startSession();
+  let transactionEnded = false;
+
   try {
-    const course = await Course.findById(req.params.courseId).lean();
+    session.startTransaction();
+
+    const course = await Course.findById(req.params.courseId).session(session);
+
     if (!course) {
-      return res.status(404).json({ message: 'Không tìm thấy lớp học.' });
-    }
-
-    res.json({ course });
-  } catch (error) {
-    console.error('Loi lay thong tin lop:', error);
-    res.status(500).json({ message: 'Không tải được thông tin lớp học.' });
-  }
-};
-
-const createCourse = async (req, res) => {
-  try {
-    const { title, category, description, imageUrl, status } = req.body;
-
-    if (!title || !category) {
-      return res.status(400).json({ message: 'Thiếu tiêu đề hoặc danh mục.' });
-    }
-
-    const teacher = req.currentUser;
-    const created = await Course.create({
-      title: title.trim(),
-      category: category.trim(),
-      description: description?.trim() || '',
-      imageUrl: imageUrl?.trim() || '',
-      status: status === 'draft' ? 'draft' : 'published',
-      teacher: teacher._id,
-      teacherName: teacher.username
-    });
-
-    res.status(201).json({
-      message: 'Đã tạo lớp học.',
-      course: created
-    });
-  } catch (error) {
-    console.error('Loi tao lop hoc:', error);
-    res.status(500).json({ message: 'Không tạo được lớp học.' });
-  }
-};
-
-const updateCourse = async (req, res) => {
-  try {
-    const { title, category, description, imageUrl, status } = req.body;
-    const course = await Course.findById(req.params.courseId);
-
-    if (!course) {
-      return res.status(404).json({ message: 'Không tìm thấy lớp học.' });
+      await session.abortTransaction();
+      transactionEnded = true;
+      return res.status(404).json({ message: 'Khong tim thay lop hoc.' });
     }
 
     if (req.currentUser.role === 'teacher' && String(course.teacher) !== String(req.currentUser._id)) {
-      return res.status(403).json({ message: 'Bạn không có quyền sửa lớp học này.' });
-    }
-
-    if (title) course.title = title.trim();
-    if (category) course.category = category.trim();
-    if (description !== undefined) course.description = description.trim();
-    if (imageUrl !== undefined) course.imageUrl = imageUrl.trim();
-    if (status) course.status = status === 'draft' ? 'draft' : 'published';
-
-    await course.save();
-
-    res.json({ message: 'Đã cập nhật lớp học.', course });
-  } catch (error) {
-    console.error('Loi cap nhat lop hoc:', error);
-    res.status(500).json({ message: 'Không cập nhật được lớp học.' });
-  }
-};
-
-const deleteCourse = async (req, res) => {
-  try {
-    const course = await Course.findById(req.params.courseId);
-
-    if (!course) {
-      return res.status(404).json({ message: 'Không tìm thấy lớp học.' });
-    }
-
-    if (req.currentUser.role === 'teacher' && String(course.teacher) !== String(req.currentUser._id)) {
-      return res.status(403).json({ message: 'Bạn không có quyền xóa lớp học này.' });
+      await session.abortTransaction();
+      transactionEnded = true;
+      return res.status(403).json({ message: 'Ban khong co quyen xoa lop hoc nay.' });
     }
 
     const [assignmentIds, forumPostIds] = await Promise.all([
-      Assignment.find({ course: course._id }, { _id: 1 }).lean(),
-      ForumPost.find({ scope: 'course', course: course._id }, { _id: 1 }).lean()
+      Assignment.find({ course: course._id }, { _id: 1 }).session(session).lean(),
+      ForumPost.find({ scope: 'course', course: course._id }, { _id: 1 }).session(session).lean()
     ]);
 
+    const assignmentObjectIds = assignmentIds.map(item => item._id);
+    const forumPostObjectIds = forumPostIds.map(item => item._id);
+
     await Promise.all([
-      Lesson.deleteMany({ course: course._id }),
-      LessonComment.deleteMany({ course: course._id }),
-      LessonView.deleteMany({ course: course._id }),
-      Enrollment.deleteMany({ course: course._id }),
+      Lesson.deleteMany({ course: course._id }).session(session),
+      LessonComment.deleteMany({ course: course._id }).session(session),
+      LessonView.deleteMany({ course: course._id }).session(session),
+      Enrollment.deleteMany({ course: course._id }).session(session),
       Submission.deleteMany({
         $or: [
           { course: course._id },
-          { assignment: { $in: assignmentIds.map(item => item._id) } }
+          { assignment: { $in: assignmentObjectIds } }
         ]
-      }),
-      Assignment.deleteMany({ course: course._id }),
-      ForumComment.deleteMany({ postId: { $in: forumPostIds.map(item => item._id) } }),
-      ForumPost.deleteMany({ scope: 'course', course: course._id })
+      }).session(session),
+      Assignment.deleteMany({ course: course._id }).session(session),
+      ForumComment.deleteMany({ postId: { $in: forumPostObjectIds } }).session(session),
+      ForumPost.deleteMany({ scope: 'course', course: course._id }).session(session)
     ]);
 
-    await course.deleteOne();
+    await course.deleteOne({ session });
+    await session.commitTransaction();
+    transactionEnded = true;
 
-    res.json({ message: 'Đã xóa lớp học.' });
-  } catch (error) {
-    console.error('Loi xoa lop hoc:', error);
-    res.status(500).json({ message: 'Không xóa được lớp học.' });
+    res.json({ message: 'Da xoa lop hoc.' });
+  } finally {
+    if (!transactionEnded) {
+      await session.abortTransaction();
+    }
+    session.endSession();
   }
-};
+});
 
 module.exports = {
   listCourses,

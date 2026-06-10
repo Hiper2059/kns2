@@ -79,10 +79,6 @@ const login = async (req, res) => {
       return res.status(403).json({ message: 'Tai khoan khong thuoc vai tro hoc sinh.' });
     }
 
-    if (!loginAs && user.role !== roles.STUDENT) {
-      return res.status(403).json({ message: 'Vui long dang nhap dung duong dan theo vai tro.' });
-    }
-
     let passwordValid = false;
 
     if (user.passwordHash) {
@@ -175,4 +171,10 @@ const refresh = async (req, res) => {
   }
 };
 
-module.exports = { register, login, refresh };
+const logout = async (req, res) => {
+  // In a real world app with Redis, we could blacklist the refresh token.
+  // For now, the client clears it on their end.
+  res.json({ message: 'Đăng xuất thành công' });
+};
+
+module.exports = { register, login, refresh, logout };

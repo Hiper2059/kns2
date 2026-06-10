@@ -7,15 +7,29 @@ const {
   updateCourse,
   deleteCourse
 } = require('../controllers/courseController');
-const { requireTeacherOrAdmin } = require('../middleware/auth');
+const { listLessons, createLesson } = require('../controllers/lessonController');
+const { listAssignments, createAssignment } = require('../controllers/assignmentController');
+const { enrollCourse, listCourseEnrollments } = require('../controllers/enrollmentController');
+const { requireActiveUser, requireTeacherOrAdmin } = require('../middleware/auth');
+const validate = require('../middleware/validate');
+const { createCourseSchema, updateCourseSchema } = require('../validations/courseValidation');
 
 const router = express.Router();
 
-router.get('/courses', listCourses);
-router.get('/courses/mine', requireTeacherOrAdmin, listMyCourses);
-router.get('/courses/:courseId', getCourse);
-router.post('/courses', requireTeacherOrAdmin, createCourse);
-router.patch('/courses/:courseId', requireTeacherOrAdmin, updateCourse);
-router.delete('/courses/:courseId', requireTeacherOrAdmin, deleteCourse);
+router.get('/', listCourses);
+router.get('/mine', requireTeacherOrAdmin, listMyCourses);
+router.get('/:courseId', getCourse);
+router.post('/', requireTeacherOrAdmin, validate(createCourseSchema), createCourse);
+router.patch('/:courseId', requireTeacherOrAdmin, validate(updateCourseSchema), updateCourse);
+router.delete('/:courseId', requireTeacherOrAdmin, deleteCourse);
+
+router.get('/:courseId/lessons', requireActiveUser, listLessons);
+router.post('/:courseId/lessons', requireTeacherOrAdmin, createLesson);
+
+router.get('/:courseId/assignments', requireActiveUser, listAssignments);
+router.post('/:courseId/assignments', requireTeacherOrAdmin, createAssignment);
+
+router.post('/:courseId/enroll', requireActiveUser, enrollCourse);
+router.get('/:courseId/enrollments', requireTeacherOrAdmin, listCourseEnrollments);
 
 module.exports = router;

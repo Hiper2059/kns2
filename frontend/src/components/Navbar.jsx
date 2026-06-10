@@ -1,52 +1,19 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
-import './Navbar.css'
-
-const IconHome = ({ width = 18, height = 18 }) => (
-  <svg width={width} height={height} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M3 11.5L12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-8.5z" fill="currentColor"/>
-  </svg>
-)
-
-const IconForum = ({ width = 18, height = 18 }) => (
-  <svg width={width} height={height} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M21 6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h1v3l4-3h8a2 2 0 0 0 2-2V6z" fill="currentColor"/>
-  </svg>
-)
-
-const IconLms = ({ width = 18, height = 18 }) => (
-  <svg width={width} height={height} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M3 5h18v14H3V5zm4 2v10l6-5-6-5z" fill="currentColor"/>
-  </svg>
-)
-
-const IconTeacher = ({ width = 18, height = 18 }) => (
-  <svg width={width} height={height} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM4 20v-1a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v1H4z" fill="currentColor"/>
-  </svg>
-)
-
-const IconManage = ({ width = 18, height = 18 }) => (
-  <svg width={width} height={height} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm8 4a6.98 6.98 0 0 0-.18-1.5l2.12-1.65-2-3.46-2.5.99A6.98 6.98 0 0 0 12 4a6.98 6.98 0 0 0-2.44.38L7.06 3.4 5.06 6.86 7.18 8.5A6.98 6.98 0 0 0 7 10c0 .34.03.67.08 1L4.96 12.7l2 3.46 2.5-.99c.7.4 1.45.7 2.28.9V20h4v-1.93c.83-.2 1.58-.5 2.28-.9l2.5.99 2-3.46-2.12-1.65c.05-.33.08-.66.08-1z" fill="currentColor"/>
-  </svg>
-)
+import { BookOpen, Home, LogOut, Menu, MessageCircle, Settings, UserRound, UsersRound } from 'lucide-react'
 
 const Navbar = ({
   currentRole,
   currentUser,
   currentUserLabel,
   currentUserAvatar,
-  currentRank,
-  currentUserPoints,
   onLogout,
   onOpenAuth,
   onBrandClick,
   onOpenForum,
   onOpenProfile,
-  sidebarCollapsed,
-  onToggleSidebar,
   sidebarOpen,
+  onToggleSidebar,
   onCloseSidebar
 }) => {
   const closeMobileSidebar = () => {
@@ -61,91 +28,92 @@ const Navbar = ({
   }
 
   return (
-    <aside className={`sidebar glass-nav ${sidebarCollapsed ? 'collapsed' : ''} ${sidebarOpen ? 'overlay-open' : ''}`}>
+    <header className={`fixed top-0 left-0 z-50 w-full min-h-[64px] px-4 md:px-[7.8vw] bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm transition-all duration-300 grid items-center gap-5 ${sidebarOpen ? 'grid-cols-1 gap-3 p-4 items-stretch' : 'grid-cols-[1fr_auto] md:grid-cols-[minmax(190px,auto)_minmax(0,1fr)_auto]'}`}>
+      
+      {/* Brand */}
       <div
-        className="sidebar-brand clickable-brand"
+        className="min-w-0 cursor-pointer flex"
         onClick={runAndClose(onBrandClick)}
         role="button"
         tabIndex={0}
         onKeyDown={event => {
           if (event.key === 'Enter' || event.key === ' ') {
             event.preventDefault()
-            onBrandClick()
+            onBrandClick?.()
           }
         }}
       >
-        <div className="brand-row">
-          <h1 className="logo">Z-Mate</h1>
-          <button className="sidebar-toggle" onClick={onToggleSidebar}>Toggle</button>
+        <div className="inline-flex items-center gap-3 min-w-0">
+          <span className="grid place-items-center w-[34px] h-[34px] rounded-lg bg-blue-600 text-white text-[15px] font-black leading-none shadow-[0_10px_18px_rgba(37,99,235,0.22)]">Z</span>
+          <div className="grid gap-[1px] min-w-0">
+            <div className="text-slate-900 text-[17px] font-black leading-tight whitespace-nowrap">Z-Mate</div>
+            <div className="text-slate-500 text-[9px] font-black leading-snug tracking-wider whitespace-nowrap">KỸ NĂNG SỐNG</div>
+          </div>
         </div>
-        <p className="tagline">Kỹ năng sống</p>
       </div>
 
-      <nav className="sidebar-nav">
-        <NavLink to="/" onClick={closeMobileSidebar} className={({ isActive }) => (isActive ? 'active' : '')}>
-          <span className="icon"><IconHome/></span>
-          <span className="label">Trang chủ</span>
-        </NavLink>
-
-        <NavLink to="/forum" onClick={runAndClose(onOpenForum)} className={({ isActive }) => (isActive ? 'active' : '')}>
-          <span className="icon"><IconForum/></span>
-          <span className="label">Diễn đàn</span>
-        </NavLink>
-
-        <NavLink to="/courses" onClick={closeMobileSidebar} className={({ isActive }) => (isActive ? 'active' : '')}>
-          <span className="icon"><IconLms/></span>
-          <span className="label">Lớp học</span>
-        </NavLink>
-
-        {currentRole === 'teacher' && (
-          <NavLink to="/teacher" onClick={closeMobileSidebar} className={({ isActive }) => (isActive ? 'active' : '')}>
-            <span className="icon"><IconTeacher/></span>
-            <span className="label">Giảng viên</span>
+      {/* Navigation */}
+      <nav className={`min-w-0 ${sidebarOpen ? 'grid gap-2 items-stretch' : 'hidden md:flex items-center justify-center gap-2'}`} aria-label="Điều hướng chính">
+        {[
+          { to: '/', icon: Home, label: 'Trang chủ', onClick: closeMobileSidebar },
+          { to: '/forum', icon: MessageCircle, label: 'Diễn đàn', onClick: runAndClose(onOpenForum) },
+          { to: '/courses', icon: BookOpen, label: 'Lớp học', onClick: closeMobileSidebar },
+          ...(currentRole === 'teacher' ? [{ to: '/teacher', icon: UsersRound, label: 'Giảng viên', onClick: closeMobileSidebar }] : []),
+          ...(currentRole === 'admin' ? [{ to: '/admin', icon: Settings, label: 'Quản lý', onClick: closeMobileSidebar }] : [])
+        ].map((item, idx) => (
+          <NavLink key={idx} to={item.to} onClick={item.onClick} className={({ isActive }) => `relative inline-flex items-center gap-2 min-h-[38px] px-3.5 rounded-full text-[13px] font-bold transition-all duration-200 ${sidebarOpen ? 'min-h-[44px] justify-start rounded-xl' : ''} ${isActive ? 'bg-blue-50 text-blue-600' : 'text-slate-500 hover:bg-slate-50 hover:text-blue-600'}`}>
+            <span className="inline-flex items-center justify-center text-current"><item.icon size={16} /></span>
+            <span>{item.label}</span>
           </NavLink>
-        )}
-
-        {currentRole === 'admin' && (
-          <NavLink to="/admin" onClick={closeMobileSidebar} className={({ isActive }) => (isActive ? 'active' : '')}>
-            <span className="icon"><IconManage/></span>
-            <span className="label">Quản lý</span>
-          </NavLink>
-        )}
+        ))}
       </nav>
 
-      <div className="sidebar-bottom">
+      {/* Bottom Actions */}
+      <div className={`flex items-center justify-end min-w-0 gap-2 ${sidebarOpen ? 'grid grid-cols-[auto_auto_1fr] justify-start mt-2' : ''}`}>
+        
+        <button className="md:hidden inline-flex items-center justify-center w-[38px] h-[38px] rounded-xl border border-slate-200 bg-white text-slate-700 cursor-pointer" onClick={onToggleSidebar} aria-label="Mở menu">
+          <Menu size={18} />
+        </button>
+
         {sidebarOpen && (
-          <div className="mobile-close">
-            <button className="btn-ghost" onClick={onCloseSidebar}>Đóng</button>
+          <div className="inline-flex">
+            <button className="inline-flex items-center justify-center gap-1.5 min-h-[34px] rounded-lg px-3.5 text-[12px] font-black border border-slate-200 bg-white text-blue-600 hover:bg-blue-50 active:translate-y-px transition-all" onClick={onCloseSidebar}>Đóng</button>
           </div>
         )}
 
         {currentUser ? (
-          <>
-            <button className="user-avatar" onClick={runAndClose(onOpenProfile)} aria-label="Mở hồ sơ cá nhân">
-              {currentUserAvatar ? (
-                <img src={currentUserAvatar} alt={currentUserLabel || currentUser} />
-              ) : (
-                <span>{(currentUserLabel || currentUser || 'U').slice(0, 1).toUpperCase()}</span>
-              )}
+          <div className={`inline-flex items-center gap-3 ${sidebarOpen ? 'inline-flex' : 'hidden md:inline-flex'}`}>
+            <button 
+              className="inline-flex items-center gap-2 pl-1.5 pr-3.5 py-1.5 border border-slate-200 rounded-full bg-white hover:bg-slate-50 transition-colors cursor-pointer shadow-sm"
+              onClick={runAndClose(onOpenProfile)}
+              aria-label="Mở hồ sơ cá nhân"
+            >
+              <div className="w-6 h-6 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center text-[11px] font-bold text-slate-700">
+                {currentUserAvatar ? (
+                  <img src={currentUserAvatar} alt={currentUserLabel || currentUser} className="w-full h-full object-cover block" />
+                ) : (
+                  (currentUserLabel || currentUser || 'U').charAt(0).toUpperCase()
+                )}
+              </div>
+              <span className="text-[13px] font-bold text-slate-700 max-w-[120px] truncate">
+                {currentUserLabel || currentUser}
+              </span>
             </button>
-            <div className="user-name" aria-label={currentUserLabel || currentUser}>
-              {currentUserLabel || currentUser}
-            </div>
-            <div className="rank-pill">
-              {currentRank?.name || ''} · {currentUserPoints || 0} điểm
-            </div>
-            <div className="auth-actions">
-              <button className="btn-ghost" onClick={runAndClose(onLogout)}>Đăng xuất</button>
-            </div>
-          </>
+            <button 
+              className="inline-flex items-center justify-center min-h-[34px] rounded-xl px-4 text-[13px] font-bold border border-slate-200 bg-white text-blue-600 hover:bg-blue-50 active:translate-y-px transition-all cursor-pointer shadow-sm"
+              onClick={runAndClose(onLogout)}
+            >
+              Đăng xuất
+            </button>
+          </div>
         ) : (
-          <div className="auth-actions">
-            <button className="btn-login" onClick={runAndClose(() => onOpenAuth('login'))}>Đăng nhập</button>
-            <button className="btn-register" onClick={runAndClose(() => onOpenAuth('register'))}>Đăng ký</button>
+          <div className={`inline-flex items-center gap-2 ${sidebarOpen ? 'inline-flex' : 'hidden md:inline-flex'}`}>
+            <button className="inline-flex items-center justify-center gap-1.5 min-h-[34px] rounded-lg px-3.5 text-[12px] font-black border border-slate-200 bg-white text-blue-600 hover:bg-blue-50 active:translate-y-px transition-all" onClick={runAndClose(() => onOpenAuth('login'))}>Đăng nhập</button>
+            <button className="inline-flex items-center justify-center gap-1.5 min-h-[34px] rounded-lg px-3.5 text-[12px] font-black border border-blue-600 bg-blue-600 text-white hover:bg-blue-700 active:translate-y-px transition-all" onClick={runAndClose(() => onOpenAuth('register'))}>Đăng ký</button>
           </div>
         )}
       </div>
-    </aside>
+    </header>
   )
 }
 

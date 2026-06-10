@@ -12,6 +12,7 @@
 - Copy `.env.example` thanh `.env`
 - Dien gia tri:
   - `MONGODB_URI` (MongoDB connection string)
+  - `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `JWT_SIGNATURE_SECRET`
   - `GEMINI_API_KEY` (neu dung chat/moderation)
   - `ADMIN_USERNAME`, `ADMIN_PASSWORD`
 

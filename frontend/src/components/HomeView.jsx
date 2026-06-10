@@ -1,7 +1,5 @@
 import { useEffect, useRef } from 'react'
 import gsap from 'gsap'
-import './HomeView.css'
-
 const HomeView = ({
   categories,
   currentUser,

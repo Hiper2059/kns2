@@ -5,6 +5,8 @@ const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 const User = require('../models/User');
 const { isStudentRole } = require('../utils/userUtils');
+const { getPaginationParams, buildPagination } = require('../utils/pagination');
+const catchAsync = require('../utils/catchAsync');
 
 const normalizeScope = value => (value === 'course' ? 'course' : 'general');
 const generalForumPostCondition = () => ({ $or: [{ scope: { $exists: false } }, { scope: 'general' }] });
@@ -82,109 +84,83 @@ const formatPostForUser = (post, userKey) => ({
   isHearted: userKey ? (post.heartUserIds || []).some(item => String(item) === userKey) : false
 });
 
-const getPosts = async (req, res) => {
-  try {
-    const search = req.query.search ? String(req.query.search).trim() : '';
-    const category = req.query.category ? String(req.query.category).trim() : '';
-    const scope = normalizeScope(String(req.query.scope || '').trim());
-    const courseId = req.query.courseId ? String(req.query.courseId).trim() : '';
-    const pageRaw = Number(req.query.page);
-    const limitRaw = Number(req.query.limit);
+const getPosts = catchAsync(async (req, res) => {
+  const search = req.query.search ? String(req.query.search).trim() : '';
+  const category = req.query.category ? String(req.query.category).trim() : '';
+  const scope = normalizeScope(String(req.query.scope || '').trim());
+  const courseId = req.query.courseId ? String(req.query.courseId).trim() : '';
+  const andConditions = [{ isDeleted: false }];
 
-    const andConditions = [{ isDeleted: false }];
-
-    if (scope === 'course') {
-      const course = await ensureCourseForumAccess(req, res, courseId, 'xem dien dan lop');
-      if (!course) {
-        return;
-      }
-      andConditions.push({ scope: 'course', course: course._id });
-    } else {
-      andConditions.push(generalForumPostCondition());
+  if (scope === 'course') {
+    const course = await ensureCourseForumAccess(req, res, courseId, 'xem dien dan lop');
+    if (!course) {
+      return;
     }
-
-    if (category) {
-      andConditions.push({ category });
-    }
-
-    if (search) {
-      const regex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-      andConditions.push({ $or: [{ title: regex }, { content: regex }, { category: regex }, { author: regex }] });
-    }
-
-    const filter = { $and: andConditions };
-    const usePaging = Number.isFinite(pageRaw) || Number.isFinite(limitRaw);
-    const userKey = req.currentUser?._id ? String(req.currentUser._id) : '';
-
-    if (!usePaging) {
-      const posts = await ForumPost.find(filter).sort({ createdAt: -1 }).lean();
-      return res.json({ posts: posts.map(post => formatPostForUser(post, userKey)) });
-    }
-
-    const page = Number.isFinite(pageRaw) && pageRaw > 0 ? Math.floor(pageRaw) : 1;
-    const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? Math.min(Math.floor(limitRaw), 50) : 10;
-    const skip = (page - 1) * limit;
-
-    const [posts, totalItems] = await Promise.all([
-      ForumPost.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
-      ForumPost.countDocuments(filter)
-    ]);
-
-    const totalPages = Math.max(1, Math.ceil(totalItems / limit));
-    res.json({
-      posts: posts.map(post => formatPostForUser(post, userKey)),
-      pagination: {
-        page,
-        limit,
-        totalItems,
-        totalPages
-      }
-    });
-  } catch (error) {
-    console.error('Loi lay forum posts:', error);
-    res.status(500).json({ message: 'Khong tai duoc bai viet dien dan.' });
+    andConditions.push({ scope: 'course', course: course._id });
+  } else {
+    andConditions.push(generalForumPostCondition());
   }
-};
 
-const createPost = async (req, res) => {
-  try {
-    const { title, content, category, scope: scopeRaw, courseId } = req.body || {};
-    const scope = normalizeScope(String(scopeRaw || '').trim());
-    const trimmedTitle = String(title || '').trim();
-    const trimmedContent = String(content || '').trim();
-    const trimmedCategory = String(category || '').trim();
-
-    if (!trimmedTitle || !trimmedContent || !trimmedCategory) {
-      return res.status(400).json({ message: 'Thieu title, content hoac category.' });
-    }
-
-    let course = null;
-    if (scope === 'course') {
-      course = await ensureCourseForumAccess(req, res, courseId, 'dang bai trong dien dan lop');
-      if (!course) {
-        return;
-      }
-    }
-
-    const created = await ForumPost.create({
-      author: req.currentUser.username,
-      title: trimmedTitle,
-      content: trimmedContent,
-      category: trimmedCategory,
-      scope,
-      course: scope === 'course' ? course._id : null
-    });
-
-    const payload = created.toObject();
-    payload.heartCount = (payload.heartUserIds || []).length;
-    payload.isHearted = false;
-
-    res.status(201).json({ post: payload });
-  } catch (error) {
-    console.error('Loi tao forum post:', error);
-    res.status(500).json({ message: 'Khong tao duoc bai viet.' });
+  if (category) {
+    andConditions.push({ category });
   }
-};
+
+  if (search) {
+    const regex = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    andConditions.push({ $or: [{ title: regex }, { content: regex }, { category: regex }, { author: regex }] });
+  }
+
+  const filter = { $and: andConditions };
+  const userKey = req.currentUser?._id ? String(req.currentUser._id) : '';
+  const { page, limit, skip } = getPaginationParams(req.query);
+
+  const [posts, totalItems] = await Promise.all([
+    ForumPost.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    ForumPost.countDocuments(filter)
+  ]);
+
+  const formattedPosts = posts.map(post => formatPostForUser(post, userKey));
+  res.json({
+    data: formattedPosts,
+    posts: formattedPosts,
+    pagination: buildPagination({ totalItems, page, limit })
+  });
+});
+
+const createPost = catchAsync(async (req, res) => {
+  const { title, content, category, scope: scopeRaw, courseId } = req.body || {};
+  const scope = normalizeScope(String(scopeRaw || '').trim());
+  const trimmedTitle = String(title || '').trim();
+  const trimmedContent = String(content || '').trim();
+  const trimmedCategory = String(category || '').trim();
+
+  if (!trimmedTitle || !trimmedContent || !trimmedCategory) {
+    return res.status(400).json({ message: 'Thieu title, content hoac category.' });
+  }
+
+  let course = null;
+  if (scope === 'course') {
+    course = await ensureCourseForumAccess(req, res, courseId, 'dang bai trong dien dan lop');
+    if (!course) {
+      return;
+    }
+  }
+
+  const created = await ForumPost.create({
+    author: req.currentUser.username,
+    title: trimmedTitle,
+    content: trimmedContent,
+    category: trimmedCategory,
+    scope,
+    course: scope === 'course' ? course._id : null
+  });
+
+  const payload = created.toObject();
+  payload.heartCount = (payload.heartUserIds || []).length;
+  payload.isHearted = false;
+
+  res.status(201).json({ post: payload });
+});
 
 const getPostIdsForCommentQuery = async (req, res) => {
   if (req.query.postId) {
@@ -240,381 +216,363 @@ const getPostIdsForCommentQuery = async (req, res) => {
   return posts.length ? posts.map(item => item._id) : [impossibleObjectId()];
 };
 
-const getComments = async (req, res) => {
-  try {
-    const postIds = await getPostIdsForCommentQuery(req, res);
-    if (!postIds) {
-      return;
-    }
+const getComments = catchAsync(async (req, res) => {
+  const postIds = await getPostIdsForCommentQuery(req, res);
+  if (!postIds) {
+    return;
+  }
 
-    const comments = await ForumComment.find({
-      isDeleted: false,
-      postId: { $in: postIds }
-    })
+  const filter = {
+    isDeleted: false,
+    postId: { $in: postIds }
+  };
+  const { page, limit, skip } = getPaginationParams(req.query);
+  const [comments, totalItems] = await Promise.all([
+    ForumComment.find(filter)
       .sort({ createdAt: 1 })
-      .lean();
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    ForumComment.countDocuments(filter)
+  ]);
 
-    res.json({ comments });
-  } catch (error) {
-    console.error('Loi lay forum comments:', error);
-    res.status(500).json({ message: 'Khong tai duoc binh luan.' });
+  res.json({
+    data: comments,
+    comments,
+    pagination: buildPagination({ totalItems, page, limit })
+  });
+});
+
+const createComment = catchAsync(async (req, res) => {
+  const { postId, text } = req.body || {};
+  const trimmedText = String(text || '').trim();
+
+  if (!postId || !trimmedText) {
+    return res.status(400).json({ message: 'Thieu postId hoac text.' });
   }
-};
 
-const createComment = async (req, res) => {
-  try {
-    const { postId, text } = req.body || {};
-    const trimmedText = String(text || '').trim();
-
-    if (!postId || !trimmedText) {
-      return res.status(400).json({ message: 'Thieu postId hoac text.' });
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(postId)) {
-      return res.status(400).json({ message: 'postId khong hop le.' });
-    }
-
-    const post = await ForumPost.findById(postId).lean();
-    const access = await ensurePostForumAccess(req, res, post, 'binh luan trong dien dan lop');
-    if (!access) {
-      return;
-    }
-
-    const created = await ForumComment.create({
-      postId: post._id,
-      author: req.currentUser.username,
-      text: trimmedText
-    });
-
-    res.status(201).json({ comment: created });
-  } catch (error) {
-    console.error('Loi tao forum comment:', error);
-    res.status(500).json({ message: 'Khong tao duoc binh luan.' });
+  if (!mongoose.Types.ObjectId.isValid(postId)) {
+    return res.status(400).json({ message: 'postId khong hop le.' });
   }
-};
 
-const deletePost = async (req, res) => {
-  try {
-    const post = await ForumPost.findById(req.params.id);
-    if (!post) {
-      return res.status(404).json({ message: 'Khong tim thay bai viet.' });
-    }
+  const post = await ForumPost.findById(postId).lean();
+  const access = await ensurePostForumAccess(req, res, post, 'binh luan trong dien dan lop');
+  if (!access) {
+    return;
+  }
 
-    const isOwner = post.author === req.currentUser.username;
-    const isAdmin = req.currentUser.role === 'admin';
+  const created = await ForumComment.create({
+    postId: post._id,
+    author: req.currentUser.username,
+    text: trimmedText
+  });
 
-    if (!isOwner && !isAdmin) {
-      return res.status(403).json({ message: 'Ban khong co quyen xoa bai viet nay.' });
-    }
+  res.status(201).json({ comment: created });
+});
 
-    const deletedAt = new Date();
-    await ForumComment.updateMany(
-      { postId: post._id, isDeleted: false },
-      {
-        $set: {
-          isDeleted: true,
-          deletedAt,
-          deletedBy: req.currentUser.username,
-          deletionReason: 'post_deleted'
-        }
+const deletePost = catchAsync(async (req, res) => {
+  const post = await ForumPost.findById(req.params.id);
+  if (!post) {
+    return res.status(404).json({ message: 'Khong tim thay bai viet.' });
+  }
+
+  const isOwner = post.author === req.currentUser.username;
+  const isAdmin = req.currentUser.role === 'admin';
+
+  if (!isOwner && !isAdmin) {
+    return res.status(403).json({ message: 'Ban khong co quyen xoa bai viet nay.' });
+  }
+
+  const deletedAt = new Date();
+  await ForumComment.updateMany(
+    { postId: post._id, isDeleted: false },
+    {
+      $set: {
+        isDeleted: true,
+        deletedAt,
+        deletedBy: req.currentUser.username,
+        deletionReason: 'post_deleted'
       }
-    );
-    await ForumPost.updateOne(
-      { _id: post._id },
-      {
-        $set: {
-          isDeleted: true,
-          deletedAt,
-          deletedBy: req.currentUser.username,
-          deletionReason: 'manual_delete'
-        }
-      }
-    );
-
-    res.json({ message: 'Da xoa bai viet thanh cong.' });
-  } catch (error) {
-    console.error('Loi xoa forum post:', error);
-    res.status(500).json({ message: 'Khong xoa duoc bai viet.' });
-  }
-};
-
-const deleteComment = async (req, res) => {
-  try {
-    const comment = await ForumComment.findById(req.params.id);
-    if (!comment) {
-      return res.status(404).json({ message: 'Khong tim thay binh luan.' });
     }
-
-    const isOwner = comment.author === req.currentUser.username;
-    const isAdmin = req.currentUser.role === 'admin';
-
-    if (!isOwner && !isAdmin) {
-      return res.status(403).json({ message: 'Ban khong co quyen xoa binh luan nay.' });
-    }
-
-    await ForumComment.updateOne(
-      { _id: comment._id },
-      {
-        $set: {
-          isDeleted: true,
-          deletedAt: new Date(),
-          deletedBy: req.currentUser.username,
-          deletionReason: 'manual_delete'
-        }
+  );
+  await ForumPost.updateOne(
+    { _id: post._id },
+    {
+      $set: {
+        isDeleted: true,
+        deletedAt,
+        deletedBy: req.currentUser.username,
+        deletionReason: 'manual_delete'
       }
-    );
-    res.json({ message: 'Da xoa binh luan thanh cong.' });
-  } catch (error) {
-    console.error('Loi xoa forum comment:', error);
-    res.status(500).json({ message: 'Khong xoa duoc binh luan.' });
-  }
-};
+    }
+  );
 
-const listAllCommentsForAdmin = async (req, res) => {
-  try {
-    const comments = await ForumComment.find({ isDeleted: false })
+  res.json({ message: 'Da xoa bai viet thanh cong.' });
+});
+
+const deleteComment = catchAsync(async (req, res) => {
+  const comment = await ForumComment.findById(req.params.id);
+  if (!comment) {
+    return res.status(404).json({ message: 'Khong tim thay binh luan.' });
+  }
+
+  const isOwner = comment.author === req.currentUser.username;
+  const isAdmin = req.currentUser.role === 'admin';
+
+  if (!isOwner && !isAdmin) {
+    return res.status(403).json({ message: 'Ban khong co quyen xoa binh luan nay.' });
+  }
+
+  await ForumComment.updateOne(
+    { _id: comment._id },
+    {
+      $set: {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedBy: req.currentUser.username,
+        deletionReason: 'manual_delete'
+      }
+    }
+  );
+  res.json({ message: 'Da xoa binh luan thanh cong.' });
+});
+
+const listAllCommentsForAdmin = catchAsync(async (req, res) => {
+  const filter = { isDeleted: false };
+  const { page, limit, skip } = getPaginationParams(req.query);
+  const [comments, totalItems] = await Promise.all([
+    ForumComment.find(filter)
       .sort({ createdAt: -1 })
-      .limit(300)
-      .lean();
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    ForumComment.countDocuments(filter)
+  ]);
 
-    const postIds = [...new Set(comments.map(comment => String(comment.postId)).filter(Boolean))];
-    const posts = postIds.length
-      ? await ForumPost.find({ _id: { $in: postIds } }, { title: 1, scope: 1, course: 1, category: 1 }).lean()
-      : [];
-    const postById = posts.reduce((acc, post) => {
-      acc[String(post._id)] = post;
-      return acc;
-    }, {});
+  const postIds = [...new Set(comments.map(comment => String(comment.postId)).filter(Boolean))];
+  const posts = postIds.length
+    ? await ForumPost.find({ _id: { $in: postIds } }, { title: 1, scope: 1, course: 1, category: 1 }).lean()
+    : [];
+  const postById = posts.reduce((acc, post) => {
+    acc[String(post._id)] = post;
+    return acc;
+  }, {});
 
-    const courseIds = [...new Set(posts.map(post => String(post.course || '')).filter(Boolean))];
-    const courses = courseIds.length
-      ? await Course.find({ _id: { $in: courseIds } }, { title: 1 }).lean()
-      : [];
-    const courseById = courses.reduce((acc, course) => {
-      acc[String(course._id)] = course;
-      return acc;
-    }, {});
+  const courseIds = [...new Set(posts.map(post => String(post.course || '')).filter(Boolean))];
+  const courses = courseIds.length
+    ? await Course.find({ _id: { $in: courseIds } }, { title: 1 }).lean()
+    : [];
+  const courseById = courses.reduce((acc, course) => {
+    acc[String(course._id)] = course;
+    return acc;
+  }, {});
 
-    res.json({
-      comments: comments.map(comment => {
-        const post = postById[String(comment.postId)] || null;
-        const course = post?.course ? courseById[String(post.course)] || null : null;
-        return {
-          ...comment,
-          postTitle: post?.title || '',
-          postScope: post?.scope || 'general',
-          postCategory: post?.category || '',
-          courseTitle: course?.title || ''
-        };
-      })
+  const enrichedComments = comments.map(comment => {
+      const post = postById[String(comment.postId)] || null;
+      const course = post?.course ? courseById[String(post.course)] || null : null;
+      return {
+        ...comment,
+        postTitle: post?.title || '',
+        postScope: post?.scope || 'general',
+        postCategory: post?.category || '',
+        courseTitle: course?.title || ''
+      };
     });
-  } catch (error) {
-    console.error('Loi lay tat ca binh luan forum:', error);
-    res.status(500).json({ message: 'Khong tai duoc danh sach binh luan dien dan.' });
-  }
-};
 
-const punishCommentAuthor = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { penalty = 'warn', reason = '' } = req.body || {};
-    const comment = await ForumComment.findById(id);
-    if (!comment) {
-      return res.status(404).json({ message: 'Khong tim thay binh luan.' });
+  res.json({
+    data: enrichedComments,
+    comments: enrichedComments,
+    pagination: buildPagination({ totalItems, page, limit })
+  });
+});
+
+const punishCommentAuthor = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const { penalty = 'warn', reason = '' } = req.body || {};
+  const comment = await ForumComment.findById(id);
+  if (!comment) {
+    return res.status(404).json({ message: 'Khong tim thay binh luan.' });
+  }
+
+  comment.isDeleted = true;
+  comment.deletedAt = new Date();
+  comment.deletedBy = req.currentUser.username;
+  comment.deletionReason = reason ? `admin_${penalty}_${reason}` : `admin_${penalty}`;
+  await comment.save();
+
+  let accountStatus = null;
+  let violationCount = null;
+  const targetUser = await User.findOne({ username: comment.author });
+  if (targetUser && targetUser.role !== 'admin') {
+    targetUser.violationCount = (targetUser.violationCount || 0) + 1;
+    targetUser.lastViolationAt = new Date();
+
+    if (penalty === 'ban') {
+      targetUser.status = 'banned';
+    } else if (penalty === 'suspend' || targetUser.violationCount >= 3) {
+      targetUser.status = 'suspended';
     }
 
-    comment.isDeleted = true;
-    comment.deletedAt = new Date();
-    comment.deletedBy = req.currentUser.username;
-    comment.deletionReason = reason ? `admin_${penalty}_${reason}` : `admin_${penalty}`;
-    await comment.save();
+    await targetUser.save();
+    accountStatus = targetUser.status;
+    violationCount = targetUser.violationCount;
+  }
 
-    let accountStatus = null;
-    let violationCount = null;
-    const targetUser = await User.findOne({ username: comment.author });
-    if (targetUser && targetUser.role !== 'admin') {
-      targetUser.violationCount = (targetUser.violationCount || 0) + 1;
-      targetUser.lastViolationAt = new Date();
+  res.json({
+    message: 'Da xoa binh luan va cap nhat vi pham tai khoan.',
+    accountStatus,
+    violationCount
+  });
+});
 
-      if (penalty === 'ban') {
-        targetUser.status = 'banned';
-      } else if (penalty === 'suspend' || targetUser.violationCount >= 3) {
-        targetUser.status = 'suspended';
+const togglePostReaction = catchAsync(async (req, res) => {
+  const post = await ForumPost.findById(req.params.id);
+  const access = await ensurePostForumAccess(req, res, post, 'tha tim bai viet lop');
+  if (!access) {
+    return;
+  }
+
+  const userKey = req.currentUser?._id ? String(req.currentUser._id) : '';
+  if (!userKey) {
+    return res.status(401).json({ message: 'Can dang nhap de tha tim.' });
+  }
+
+  const existingIndex = (post.heartUserIds || []).findIndex(item => String(item) === userKey);
+  if (existingIndex >= 0) {
+    post.heartUserIds.splice(existingIndex, 1);
+  } else {
+    post.heartUserIds.push(userKey);
+  }
+
+  await post.save();
+
+  const heartCount = post.heartUserIds.length;
+  const isHearted = post.heartUserIds.some(item => String(item) === userKey);
+  res.json({ heartCount, isHearted });
+});
+
+const getDeletedPosts = catchAsync(async (req, res) => {
+  const reason = req.query.reason ? String(req.query.reason).trim() : '';
+  const filter = { isDeleted: true };
+
+  if (reason && reason !== 'all') {
+    filter.deletionReason = reason;
+  }
+
+  const { page, limit, skip } = getPaginationParams(req.query);
+  const [posts, totalItems] = await Promise.all([
+    ForumPost.find(filter)
+      .sort({ deletedAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    ForumPost.countDocuments(filter)
+  ]);
+
+  res.json({
+    data: posts,
+    posts,
+    pagination: buildPagination({ totalItems, page, limit })
+  });
+});
+
+const getDeletedComments = catchAsync(async (req, res) => {
+  const reason = req.query.reason ? String(req.query.reason).trim() : '';
+  const filter = { isDeleted: true };
+
+  if (reason && reason !== 'all') {
+    filter.deletionReason = reason;
+  }
+
+  const { page, limit, skip } = getPaginationParams(req.query);
+  const [comments, totalItems] = await Promise.all([
+    ForumComment.find(filter)
+      .sort({ deletedAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    ForumComment.countDocuments(filter)
+  ]);
+
+  res.json({
+    data: comments,
+    comments,
+    pagination: buildPagination({ totalItems, page, limit })
+  });
+});
+
+const deleteDeletedPost = catchAsync(async (req, res) => {
+  const post = await ForumPost.findById(req.params.id);
+  if (!post) {
+    return res.status(404).json({ message: 'Khong tim thay bai viet.' });
+  }
+
+  if (!post.isDeleted) {
+    return res.status(400).json({ message: 'Bai viet nay chua o trang thai da an.' });
+  }
+
+  await ForumComment.deleteMany({ postId: post._id });
+  await ForumPost.deleteOne({ _id: post._id });
+
+  res.json({ message: 'Da xoa vinh vien bai viet va binh luan lien quan.' });
+});
+
+const deleteDeletedComment = catchAsync(async (req, res) => {
+  const comment = await ForumComment.findById(req.params.id);
+  if (!comment) {
+    return res.status(404).json({ message: 'Khong tim thay binh luan.' });
+  }
+
+  if (!comment.isDeleted) {
+    return res.status(400).json({ message: 'Binh luan nay chua o trang thai da an.' });
+  }
+
+  await ForumComment.deleteOne({ _id: comment._id });
+
+  res.json({ message: 'Da xoa vinh vien binh luan.' });
+});
+
+const restorePost = catchAsync(async (req, res) => {
+  const post = await ForumPost.findById(req.params.id);
+  if (!post) {
+    return res.status(404).json({ message: 'Khong tim thay bai viet.' });
+  }
+
+  post.isDeleted = false;
+  post.deletedAt = null;
+  post.deletedBy = null;
+  post.deletionReason = null;
+  await post.save();
+
+  await ForumComment.updateMany(
+    { postId: post._id, deletionReason: 'post_deleted' },
+    {
+      $set: {
+        isDeleted: false,
+        deletedAt: null,
+        deletedBy: null,
+        deletionReason: null
       }
-
-      await targetUser.save();
-      accountStatus = targetUser.status;
-      violationCount = targetUser.violationCount;
     }
+  );
 
-    res.json({
-      message: 'Da xoa binh luan va cap nhat vi pham tai khoan.',
-      accountStatus,
-      violationCount
-    });
-  } catch (error) {
-    console.error('Loi phat tac gia binh luan:', error);
-    res.status(500).json({ message: 'Khong phat duoc tac gia binh luan.' });
+  res.json({ message: 'Da khoi phuc bai viet.' });
+});
+
+const restoreComment = catchAsync(async (req, res) => {
+  const comment = await ForumComment.findById(req.params.id);
+  if (!comment) {
+    return res.status(404).json({ message: 'Khong tim thay binh luan.' });
   }
-};
 
-const togglePostReaction = async (req, res) => {
-  try {
-    const post = await ForumPost.findById(req.params.id);
-    const access = await ensurePostForumAccess(req, res, post, 'tha tim bai viet lop');
-    if (!access) {
-      return;
-    }
+  comment.isDeleted = false;
+  comment.deletedAt = null;
+  comment.deletedBy = null;
+  comment.deletionReason = null;
+  await comment.save();
 
-    const userKey = req.currentUser?._id ? String(req.currentUser._id) : '';
-    if (!userKey) {
-      return res.status(401).json({ message: 'Can dang nhap de tha tim.' });
-    }
-
-    const existingIndex = (post.heartUserIds || []).findIndex(item => String(item) === userKey);
-    if (existingIndex >= 0) {
-      post.heartUserIds.splice(existingIndex, 1);
-    } else {
-      post.heartUserIds.push(userKey);
-    }
-
-    await post.save();
-
-    const heartCount = post.heartUserIds.length;
-    const isHearted = post.heartUserIds.some(item => String(item) === userKey);
-    res.json({ heartCount, isHearted });
-  } catch (error) {
-    console.error('Loi tha tim forum post:', error);
-    res.status(500).json({ message: 'Khong tha tim duoc.' });
-  }
-};
-
-const getDeletedPosts = async (req, res) => {
-  try {
-    const reason = req.query.reason ? String(req.query.reason).trim() : '';
-    const filter = { isDeleted: true };
-
-    if (reason && reason !== 'all') {
-      filter.deletionReason = reason;
-    }
-
-    const posts = await ForumPost.find(filter).sort({ deletedAt: -1 }).limit(100).lean();
-    res.json({ posts });
-  } catch (error) {
-    console.error('Loi lay deleted posts:', error);
-    res.status(500).json({ message: 'Khong tai duoc danh sach bai da xoa.' });
-  }
-};
-
-const getDeletedComments = async (req, res) => {
-  try {
-    const reason = req.query.reason ? String(req.query.reason).trim() : '';
-    const filter = { isDeleted: true };
-
-    if (reason && reason !== 'all') {
-      filter.deletionReason = reason;
-    }
-
-    const comments = await ForumComment.find(filter).sort({ deletedAt: -1 }).limit(200).lean();
-    res.json({ comments });
-  } catch (error) {
-    console.error('Loi lay deleted comments:', error);
-    res.status(500).json({ message: 'Khong tai duoc danh sach binh luan da xoa.' });
-  }
-};
-
-const deleteDeletedPost = async (req, res) => {
-  try {
-    const post = await ForumPost.findById(req.params.id);
-    if (!post) {
-      return res.status(404).json({ message: 'Khong tim thay bai viet.' });
-    }
-
-    if (!post.isDeleted) {
-      return res.status(400).json({ message: 'Bai viet nay chua o trang thai da an.' });
-    }
-
-    await ForumComment.deleteMany({ postId: post._id });
-    await ForumPost.deleteOne({ _id: post._id });
-
-    res.json({ message: 'Da xoa vinh vien bai viet va binh luan lien quan.' });
-  } catch (error) {
-    console.error('Loi xoa vinh vien post:', error);
-    res.status(500).json({ message: 'Khong xoa vinh vien duoc bai viet.' });
-  }
-};
-
-const deleteDeletedComment = async (req, res) => {
-  try {
-    const comment = await ForumComment.findById(req.params.id);
-    if (!comment) {
-      return res.status(404).json({ message: 'Khong tim thay binh luan.' });
-    }
-
-    if (!comment.isDeleted) {
-      return res.status(400).json({ message: 'Binh luan nay chua o trang thai da an.' });
-    }
-
-    await ForumComment.deleteOne({ _id: comment._id });
-
-    res.json({ message: 'Da xoa vinh vien binh luan.' });
-  } catch (error) {
-    console.error('Loi xoa vinh vien comment:', error);
-    res.status(500).json({ message: 'Khong xoa vinh vien duoc binh luan.' });
-  }
-};
-
-const restorePost = async (req, res) => {
-  try {
-    const post = await ForumPost.findById(req.params.id);
-    if (!post) {
-      return res.status(404).json({ message: 'Khong tim thay bai viet.' });
-    }
-
-    post.isDeleted = false;
-    post.deletedAt = null;
-    post.deletedBy = null;
-    post.deletionReason = null;
-    await post.save();
-
-    await ForumComment.updateMany(
-      { postId: post._id, deletionReason: 'post_deleted' },
-      {
-        $set: {
-          isDeleted: false,
-          deletedAt: null,
-          deletedBy: null,
-          deletionReason: null
-        }
-      }
-    );
-
-    res.json({ message: 'Da khoi phuc bai viet.' });
-  } catch (error) {
-    console.error('Loi restore post:', error);
-    res.status(500).json({ message: 'Khong khoi phuc duoc bai viet.' });
-  }
-};
-
-const restoreComment = async (req, res) => {
-  try {
-    const comment = await ForumComment.findById(req.params.id);
-    if (!comment) {
-      return res.status(404).json({ message: 'Khong tim thay binh luan.' });
-    }
-
-    comment.isDeleted = false;
-    comment.deletedAt = null;
-    comment.deletedBy = null;
-    comment.deletionReason = null;
-    await comment.save();
-
-    res.json({ message: 'Da khoi phuc binh luan.' });
-  } catch (error) {
-    console.error('Loi restore comment:', error);
-    res.status(500).json({ message: 'Khong khoi phuc duoc binh luan.' });
-  }
-};
+  res.json({ message: 'Da khoi phuc binh luan.' });
+});
 
 module.exports = {
   getPosts,

@@ -8,8 +8,8 @@ const { requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/categories', listCategories);
-router.post('/categories', requireAdmin, createCategory);
-router.delete('/categories/:name', requireAdmin, deleteCategory);
+router.get('/', listCategories);
+router.post('/', requireAdmin, createCategory);
+router.delete('/:name', requireAdmin, deleteCategory);
 
 module.exports = router;

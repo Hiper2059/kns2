@@ -1,78 +1,82 @@
+const fs = require('fs');
 const config = require('../config/env');
 const { cloudinary } = require('../utils/cloudinary');
+const catchAsync = require('../utils/catchAsync');
 
-const uploadImage = async (req, res) => {
+const isCloudinaryConfigured = () =>
+  Boolean(config.cloudinary.cloudName && config.cloudinary.apiKey && config.cloudinary.apiSecret);
+
+const cleanupTempFile = filePath => {
+  if (!filePath) {
+    return;
+  }
+
   try {
-    if (!config.cloudinary.cloudName || !config.cloudinary.apiKey || !config.cloudinary.apiSecret) {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (error) {
+    console.warn('Khong xoa duoc file tam:', error);
+  }
+};
+
+const uploadToCloudinary = (filePath, resourceType) => {
+  const uploadOptions = {
+    folder: config.cloudinary.folder,
+    resource_type: resourceType
+  };
+
+  if (resourceType === 'video' && typeof cloudinary.uploader.upload_large === 'function') {
+    return cloudinary.uploader.upload_large(filePath, uploadOptions);
+  }
+
+  return cloudinary.uploader.upload(filePath, uploadOptions);
+};
+
+const uploadImage = catchAsync(async (req, res) => {
+  const filePath = req.file?.path;
+
+  try {
+    if (!isCloudinaryConfigured()) {
       return res.status(500).json({ message: 'Cloudinary chua duoc cau hinh.' });
     }
 
-    if (!req.file) {
+    if (!filePath) {
       return res.status(400).json({ message: 'Chua co file anh.' });
     }
 
-    const result = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        {
-          folder: config.cloudinary.folder,
-          resource_type: 'image'
-        },
-        (error, uploadResult) => {
-          if (error) {
-            return reject(error);
-          }
-          return resolve(uploadResult);
-        }
-      );
-
-      stream.end(req.file.buffer);
-    });
+    const result = await uploadToCloudinary(filePath, 'image');
 
     res.json({
       url: result.secure_url,
       publicId: result.public_id
     });
-  } catch (error) {
-    console.error('Loi upload anh:', error);
-    res.status(500).json({ message: 'Khong upload duoc anh.' });
+  } finally {
+    cleanupTempFile(filePath);
   }
-};
+});
 
-const uploadVideo = async (req, res) => {
+const uploadVideo = catchAsync(async (req, res) => {
+  const filePath = req.file?.path;
+
   try {
-    if (!config.cloudinary.cloudName || !config.cloudinary.apiKey || !config.cloudinary.apiSecret) {
+    if (!isCloudinaryConfigured()) {
       return res.status(500).json({ message: 'Cloudinary chua duoc cau hinh.' });
     }
 
-    if (!req.file) {
+    if (!filePath) {
       return res.status(400).json({ message: 'Chua co file video.' });
     }
 
-    const result = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        {
-          folder: config.cloudinary.folder,
-          resource_type: 'video'
-        },
-        (error, uploadResult) => {
-          if (error) {
-            return reject(error);
-          }
-          return resolve(uploadResult);
-        }
-      );
-
-      stream.end(req.file.buffer);
-    });
+    const result = await uploadToCloudinary(filePath, 'video');
 
     res.json({
       url: result.secure_url,
       publicId: result.public_id
     });
-  } catch (error) {
-    console.error('Loi upload video:', error);
-    res.status(500).json({ message: 'Khong upload duoc video.' });
+  } finally {
+    cleanupTempFile(filePath);
   }
-};
+});
 
 module.exports = { uploadImage, uploadVideo };
