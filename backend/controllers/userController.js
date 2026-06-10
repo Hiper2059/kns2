@@ -299,6 +299,7 @@ const updateMyProfile = catchAsync(async (req, res) => {
   }
 
   user.profile = compactObject(nextProfile);
+  user.markModified('profile');
   await user.save();
 
   const profilePayload = await buildPublicProfile(user.toObject());
