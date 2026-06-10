@@ -10,7 +10,8 @@ import {
   PlayCircle,
   Search,
   Sparkles,
-  Users
+  Users,
+  Trophy
 } from 'lucide-react'
 
 const answerLabel = index => String.fromCharCode(65 + index)
@@ -25,6 +26,7 @@ const LmsView = ({
   onSelectCourse,
   lessons,
   assignments,
+  courseLeaderboard,
   assignmentDrafts,
   onAssignmentDraftChange,
   onSubmitAssignment,
@@ -411,6 +413,51 @@ const LmsView = ({
                     </div>
                   </div>
                 )}
+
+                <div className="gsap-animate p-6 md:p-8 bg-white border border-slate-200 rounded-[24px] shadow-sm">
+                  <h3 className="flex items-center gap-3 text-xl font-black text-slate-900 mb-6 pb-4 border-b border-slate-100">
+                    <span className="grid place-items-center w-10 h-10 rounded-xl bg-orange-50 text-orange-500"><Trophy size={18} /></span>
+                    Top 10 Lớp Học
+                  </h3>
+                  <div className="flex flex-col gap-3">
+                    {courseLeaderboard?.length ? (
+                      courseLeaderboard.map((user, idx) => (
+                        <div key={user.studentId} className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
+                            idx === 0 ? 'bg-yellow-100 text-yellow-600' :
+                            idx === 1 ? 'bg-slate-200 text-slate-600' :
+                            idx === 2 ? 'bg-orange-100 text-orange-600' :
+                            'bg-slate-100 text-slate-500'
+                          }`}>
+                            {idx + 1}
+                          </div>
+                          <img
+                            src={user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName)}&background=random`}
+                            alt={user.displayName}
+                            className="w-10 h-10 rounded-full object-cover shrink-0 cursor-pointer"
+                            onClick={() => onOpenProfile?.(user.studentId)}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div
+                              className="font-bold text-[15px] text-slate-800 truncate cursor-pointer hover:text-blue-600 transition-colors"
+                              onClick={() => onOpenProfile?.(user.studentId)}
+                            >
+                              {user.displayName}
+                            </div>
+                            <div className="text-[13px] text-slate-500 font-medium">@{user.username}</div>
+                          </div>
+                          <div className="font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg shrink-0">
+                            {user.coursePoints}đ
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="py-8 text-center text-[15px] font-medium text-slate-500 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+                        Chưa có học viên nào đạt điểm.
+                      </div>
+                    )}
+                  </div>
+                </div>
 
                 <div className="gsap-animate p-6 md:p-8 bg-white border border-slate-200 rounded-[24px] shadow-sm">
                   <h3 className="flex items-center gap-3 text-xl font-black text-slate-900 mb-6 pb-4 border-b border-slate-100">

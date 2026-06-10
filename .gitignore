@@ -27,3 +27,7 @@ frontend/refactor_routing.py
 frontend/run_ftfy.py
 frontend/scripts/
 temp.css
+
+# Temp files
+temp.css
+

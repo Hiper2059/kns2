@@ -1,6 +1,7 @@
 const Course = require('../models/Course');
 const Lesson = require('../models/Lesson');
 const Enrollment = require('../models/Enrollment');
+const User = require('../models/User');
 const { isStudentRole } = require('../utils/userUtils');
 const { getPaginationParams, buildPagination } = require('../utils/pagination');
 const catchAsync = require('../utils/catchAsync');
@@ -103,8 +104,15 @@ const completeLesson = catchAsync(async (req, res) => {
     return res.status(403).json({ message: 'Cậu cần tham gia lớp trước khi học.' });
   }
 
+  let pointsEarned = 0;
   if (!enrollment.completedLessons.find(item => String(item) === String(lessonId))) {
     enrollment.completedLessons.push(lesson._id);
+    enrollment.points = (enrollment.points || 0) + 10;
+    pointsEarned = 10;
+    
+    await User.findByIdAndUpdate(req.currentUser._id, {
+      $inc: { points: 10 }
+    });
   }
 
   const totalLessons = await Lesson.countDocuments({ course: lesson.course });
@@ -152,10 +160,33 @@ const evaluateEnrollment = catchAsync(async (req, res) => {
   res.json({ message: 'Đã cập nhật đánh giá.', enrollment });
 });
 
+const getCourseLeaderboard = catchAsync(async (req, res) => {
+  const { courseId } = req.params;
+
+  const enrollments = await Enrollment.find({ course: courseId })
+    .sort({ points: -1, createdAt: 1 })
+    .limit(10)
+    .populate('student', 'username profile.displayName profile.avatarUrl points')
+    .lean();
+
+  const leaderboard = enrollments.map((en, index) => ({
+    rank: index + 1,
+    studentId: en.student?._id,
+    username: en.studentName,
+    displayName: en.student?.profile?.displayName || en.studentName,
+    avatarUrl: en.student?.profile?.avatarUrl || null,
+    coursePoints: en.points || 0,
+    globalPoints: en.student?.points || 0
+  }));
+
+  res.json({ leaderboard });
+});
+
 module.exports = {
   enrollCourse,
   listMyEnrollments,
   listCourseEnrollments,
   completeLesson,
-  evaluateEnrollment
+  evaluateEnrollment,
+  getCourseLeaderboard
 };

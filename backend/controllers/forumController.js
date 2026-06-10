@@ -119,7 +119,19 @@ const getPosts = catchAsync(async (req, res) => {
     ForumPost.countDocuments(filter)
   ]);
 
-  const formattedPosts = posts.map(post => formatPostForUser(post, userKey));
+  const authorUsernames = [...new Set(posts.map(p => p.author))];
+  const authors = await User.find({ username: { $in: authorUsernames } }, { username: 1, 'profile.displayName': 1 }).lean();
+  const authorMap = authors.reduce((acc, user) => {
+    acc[user.username] = user.profile?.displayName || user.username;
+    return acc;
+  }, {});
+
+  const formattedPosts = posts.map(post => {
+    const formatted = formatPostForUser(post, userKey);
+    formatted.authorDisplayName = authorMap[post.author] || post.author;
+    return formatted;
+  });
+  
   res.json({
     data: formattedPosts,
     posts: formattedPosts,
@@ -236,9 +248,20 @@ const getComments = catchAsync(async (req, res) => {
     ForumComment.countDocuments(filter)
   ]);
 
+  const authorUsernames = [...new Set(comments.map(c => c.author))];
+  const authors = await User.find({ username: { $in: authorUsernames } }, { username: 1, 'profile.displayName': 1 }).lean();
+  const authorMap = authors.reduce((acc, user) => {
+    acc[user.username] = user.profile?.displayName || user.username;
+    return acc;
+  }, {});
+
+  const formattedComments = comments.map(comment => {
+    return { ...comment, authorDisplayName: authorMap[comment.author] || comment.author };
+  });
+
   res.json({
-    data: comments,
-    comments,
+    data: formattedComments,
+    comments: formattedComments,
     pagination: buildPagination({ totalItems, page, limit })
   });
 });

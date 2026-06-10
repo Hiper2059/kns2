@@ -289,7 +289,7 @@ const ProfilePage = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[13px] font-bold text-slate-700">Ngày sinh</label>
-                      <input type="text" className={baseInputClass} placeholder="Ngày sinh" value={profileDraft.student?.dob || ''} onChange={event => handleNestedChange('student', 'dob', event.target.value)} />
+                      <input type="date" className={baseInputClass} placeholder="Ngày sinh" value={profileDraft.student?.dob || ''} onChange={event => handleNestedChange('student', 'dob', event.target.value)} />
                     </div>
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[13px] font-bold text-slate-700">Lớp đang học</label>

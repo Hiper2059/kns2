@@ -52,76 +52,93 @@ const ForumView = ({
     </div>
 
     <div className="flex flex-col max-w-4xl mx-auto gap-10 items-stretch w-full">
-      {/* Composer Column */}
-      <div className="flex flex-col gap-6 p-6 md:p-8 bg-white/70 backdrop-blur-xl border border-slate-200/60 rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-        <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-          <div className="grid place-items-center w-10 h-10 rounded-xl bg-orange-100 text-orange-600">
-            <PenSquare size={20} strokeWidth={2.5} />
-          </div>
-          <div>
-            <h3 className="text-lg font-extrabold text-slate-800">Tạo chủ đề mới</h3>
-            {forumScope === 'course' && forumCourse && (
-              <span className="inline-block mt-1 px-2.5 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[11px] font-bold tracking-wide">
-                Trong: {forumCourse.title}
-              </span>
-            )}
-          </div>
+      {/* Dummy Input (Facebook style) */}
+      <div className="flex items-center gap-3 p-4 bg-white rounded-[24px] shadow-sm border border-slate-200/60 w-full cursor-pointer hover:bg-slate-50 transition-colors" onClick={() => setIsComposerOpen(true)}>
+        <div className="grid place-items-center w-10 h-10 rounded-full bg-slate-100 text-slate-400 overflow-hidden shrink-0">
+          <UserCircle2 size={24} />
         </div>
-
-        <div className="flex flex-col gap-5">
-          <ComposeField
-            label="Tiêu đề"
-            hint="Tóm tắt ngắn gọn nội dung bạn muốn hỏi hoặc chia sẻ."
-          >
-            <input
-              type="text"
-              placeholder="VD: Làm sao để ghi nhớ lâu hơn?"
-              className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-[14px] font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
-              value={newPost.title}
-              onChange={e => onNewPostChange({ ...newPost, title: e.target.value })}
-            />
-          </ComposeField>
-
-          {forumScope === 'general' && (
-            <ComposeField label="Danh mục" hint="Chọn chuyên mục phù hợp để mọi người dễ tìm.">
-              <div className="relative">
-                <select
-                  className="w-full h-11 pl-10 pr-4 appearance-none bg-slate-50 border border-slate-200 rounded-xl text-[14px] font-semibold text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all cursor-pointer"
-                  value={newPost.category}
-                  onChange={e => onNewPostChange({ ...newPost, category: e.target.value })}
-                >
-                  {categories.map((cat, i) => <option key={i} value={cat}>{cat}</option>)}
-                </select>
-                <Hash size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-              </div>
-            </ComposeField>
-          )}
-
-          <ComposeField
-            label="Nội dung"
-            hint="Miêu tả chi tiết vấn đề của bạn."
-            as="div"
-          >
-            <div className="rounded-xl overflow-hidden border border-slate-200 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10 transition-all bg-white">
-              <RichTextEditor
-                toolbarId="forum-post-toolbar"
-                value={newPost.content}
-                onChange={value => onNewPostChange({ ...newPost, content: value })}
-                placeholder="Nội dung chi tiết..."
-              />
-            </div>
-          </ComposeField>
+        <div className="flex-1 h-10 bg-slate-100 hover:bg-slate-200 transition-colors rounded-full px-4 flex items-center">
+          <span className="text-[15px] text-slate-500 font-medium">Bạn đang nghĩ gì thế?</span>
         </div>
-
-        <button
-          onClick={() => onPostSubmit()}
-          disabled={forumScope === 'course' && !forumCourse}
-          className="w-full h-12 inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[15px] font-bold shadow-[0_4px_14px_0_rgb(37,99,235,0.39)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
-        >
-          <Send size={18} />
-          <span>Đăng bài thảo luận</span>
-        </button>
       </div>
+
+      {/* Composer Modal */}
+      {isComposerOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-[24px] shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-100 shrink-0">
+              <div className="w-8"></div>
+              <h3 className="text-lg font-black text-slate-900">Tạo chủ đề mới</h3>
+              <button 
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors cursor-pointer"
+                onClick={() => setIsComposerOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-5">
+              {forumScope === 'course' && forumCourse && (
+                <div className="bg-blue-50 text-blue-700 px-4 py-2 rounded-xl text-[13px] font-bold">
+                  Đang đăng trong: {forumCourse.title}
+                </div>
+              )}
+
+              <ComposeField label="Tiêu đề" hint="Tóm tắt ngắn gọn nội dung bạn muốn hỏi hoặc chia sẻ.">
+                <input
+                  type="text"
+                  placeholder="VD: Làm sao để ghi nhớ lâu hơn?"
+                  className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-[14px] font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                  value={newPost.title}
+                  onChange={e => onNewPostChange({ ...newPost, title: e.target.value })}
+                />
+              </ComposeField>
+
+              {forumScope === 'general' && (
+                <ComposeField label="Danh mục" hint="Chọn chuyên mục phù hợp để mọi người dễ tìm.">
+                  <div className="relative">
+                    <select
+                      className="w-full h-11 pl-10 pr-4 appearance-none bg-slate-50 border border-slate-200 rounded-xl text-[14px] font-semibold text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all cursor-pointer"
+                      value={newPost.category}
+                      onChange={e => onNewPostChange({ ...newPost, category: e.target.value })}
+                    >
+                      {categories.map((cat, i) => <option key={i} value={cat}>{cat}</option>)}
+                    </select>
+                    <Hash size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  </div>
+                </ComposeField>
+              )}
+
+              <ComposeField label="Nội dung" hint="Miêu tả chi tiết vấn đề của bạn." as="div">
+                <div className="rounded-xl overflow-hidden border border-slate-200 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10 transition-all bg-white min-h-[200px] flex flex-col">
+                  <div className="flex-1 overflow-y-auto">
+                    <RichTextEditor
+                      toolbarId="forum-post-toolbar"
+                      value={newPost.content}
+                      onChange={value => onNewPostChange({ ...newPost, content: value })}
+                      placeholder="Nội dung chi tiết..."
+                    />
+                  </div>
+                </div>
+              </ComposeField>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-slate-100 shrink-0">
+              <button
+                onClick={handlePostSubmit}
+                disabled={forumScope === 'course' && !forumCourse}
+                className="w-full h-11 inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[15px] font-bold shadow-sm transition-all disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
+              >
+                <Send size={18} />
+                <span>Đăng bài thảo luận</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Feed Column */}
       <div className="flex flex-col gap-6 min-w-0">
@@ -149,7 +166,7 @@ const ForumView = ({
                       <UserCircle2 size={24} />
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <span className="text-[14px] font-bold text-slate-800 truncate">{post.author}</span>
+                      <span className="text-[14px] font-bold text-slate-800 truncate">{post.authorDisplayName || post.author}</span>
                       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[11px] font-bold uppercase tracking-wide w-fit mt-0.5">
                         <Hash size={12} />
                         {post.category}
@@ -192,7 +209,7 @@ const ForumView = ({
                       (commentsByPost[post.id] || []).map(comment => (
                         <div key={comment.id} className="group relative flex flex-col gap-1 p-3.5 bg-white border border-slate-200 rounded-2xl shadow-sm">
                           <div className="flex items-center justify-between">
-                            <strong className="text-[13px] font-extrabold text-slate-800">{comment.author}</strong>
+                            <strong className="text-[13px] font-extrabold text-slate-800">{comment.authorDisplayName || comment.author}</strong>
                             <button
                               className="opacity-0 cursor-pointer group-hover:opacity-100 inline-flex items-center text-[11px] font-bold text-slate-400 hover:text-red-500 transition-all"
                               onClick={() => onReportContent({ targetType: 'comment', targetId: comment.id, targetAuthor: comment.author, content: comment.text })}

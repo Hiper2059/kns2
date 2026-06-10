@@ -100,10 +100,7 @@ function App() {
   const [forumScope, setForumScope] = useState('general')
   const [forumCourseId, setForumCourseId] = useState('')
   const [forumCourse, setForumCourse] = useState(null)
-  const [pointsByUser, setPointsByUser] = useState(() => {
-    const savedPoints = localStorage.getItem('zmate_points_by_user')
-    return savedPoints ? JSON.parse(savedPoints) : {}
-  })
+
   const [managedUsers, setManagedUsers] = useState([])
   const [isLoadingUsers, setIsLoadingUsers] = useState(false)
   const [categoryVideos, setCategoryVideos] = useState(defaultCategoryVideos)
@@ -143,6 +140,7 @@ function App() {
   const [selectedCourse, setSelectedCourse] = useState(null)
   const [courseLessons, setCourseLessons] = useState([])
   const [courseAssignments, setCourseAssignments] = useState([])
+  const [courseLeaderboard, setCourseLeaderboard] = useState([])
   const [assignmentDrafts, setAssignmentDrafts] = useState({})
   const [myEnrollments, setMyEnrollments] = useState([])
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -341,9 +339,7 @@ function App() {
     }
   }, [activeTab, lessonRouteSlug, location.pathname, navigate, resetLessonRoute])
 
-  useEffect(() => {
-    localStorage.setItem('zmate_points_by_user', JSON.stringify(pointsByUser))
-  }, [pointsByUser])
+
 
   useEffect(() => {
     localStorage.setItem('zmate_custom_categories', JSON.stringify(customCategories))
@@ -1004,6 +1000,23 @@ function App() {
     }
   }, [])
 
+  const fetchCourseLeaderboard = useCallback(
+    async courseId => {
+      if (!courseId) {
+        setCourseLeaderboard([])
+        return
+      }
+
+      try {
+        const response = await api.get(`/api/courses/${courseId}/leaderboard`)
+        setCourseLeaderboard(response.data.leaderboard || [])
+      } catch {
+        setCourseLeaderboard([])
+      }
+    },
+    []
+  )
+
   const fetchCourseAssignments = useCallback(
     async courseId => {
       if (!courseId || !currentUser) {
@@ -1086,9 +1099,10 @@ function App() {
 
     await Promise.all([
       fetchCourseLessons(courseId),
-      fetchCourseAssignments(courseId)
+      fetchCourseAssignments(courseId),
+      fetchCourseLeaderboard(courseId)
     ])
-  }, [fetchCourseAssignments, fetchCourseLessons])
+  }, [fetchCourseAssignments, fetchCourseLessons, fetchCourseLeaderboard])
 
   const loadAdminDashboard = useCallback(async () => {
     if (!currentUser || currentRole !== 'admin') {
@@ -1240,6 +1254,7 @@ function App() {
     try {
       const response = await api.post(`/api/assignments/${assignmentId}/submissions`, { answers })
       const submission = response.data?.submission
+      const pointsEarned = response.data?.pointsEarned || 0
 
       setCourseAssignments(prev =>
         prev.map(item =>
@@ -1248,6 +1263,13 @@ function App() {
             : item
         )
       )
+      
+      if (pointsEarned > 0) {
+        showSuccess(`Tuyệt vời! Cậu đạt 100% và nhận được ${pointsEarned} điểm.`)
+        if (currentUser) {
+          fetchMyProfile()
+        }
+      }
       return true
     } catch (error) {
       showError(error.response?.data?.message || 'Không nộp được trắc nghiệm.')
@@ -1436,9 +1458,9 @@ function App() {
       } catch (error) {
         const message = error.response?.data?.message || 'Không tải được bài học.'
         showError(message)
-        setLessonRouteSlug(null)
         setLessonRouteLesson(null)
         setLessonRouteCourse(null)
+        navigate('/courses')
       } finally {
         setLessonRouteLoading(false)
       }
@@ -2023,10 +2045,7 @@ function App() {
       showSuccess(response.data.message || 'Đã cập nhật tiến độ.')
       fetchMyEnrollments()
       if (currentUser) {
-        setPointsByUser(prev => ({
-          ...prev,
-          [currentUser]: (prev[currentUser] || 0) + 10
-        }))
+        fetchMyProfile()
       }
     } catch (error) {
       showError(error.response?.data?.message || 'Không cập nhật được tiến độ.')
@@ -2364,10 +2383,10 @@ function App() {
   }, [activeTab, currentRole, loadAdminDashboard])
 
   useEffect(() => {
-    if (activeTab === 'profile' && currentUser && !myProfile && !myProfileLoading) {
+    if (currentUser && !myProfile && !myProfileLoading) {
       fetchMyProfile()
     }
-  }, [activeTab, currentUser, fetchMyProfile, myProfile, myProfileLoading])
+  }, [currentUser, fetchMyProfile, myProfile, myProfileLoading])
 
   useEffect(() => {
     if (lessonRouteSlug) {
@@ -2396,17 +2415,15 @@ function App() {
     return new Set((lessonRouteEnrollment?.completedLessons || []).map(item => String(item)))
   }, [lessonRouteEnrollment])
 
-  const currentUserPoints = currentUser ? pointsByUser[currentUser] || 0 : 0
+  const currentUserPoints = currentUser ? (myProfile?.points || 0) : 0
   const { currentRank, nextRank, pointsToNext } = useMemo(
     () => getRankInfo(currentUserPoints, rankTiers),
     [currentUserPoints]
   )
 
   const rankLeaderboard = useMemo(() => {
-    return Object.entries(pointsByUser)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-  }, [pointsByUser])
+    return []
+  }, [])
 
   const canCompleteLesson = Boolean(currentUser) && (currentRole === 'student' || currentRole === 'user')
   const isLessonCompleted = lessonRouteLesson
@@ -2509,6 +2526,7 @@ function App() {
                     onSelectCourse={handleSelectLmsCourse}
                     lessons={courseLessons}
                     assignments={courseAssignments}
+                    courseLeaderboard={courseLeaderboard}
                     assignmentDrafts={assignmentDrafts}
                     onAssignmentDraftChange={handleAssignmentDraftChange}
                     onSubmitAssignment={handleSubmitAssignment}
@@ -2537,6 +2555,7 @@ function App() {
                     onSelectCourse={handleSelectLmsCourse}
                     lessons={courseLessons}
                     assignments={courseAssignments}
+                    courseLeaderboard={courseLeaderboard}
                     assignmentDrafts={assignmentDrafts}
                     onAssignmentDraftChange={handleAssignmentDraftChange}
                     onSubmitAssignment={handleSubmitAssignment}

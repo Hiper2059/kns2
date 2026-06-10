@@ -3,6 +3,7 @@ const Assignment = require('../models/Assignment');
 const Submission = require('../models/Submission');
 const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
+const User = require('../models/User');
 const { isStudentRole } = require('../utils/userUtils');
 const { getPaginationParams, buildPagination } = require('../utils/pagination');
 const catchAsync = require('../utils/catchAsync');
@@ -317,6 +318,14 @@ const upsertSubmission = catchAsync(async (req, res) => {
     };
   }
 
+  let isNewPerfectScore = false;
+  if (assignment.type === 'quiz' && submissionPayload.score === 100) {
+    const existingSubmission = await Submission.findOne({ assignment: assignment._id, student: req.currentUser._id });
+    if (!existingSubmission || existingSubmission.score !== 100) {
+      isNewPerfectScore = true;
+    }
+  }
+
   const submission = await Submission.findOneAndUpdate(
     { assignment: assignment._id, student: req.currentUser._id },
     {
@@ -326,7 +335,15 @@ const upsertSubmission = catchAsync(async (req, res) => {
     { new: true, upsert: true }
   );
 
-  res.json({ message: 'Da nop bai.', submission });
+  if (isNewPerfectScore) {
+    await Enrollment.findOneAndUpdate(
+      { course: assignment.course, student: req.currentUser._id },
+      { $inc: { points: 20 } }
+    );
+    await User.findByIdAndUpdate(req.currentUser._id, { $inc: { points: 20 } });
+  }
+
+  res.json({ message: 'Da nop bai.', submission, pointsEarned: isNewPerfectScore ? 20 : 0 });
 });
 
 const listSubmissions = catchAsync(async (req, res) => {

@@ -127,6 +127,10 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null
     },
+    points: {
+      type: Number,
+      default: 0
+    },
     profile: {
       type: userProfileSchema,
       default: undefined

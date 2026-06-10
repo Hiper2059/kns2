@@ -11,6 +11,21 @@ const LessonView = require('../models/LessonView');
 const { getPaginationParams, buildPagination } = require('../utils/pagination');
 const catchAsync = require('../utils/catchAsync');
 
+const getCourseCounts = async (courses) => {
+  return Promise.all(courses.map(async (course) => {
+    const [lessonCount, enrollmentCount] = await Promise.all([
+      Lesson.countDocuments({ course: course._id }),
+      Enrollment.countDocuments({ course: course._id })
+    ]);
+    return {
+      ...course,
+      lessonCount,
+      studentCount: enrollmentCount,
+      enrollmentCount
+    };
+  }));
+};
+
 const listCourses = catchAsync(async (req, res) => {
   const { category } = req.query;
   const filter = {};
@@ -28,9 +43,11 @@ const listCourses = catchAsync(async (req, res) => {
     Course.countDocuments(filter)
   ]);
 
+  const coursesWithCounts = await getCourseCounts(courses);
+
   res.json({
-    data: courses,
-    courses,
+    data: coursesWithCounts,
+    courses: coursesWithCounts,
     pagination: buildPagination({ totalItems, page, limit })
   });
 });
@@ -48,9 +65,11 @@ const listMyCourses = catchAsync(async (req, res) => {
     Course.countDocuments(filter)
   ]);
 
+  const coursesWithCounts = await getCourseCounts(courses);
+
   res.json({
-    data: courses,
-    courses,
+    data: coursesWithCounts,
+    courses: coursesWithCounts,
     pagination: buildPagination({ totalItems, page, limit })
   });
 });

@@ -57,6 +57,10 @@ const enrollmentSchema = new mongoose.Schema(
       type: Number,
       default: 0
     },
+    points: {
+      type: Number,
+      default: 0
+    },
     evaluation: {
       type: evaluationSchema,
       default: () => ({})

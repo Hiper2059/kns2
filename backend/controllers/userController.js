@@ -208,6 +208,7 @@ const buildPublicProfile = async user => {
     _id: user._id,
     username: user.username,
     role: user.role,
+    points: user.points || 0,
     profile: serializeProfileForRole(user)
   };
 

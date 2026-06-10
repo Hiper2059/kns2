@@ -9,7 +9,8 @@ import {
   Search,
   ShieldCheck,
   UserRound,
-  Users
+  Users,
+  Settings
 } from 'lucide-react'
 import { getApiErrorMessage } from '../utils/apiMessages'
 import { useUI } from '../context/UIContext'
@@ -83,7 +84,8 @@ const ManageView = ({
     { id: 'comments', label: 'Bình luận' },
     { id: 'moderation', label: 'Kiểm duyệt' },
     { id: 'reports', label: 'Báo cáo' },
-    { id: 'content', label: 'Nội dung' }
+    { id: 'content', label: 'Nội dung' },
+    { id: 'settings', label: 'Cài đặt' }
   ]
 
   const navMeta = {
@@ -93,7 +95,8 @@ const ManageView = ({
     comments: { label: 'Bình luận', icon: MessageSquare },
     moderation: { label: 'Kiểm duyệt', icon: ShieldCheck },
     reports: { label: 'Báo cáo', icon: Flag },
-    content: { label: 'Nội dung', icon: FileText }
+    content: { label: 'Nội dung', icon: FileText },
+    settings: { label: 'Cài đặt', icon: Settings }
   }
 
   const getReportTargetLabel = targetType => {
@@ -183,10 +186,10 @@ const ManageView = ({
                 <button
                   key={item.id}
                   type="button"
-                  className={`flex items-center gap-3 w-full px-4 h-12 flex-shrink-0 text-[14px] font-bold rounded-xl transition-all cursor-pointer ${
+                  className={`flex items-center gap-2 md:gap-3 lg:w-full px-4 h-10 md:h-12 flex-shrink-0 text-[13px] md:text-[14px] font-bold rounded-xl transition-all cursor-pointer ${
                     isActive 
                       ? 'bg-blue-600 text-white shadow-[0_4px_14px_0_rgb(37,99,235,0.39)]' 
-                      : 'hover:bg-slate-800 hover:text-white text-slate-400'
+                      : 'bg-slate-800/50 lg:bg-transparent hover:bg-slate-800 hover:text-white text-slate-400'
                   }`}
                   onClick={() => setActiveSection(item.id)}
                 >
@@ -331,7 +334,7 @@ const ManageView = ({
                     <div className="flex items-center gap-3">
                       <select className={baseInputClass} value={newUserData.role} onChange={event => onNewUserDataChange({ ...newUserData, role: event.target.value })}>
                         <option value="student">student</option>
-                        <option value="user">user</option>
+                        <option value="teacher">teacher</option>
                         <option value="admin">admin</option>
                       </select>
                       <button className={baseButtonClass} onClick={onCreateUser}>Tạo</button>
@@ -604,6 +607,23 @@ const ManageView = ({
                       </div>
                     )) : <div className="py-10 text-center text-slate-500 font-medium">Không có bài viết diễn đàn nào.</div>}
                   </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'settings' && (
+              <div className="flex flex-col gap-6">
+                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col items-center justify-center py-20 px-6 text-center">
+                  <div className="w-20 h-20 bg-slate-50 border border-slate-200 rounded-full flex items-center justify-center text-slate-400 mb-6 shadow-sm">
+                    <Settings size={32} />
+                  </div>
+                  <h4 className="text-2xl font-black text-slate-900 mb-2">Cài đặt hệ thống</h4>
+                  <p className="text-[15px] font-medium text-slate-500 max-w-md mx-auto leading-relaxed">
+                    Tính năng Cài đặt hệ thống hiện đang được phát triển. Trong các phiên bản tới, bạn có thể tùy chỉnh thông báo, phân quyền, giao diện hệ thống và nhiều tiện ích khác tại đây.
+                  </p>
+                  <button className="mt-8 px-6 py-3 bg-blue-50 text-blue-600 border border-blue-100 rounded-xl font-bold text-[14px] hover:bg-blue-100 transition-colors" onClick={() => setActiveSection('overview')}>
+                    Trở lại Tổng quan
+                  </button>
                 </div>
               </div>
             )}

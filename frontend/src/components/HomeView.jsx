@@ -63,14 +63,14 @@ const HomeView = ({
       <div className="grid min-w-0 grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* Rank Progress Card */}
-        <div className="gsap-animate glass-card min-w-0 p-5 sm:p-8 flex flex-col justify-center bg-white/85 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-xl hover:shadow-2xl transition-shadow duration-300">
+        <div className="gsap-animate glass-card min-w-0 p-5 sm:p-8 flex flex-col justify-center bg-white/85 border border-zinc-200 rounded-3xl shadow-xl hover:shadow-2xl transition-shadow duration-300">
           <div className="flex min-w-0 flex-wrap items-center gap-4 mb-4">
             <div className="p-3 bg-teal-100 text-teal-700 rounded-2xl">
               <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <h3 className="text-2xl font-bold text-zinc-800 dark:text-zinc-100">Hệ thống Rank</h3>
+            <h3 className="text-2xl font-bold text-zinc-800">Hệ thống Rank</h3>
           </div>
 
           {currentUser ? (
