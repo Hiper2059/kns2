@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState, Fragment } from 'react'
 import {
   BarChart3,
   BookOpen,
@@ -280,7 +280,8 @@ const ManageView = ({
                   </div>
                   <div className="flex flex-col max-h-[500px] overflow-y-auto bg-slate-50">
                     {managedUsers.length ? managedUsers.map(user => (
-                      <div key={user.username} className="p-6 border-b border-slate-200 flex flex-col lg:flex-row justify-between gap-6 hover:bg-slate-100/50 transition-colors bg-white">
+                      <React.Fragment key={user.username}>
+                        <div className="p-6 border-b border-slate-200 flex flex-col lg:flex-row justify-between gap-6 hover:bg-slate-100/50 transition-colors bg-white">
                         <div className="flex-1">
                           <strong className="block text-[16px] font-black text-slate-900 mb-2">{user.username} {user.displayName ? `(${user.displayName})` : ''}</strong>
                           <div className="flex flex-wrap gap-2 text-[13px] font-bold">
@@ -343,7 +344,7 @@ const ManageView = ({
                           }}>Lưu thay đổi</button>
                         </div>
                       )}
-                      </div>
+                      </React.Fragment>
                     )) : <div className="p-8 text-center text-slate-500 font-medium">Chưa có dữ liệu người dùng.</div>}
                   </div>
                 </div>

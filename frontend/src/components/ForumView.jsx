@@ -38,6 +38,11 @@ const ForumView = ({
 }) => {
   const [isComposerOpen, setIsComposerOpen] = React.useState(false)
 
+  const handlePostSubmit = async () => {
+    await onPostSubmit();
+    setIsComposerOpen(false);
+  }
+
   return (
   <div className="w-full max-w-7xl mx-auto px-4 md:px-6 py-8 min-w-0">
     <div className="flex items-center gap-3 mb-8">
