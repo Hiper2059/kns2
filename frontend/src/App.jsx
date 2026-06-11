@@ -2610,6 +2610,9 @@ function App() {
                     forumScope={forumScope}
                     forumCourse={forumCourse}
                     onOpenProfile={handleOpenProfile}
+                    currentRole={currentRole}
+                    onAdminDeletePost={handleAdminDeletePost}
+                    onAdminPunishComment={handlePunishForumComment}
                   />
                 } />
 

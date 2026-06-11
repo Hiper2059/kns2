@@ -1,6 +1,6 @@
 import React from 'react'
 import RichTextEditor from './RichTextEditor'
-import { MessageSquare, Heart, AlertTriangle, Send, ChevronLeft, ChevronRight, PenSquare, Hash, UserCircle2 } from 'lucide-react'
+import { MessageSquare, Heart, AlertTriangle, Send, ChevronLeft, ChevronRight, PenSquare, Hash, UserCircle2, Trash2 } from 'lucide-react'
 
 const ComposeField = ({ label, hint, children, className = '', as = 'label' }) => {
   const FieldTag = as
@@ -35,7 +35,10 @@ const ForumView = ({
   filteredForumPosts,
   forumScope,
   forumCourse,
-  onOpenProfile
+  onOpenProfile,
+  currentRole,
+  onAdminDeletePost,
+  onAdminPunishComment
 }) => {
   const [isComposerOpen, setIsComposerOpen] = React.useState(false)
 
@@ -196,6 +199,16 @@ const ForumView = ({
                     <Heart size={16} className={post.isHearted ? 'fill-current' : ''} />
                     <span>{post.heartCount || 0}</span>
                   </button>
+                  {currentRole === 'admin' && (
+                    <button
+                      className="inline-flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-bold transition-colors bg-red-50 text-red-600 hover:bg-red-100"
+                      onClick={() => onAdminDeletePost?.(post)}
+                      aria-label="Xóa bài viết"
+                    >
+                      <Trash2 size={16} />
+                      <span>Xóa bài</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Post Content */}
@@ -236,6 +249,22 @@ const ForumView = ({
                             >
                               Báo cáo
                             </button>
+                            {currentRole === 'admin' && (
+                              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  className="cursor-pointer inline-flex items-center text-[11px] font-bold text-red-500 hover:text-red-700 transition-all"
+                                  onClick={() => onAdminPunishComment?.(comment, 'warn')}
+                                >
+                                  Xóa
+                                </button>
+                                <button
+                                  className="cursor-pointer inline-flex items-center text-[11px] font-bold text-red-500 hover:text-red-700 transition-all"
+                                  onClick={() => onAdminPunishComment?.(comment, 'ban')}
+                                >
+                                  Ban User
+                                </button>
+                              </div>
+                            )}
                           </div>
                           <span className="text-[14px] text-slate-600 leading-snug">{comment.text}</span>
                         </div>
