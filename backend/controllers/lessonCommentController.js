@@ -6,6 +6,7 @@ const LessonComment = require('../models/LessonComment');
 const { isStudentRole } = require('../utils/userUtils');
 const { getPaginationParams, buildPagination } = require('../utils/pagination');
 const catchAsync = require('../utils/catchAsync');
+const { getProfileForUser, getProfileMapByUserIds } = require('../services/userProfileService');
 
 const listComments = catchAsync(async (req, res) => {
   const { lessonId } = req.params;
@@ -30,9 +31,11 @@ const listComments = catchAsync(async (req, res) => {
   ]);
 
   const authorIds = [...new Set(comments.map(c => String(c.author)).filter(id => id && id !== 'null'))];
-  const authors = await mongoose.model('User').find({ _id: { $in: authorIds } }, { 'profile.displayName': 1, username: 1 }).lean();
+  const authors = await mongoose.model('User').find({ _id: { $in: authorIds } }, { username: 1, role: 1, profile: 1 }).lean();
+  const profileMap = await getProfileMapByUserIds(authorIds);
   const authorMap = authors.reduce((acc, user) => {
-    acc[String(user._id)] = user.profile?.displayName || user.username;
+    const profile = profileMap[String(user._id)] || {};
+    acc[String(user._id)] = profile.displayName || user.profile?.displayName || user.username;
     return acc;
   }, {});
 
@@ -94,12 +97,13 @@ const createComment = catchAsync(async (req, res) => {
     }
   }
 
+  const currentProfile = await getProfileForUser(req.currentUser);
   const created = await LessonComment.create({
     lesson: lesson._id,
     course: course ? course._id : null,
     parentComment: parentComment ? parentComment._id : null,
     author: req.currentUser?._id || null,
-    authorName: req.currentUser?.profile?.displayName || req.currentUser?.username || 'Khách',
+    authorName: currentProfile.displayName || req.currentUser?.username || 'Khách',
     content: String(content).trim()
   });
 

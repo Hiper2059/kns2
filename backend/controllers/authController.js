@@ -5,6 +5,7 @@ const User = require('../models/User');
 const { createAuthTokens, createAuthTokensForPayload } = require('../utils/token');
 const { comparePassword, hashPassword } = require('../utils/password');
 const { getEffectiveStatus, getEffectiveViolationCount } = require('../utils/userUtils');
+const { ensureUserProfile } = require('../services/userProfileService');
 
 const register = async (req, res) => {
   try {
@@ -28,11 +29,9 @@ const register = async (req, res) => {
     const newUser = await User.create({ 
       username: normalizedUsername, 
       passwordHash, 
-      role: roles.STUDENT,
-      profile: {
-        displayName: displayName ? String(displayName).trim() : ''
-      }
+      role: roles.STUDENT
     });
+    await ensureUserProfile(newUser, { displayName });
     res.json({ message: 'Đăng ký thành công mỹ mãn!' });
   } catch (error) {
     console.error('Loi dang ky:', error);

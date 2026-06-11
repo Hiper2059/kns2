@@ -5,6 +5,7 @@ const User = require('../models/User');
 const { isStudentRole } = require('../utils/userUtils');
 const { getPaginationParams, buildPagination } = require('../utils/pagination');
 const catchAsync = require('../utils/catchAsync');
+const { getProfileMapByUserIds } = require('../services/userProfileService');
 
 const enrollCourse = catchAsync(async (req, res) => {
   const { courseId } = req.params;
@@ -166,15 +167,16 @@ const getCourseLeaderboard = catchAsync(async (req, res) => {
   const enrollments = await Enrollment.find({ course: courseId })
     .sort({ points: -1, createdAt: 1 })
     .limit(10)
-    .populate('student', 'username profile.displayName profile.avatarUrl points')
+    .populate('student', 'username role profile points')
     .lean();
+  const profileMap = await getProfileMapByUserIds(enrollments.map(en => en.student?._id).filter(Boolean));
 
   const leaderboard = enrollments.map((en, index) => ({
     rank: index + 1,
     studentId: en.student?._id,
     username: en.studentName,
-    displayName: en.student?.profile?.displayName || en.studentName,
-    avatarUrl: en.student?.profile?.avatarUrl || null,
+    displayName: profileMap[String(en.student?._id)]?.displayName || en.student?.profile?.displayName || en.studentName,
+    avatarUrl: profileMap[String(en.student?._id)]?.avatarUrl || en.student?.profile?.avatarUrl || null,
     coursePoints: en.points || 0,
     globalPoints: en.student?.points || 0
   }));

@@ -11,10 +11,17 @@ const passwordSchema = z
   .min(6, 'password can toi thieu 6 ky tu.')
   .max(128, 'password toi da 128 ky tu.');
 
+const displayNameSchema = z
+  .string({ error: 'displayName phai la chuoi.' })
+  .trim()
+  .max(100, 'displayName toi da 100 ky tu.')
+  .optional();
+
 const registerSchema = {
   body: z.object({
     username: usernameSchema,
-    password: passwordSchema
+    password: passwordSchema,
+    displayName: displayNameSchema
   }).strict()
 };
 

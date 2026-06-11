@@ -6,6 +6,13 @@ const { normalizeRole, allowedStatuses } = require('../utils/userUtils');
 const { hashPassword } = require('../utils/password');
 const { getPaginationParams, buildPagination } = require('../utils/pagination');
 const catchAsync = require('../utils/catchAsync');
+const {
+  ensureUserProfile,
+  getDisplayNameMapByUsernames,
+  getProfileForUser,
+  updateProfileForUser
+} = require('../services/userProfileService');
+const { hardDeleteUserCascade } = require('../services/userDeletionService');
 
 const teacherProfileFields = [
   'mainSubject',
@@ -114,11 +121,9 @@ const createUser = catchAsync(async (req, res) => {
   const created = await User.create({
     username: normalizedUsername,
     passwordHash,
-    role: normalizeRole(role),
-    profile: {
-      displayName: String(displayName || '').trim()
-    }
+    role: normalizeRole(role)
   });
+  await ensureUserProfile(created, { displayName });
 
   res.status(201).json({
     message: 'Đã tạo tài khoản thành công.',
@@ -138,10 +143,18 @@ const listUsers = catchAsync(async (req, res) => {
       .lean(),
     User.countDocuments(filter)
   ]);
+  const displayNameMap = await getDisplayNameMapByUsernames(safeUsers.map(user => user.username));
+  const usersWithProfiles = safeUsers.map(user => ({
+    ...user,
+    displayName: displayNameMap[user.username] && displayNameMap[user.username] !== user.username ? displayNameMap[user.username] : '',
+    profile: {
+      displayName: displayNameMap[user.username] && displayNameMap[user.username] !== user.username ? displayNameMap[user.username] : ''
+    }
+  }));
 
   res.json({
-    data: safeUsers,
-    users: safeUsers,
+    data: usersWithProfiles,
+    users: usersWithProfiles,
     pagination: buildPagination({ totalItems, page, limit })
   });
 });
@@ -172,14 +185,13 @@ const updateUserDetails = catchAsync(async (req, res) => {
     return res.status(404).json({ message: 'Không tìm thấy người dùng.' });
   }
 
-  if (displayName && displayName.trim()) {
-    user.profile.displayName = displayName.trim();
+  if (displayName !== undefined) {
+    await ensureUserProfile(user, { displayName });
   }
 
   if (password && password.trim()) {
-    const bcrypt = require('bcryptjs');
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(password.trim(), salt);
+    user.passwordHash = await hashPassword(password.trim());
+    user.password = undefined;
   }
 
   await user.save();
@@ -212,28 +224,29 @@ const deleteUser = catchAsync(async (req, res) => {
   const adminUsername = req.currentUser?.username;
 
   if (!username) {
-    return res.status(400).json({ message: 'Thiếu username cần xóa.' });
+    return res.status(400).json({ message: 'Thieu username can xoa.' });
   }
 
   if (username === adminUsername) {
-    return res.status(400).json({ message: 'Không thể tự xóa tài khoản admin đang đăng nhập.' });
+    return res.status(400).json({ message: 'Khong the tu xoa tai khoan admin dang dang nhap.' });
   }
 
-  const deleted = await User.findOneAndDelete({ username });
-  if (!deleted) {
-    return res.status(404).json({ message: 'Không tìm thấy người dùng.' });
+  const user = await User.findOne({ username });
+  if (!user) {
+    return res.status(404).json({ message: 'Khong tim thay nguoi dung.' });
   }
 
-  res.json({ message: `Đã xóa tài khoản ${username}.` });
+  const deletedCounts = await hardDeleteUserCascade(user);
+  res.json({ message: `Da xoa tai khoan ${username}.`, deletedCounts });
 });
-
 const buildPublicProfile = async user => {
+  const profile = await getProfileForUser(user);
   const profilePayload = {
     _id: user._id,
     username: user.username,
     role: user.role,
     points: user.points || 0,
-    profile: serializeProfileForRole(user)
+    profile
   };
 
   if (user.role === 'teacher') {
@@ -276,36 +289,13 @@ const updateMyProfile = catchAsync(async (req, res) => {
   const payload = req.body || {};
   const user = await User.findById(req.currentUser._id);
   if (!user) {
-    return res.status(404).json({ message: 'Không tìm thấy người dùng.' });
+    return res.status(404).json({ message: 'Khong tim thay nguoi dung.' });
   }
 
-  const nextProfile = serializeProfileForRole(user);
-
-  if (payload.displayName !== undefined) nextProfile.displayName = String(payload.displayName).trim();
-  if (payload.stageName !== undefined) nextProfile.stageName = String(payload.stageName).trim();
-  if (payload.avatarUrl !== undefined) nextProfile.avatarUrl = String(payload.avatarUrl).trim();
-  if (payload.bio !== undefined) nextProfile.bio = String(payload.bio).trim();
-
-  const roleProfileKey = getRoleProfileKey(user.role);
-
-  if (roleProfileKey === 'teacher' && payload.teacher && typeof payload.teacher === 'object') {
-    nextProfile.teacher = { ...(nextProfile.teacher || {}) };
-    assignStringFields(nextProfile.teacher, payload.teacher, teacherProfileFields);
-  }
-
-  if (roleProfileKey === 'student' && payload.student && typeof payload.student === 'object') {
-    nextProfile.student = { ...(nextProfile.student || {}) };
-    assignStringFields(nextProfile.student, payload.student, studentProfileFields);
-  }
-
-  user.profile = compactObject(nextProfile);
-  user.markModified('profile');
-  await user.save();
-
+  await updateProfileForUser(user, payload);
   const profilePayload = await buildPublicProfile(user.toObject());
-  res.json({ message: 'Đã cập nhật hồ sơ.', user: profilePayload });
+  res.json({ message: 'Da cap nhat ho so.', user: profilePayload });
 });
-
 module.exports = {
   createUser,
   listUsers,

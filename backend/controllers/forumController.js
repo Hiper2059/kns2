@@ -7,6 +7,7 @@ const User = require('../models/User');
 const { isStudentRole } = require('../utils/userUtils');
 const { getPaginationParams, buildPagination } = require('../utils/pagination');
 const catchAsync = require('../utils/catchAsync');
+const { getDisplayNameMapByUsernames, getProfileForUser } = require('../services/userProfileService');
 
 const normalizeScope = value => (value === 'course' ? 'course' : 'general');
 const generalForumPostCondition = () => ({ $or: [{ scope: { $exists: false } }, { scope: 'general' }] });
@@ -120,11 +121,7 @@ const getPosts = catchAsync(async (req, res) => {
   ]);
 
   const authorUsernames = [...new Set(posts.map(p => p.author))];
-  const authors = await User.find({ username: { $in: authorUsernames } }, { username: 1, 'profile.displayName': 1 }).lean();
-  const authorMap = authors.reduce((acc, user) => {
-    acc[user.username] = user.profile?.displayName || user.username;
-    return acc;
-  }, {});
+  const authorMap = await getDisplayNameMapByUsernames(authorUsernames);
 
   const formattedPosts = posts.map(post => {
     const formatted = formatPostForUser(post, userKey);
@@ -170,7 +167,8 @@ const createPost = catchAsync(async (req, res) => {
   const payload = created.toObject();
   payload.heartCount = (payload.heartUserIds || []).length;
   payload.isHearted = false;
-  payload.authorDisplayName = req.currentUser?.profile?.displayName || req.currentUser?.username || created.author;
+  const currentProfile = await getProfileForUser(req.currentUser);
+  payload.authorDisplayName = currentProfile.displayName || req.currentUser?.username || created.author;
 
   res.status(201).json({ post: payload });
 });
@@ -250,11 +248,7 @@ const getComments = catchAsync(async (req, res) => {
   ]);
 
   const authorUsernames = [...new Set(comments.map(c => c.author))];
-  const authors = await User.find({ username: { $in: authorUsernames } }, { username: 1, 'profile.displayName': 1 }).lean();
-  const authorMap = authors.reduce((acc, user) => {
-    acc[user.username] = user.profile?.displayName || user.username;
-    return acc;
-  }, {});
+  const authorMap = await getDisplayNameMapByUsernames(authorUsernames);
 
   const formattedComments = comments.map(comment => {
     return { ...comment, authorDisplayName: authorMap[comment.author] || comment.author };
@@ -292,7 +286,8 @@ const createComment = catchAsync(async (req, res) => {
   });
 
   const payload = created.toObject();
-  payload.authorDisplayName = req.currentUser?.profile?.displayName || req.currentUser?.username || created.author;
+  const currentProfile = await getProfileForUser(req.currentUser);
+  payload.authorDisplayName = currentProfile.displayName || req.currentUser?.username || created.author;
 
   res.status(201).json({ comment: payload });
 });
