@@ -11,8 +11,50 @@ import {
   Search,
   Sparkles,
   Users,
-  Trophy
+  Trophy,
+  PlusCircle,
+  Pencil,
+  Trash2,
+  Image as ImageIcon,
+  Film,
+  FileText,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react'
+import RichTextEditor from './RichTextEditor'
+
+const baseInputClass = "h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-[14px] font-medium text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-400"
+const baseFileInputClass = "block w-full text-[14px] text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-[14px] file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors file:cursor-pointer"
+const baseButtonClass = "inline-flex cursor-pointer items-center justify-center gap-2 h-11 px-6 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold transition-all disabled:opacity-50"
+const ghostButtonClass = "inline-flex cursor-pointer items-center justify-center gap-2 h-11 px-6 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-all"
+const dangerButtonClass = "inline-flex cursor-pointer items-center justify-center gap-2 h-11 px-6 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-bold transition-all"
+
+const FormField = ({ label, hint, children, className = '', as = 'label' }) => {
+  const FieldTag = as
+  return (
+    <FieldTag className={`flex flex-col gap-1.5 ${className}`}>
+      <span className="text-[14px] font-bold text-slate-700">{label}</span>
+      {hint && <span className="text-[12px] font-medium text-slate-500">{hint}</span>}
+      {children}
+    </FieldTag>
+  )
+}
+
+const CreatePanel = ({ title, eyebrow, description, isOpen, onToggle, children }) => (
+  <section className={`bg-white border border-slate-200 rounded-[24px] shadow-sm mb-6 overflow-hidden transition-all duration-300 ${isOpen ? 'ring-2 ring-blue-100' : ''}`}>
+    <button type="button" className="w-full flex items-center justify-between p-6 md:p-8 text-left bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer" onClick={onToggle} aria-expanded={isOpen}>
+      <div>
+        <span className="block text-[13px] font-black uppercase text-blue-600 mb-2 tracking-wide">{eyebrow}</span>
+        <strong className="block text-xl md:text-2xl font-black text-slate-900 mb-1">{title}</strong>
+        <small className="block text-[14px] text-slate-500 font-medium">{description}</small>
+      </div>
+      <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-700">
+        {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+      </span>
+    </button>
+    {isOpen && <div className="p-6 md:p-8 border-t border-slate-200 bg-white">{children}</div>}
+  </section>
+)
 
 const answerLabel = index => String.fromCharCode(65 + index)
 
@@ -40,11 +82,23 @@ const LmsView = ({
   onOpenLesson,
   onOpenCourseForum,
   onLoadEnrollments,
-  onDeleteLesson
+  onDeleteLesson,
+  newLessonData,
+  onNewLessonDataChange,
+  onCreateLesson,
+  editLessonId,
+  editLessonData,
+  onEditLessonStart,
+  onEditLessonChange,
+  onEditLessonCancel,
+  onUpdateLesson,
+  onUploadLessonEditorVideo,
+  onUploadEditLessonEditorVideo
 }) => {
   const { showWarning } = useUI()
   const [quizDrafts, setQuizDrafts] = useState({})
   const [courseSearch, setCourseSearch] = useState('')
+  const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false)
   const isTeacher = currentRole === 'teacher'
   const isAdmin = currentRole === 'admin'
   const canManageLearning = isTeacher || isAdmin
@@ -241,11 +295,11 @@ const LmsView = ({
       </div>
 
       <nav className="gsap-animate mt-7 flex gap-2 overflow-x-auto border-b border-slate-100 pb-2" aria-label="Mục lục lớp học">
-        {categoryStats.map(category => {
+        {categoryStats.map((category, index) => {
           const isActive = selectedCategory === category.name
           return (
             <button
-              key={category.name}
+              key={category.name || `category-${index}`}
               type="button"
               className={`flex h-11 shrink-0 cursor-pointer items-center gap-3 border-b-2 px-5 text-[15px] font-black transition ${
                 isActive ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-900'
@@ -280,9 +334,9 @@ const LmsView = ({
 
           <div className="mt-6 flex overflow-x-auto gap-6 pb-6 snap-x hide-scrollbar">
             {visibleCourses.length ? (
-              visibleCourses.map(course => (
+              visibleCourses.map((course, index) => (
                 <button
-                  key={course._id}
+                  key={course._id || course.id || `${course.title || 'course'}-${index}`}
                   type="button"
                   className={`gsap-animate shrink-0 w-[280px] snap-start flex flex-col cursor-pointer min-h-[230px] rounded-2xl border bg-white p-5 text-left shadow-[0_10px_26px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-[0_18px_38px_rgba(37,99,235,0.12)] ${
                     selectedCourse?._id === course._id ? 'border-blue-400 ring-4 ring-blue-50' : 'border-slate-200'
@@ -399,8 +453,8 @@ const LmsView = ({
                     </h3>
                     <div className="flex flex-col gap-4">
                       {teacherEnrollments?.length ? (
-                        teacherEnrollments.map(enItem => (
-                          <div key={enItem._id} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                        teacherEnrollments.map((enItem, index) => (
+                          <div key={enItem._id || enItem.student || `${enItem.studentName || 'student'}-${index}`} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl">
                             <span className="text-[15px] font-bold text-slate-800">{enItem.studentName}</span>
                             <strong className="px-3 py-1 rounded-lg bg-emerald-100 text-emerald-700 text-[13px] font-bold">{enItem.progressPercent || 0}% hoàn thành</strong>
                           </div>
@@ -422,7 +476,7 @@ const LmsView = ({
                   <div className="flex flex-col gap-3">
                     {courseLeaderboard?.length ? (
                       courseLeaderboard.map((user, idx) => (
-                        <div key={user.studentId} className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors">
+                        <div key={user.studentId || user.username || `leaderboard-${idx}`} className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition-colors">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
                             idx === 0 ? 'bg-yellow-100 text-yellow-600' :
                             idx === 1 ? 'bg-slate-200 text-slate-600' :
@@ -459,16 +513,117 @@ const LmsView = ({
                   </div>
                 </div>
 
+                {canManageLearning && (
+                  <div className="gsap-animate mb-6">
+                    {editLessonId ? (
+                      <CreatePanel
+                        title="Chỉnh sửa bài học"
+                        eyebrow="Quản lý"
+                        description="Sửa thông tin bài học."
+                        isOpen={true}
+                        onToggle={onEditLessonCancel}
+                      >
+                        <form className="flex flex-col gap-6" onSubmit={event => { event.preventDefault(); onUpdateLesson(editLessonId); }}>
+                          <FormField label="Tiêu đề bài học" hint="Ví dụ: Bài 1: Giới thiệu">
+                            <input required type="text" className={baseInputClass} value={editLessonData?.title || ''} onChange={event => onEditLessonChange({ ...editLessonData, title: event.target.value })} />
+                          </FormField>
+                          <FormField label="Số thứ tự (Order)" hint="Thứ tự hiển thị của bài học">
+                            <input required type="number" min="1" className={baseInputClass} value={editLessonData?.order || 1} onChange={event => onEditLessonChange({ ...editLessonData, order: Number(event.target.value) })} />
+                          </FormField>
+                          <FormField label="URL Video (Tùy chọn)" hint="Link video YouTube hoặc Vimeo">
+                            <div className="flex gap-2">
+                              <input type="url" className={`${baseInputClass} flex-1`} value={editLessonData?.videoUrl || ''} onChange={event => onEditLessonChange({ ...editLessonData, videoUrl: event.target.value })} />
+                              <label className={ghostButtonClass}>
+                                <Film size={18} />
+                                <span>Tải video lên</span>
+                                <input type="file" className="hidden" accept="video/mp4,video/webm" onChange={event => { const file = event.target.files?.[0]; if (file) onEditLessonChange({ ...editLessonData, videoFile: file }); }} />
+                              </label>
+                            </div>
+                            {editLessonData?.videoFile && <div className="text-[13px] text-blue-600 font-medium">Đã chọn file: {editLessonData.videoFile.name}</div>}
+                          </FormField>
+                          <FormField label="URL Ảnh nền (Tùy chọn)" hint="Link ảnh bìa của bài học">
+                            <div className="flex gap-2">
+                              <input type="url" className={`${baseInputClass} flex-1`} value={editLessonData?.imageUrl || ''} onChange={event => onEditLessonChange({ ...editLessonData, imageUrl: event.target.value })} />
+                              <label className={ghostButtonClass}>
+                                <ImageIcon size={18} />
+                                <span>Tải ảnh lên</span>
+                                <input type="file" className="hidden" accept="image/jpeg,image/png,image/webp" onChange={event => { const file = event.target.files?.[0]; if (file) onEditLessonChange({ ...editLessonData, imageFile: file }); }} />
+                              </label>
+                            </div>
+                            {editLessonData?.imageFile && <div className="text-[13px] text-blue-600 font-medium">Đã chọn file: {editLessonData.imageFile.name}</div>}
+                          </FormField>
+                          <FormField label="Nội dung bài học">
+                            <div className="rounded-xl border border-slate-200 overflow-hidden">
+                              <RichTextEditor toolbarId="lms-edit-lesson-editor" value={editLessonData?.content || ''} onChange={content => onEditLessonChange({ ...editLessonData, content })} onUploadVideo={onUploadEditLessonEditorVideo} />
+                            </div>
+                          </FormField>
+                          <div className="flex items-center gap-3 justify-end mt-4 pt-6 border-t border-slate-100">
+                            <button type="button" className={ghostButtonClass} onClick={onEditLessonCancel}>Hủy</button>
+                            <button type="submit" className={baseButtonClass}><CheckCircle2 size={18} /> Cập nhật</button>
+                          </div>
+                        </form>
+                      </CreatePanel>
+                    ) : (
+                      <CreatePanel
+                        title="Thêm bài học mới"
+                        eyebrow="Tạo mới"
+                        description="Thêm bài học mới vào lớp này."
+                        isOpen={isCreateLessonOpen}
+                        onToggle={() => setIsCreateLessonOpen(prev => !prev)}
+                      >
+                        <form className="flex flex-col gap-6" onSubmit={event => { event.preventDefault(); onCreateLesson(); setIsCreateLessonOpen(false); }}>
+                          <FormField label="Tiêu đề bài học" hint="Ví dụ: Bài 1: Giới thiệu">
+                            <input required type="text" className={baseInputClass} value={newLessonData?.title || ''} onChange={event => onNewLessonDataChange({ ...newLessonData, title: event.target.value })} />
+                          </FormField>
+                          <FormField label="Số thứ tự (Order)" hint="Thứ tự hiển thị của bài học">
+                            <input required type="number" min="1" className={baseInputClass} value={newLessonData?.order || 1} onChange={event => onNewLessonDataChange({ ...newLessonData, order: Number(event.target.value) })} />
+                          </FormField>
+                          <FormField label="URL Video (Tùy chọn)" hint="Link video YouTube hoặc Vimeo">
+                            <div className="flex gap-2">
+                              <input type="url" className={`${baseInputClass} flex-1`} value={newLessonData?.videoUrl || ''} onChange={event => onNewLessonDataChange({ ...newLessonData, videoUrl: event.target.value })} />
+                              <label className={ghostButtonClass}>
+                                <Film size={18} />
+                                <span>Tải video lên</span>
+                                <input type="file" className="hidden" accept="video/mp4,video/webm" onChange={event => { const file = event.target.files?.[0]; if (file) onNewLessonDataChange({ ...newLessonData, videoFile: file }); }} />
+                              </label>
+                            </div>
+                            {newLessonData?.videoFile && <div className="text-[13px] text-blue-600 font-medium">Đã chọn file: {newLessonData.videoFile.name}</div>}
+                          </FormField>
+                          <FormField label="URL Ảnh nền (Tùy chọn)" hint="Link ảnh bìa của bài học">
+                            <div className="flex gap-2">
+                              <input type="url" className={`${baseInputClass} flex-1`} value={newLessonData?.imageUrl || ''} onChange={event => onNewLessonDataChange({ ...newLessonData, imageUrl: event.target.value })} />
+                              <label className={ghostButtonClass}>
+                                <ImageIcon size={18} />
+                                <span>Tải ảnh lên</span>
+                                <input type="file" className="hidden" accept="image/jpeg,image/png,image/webp" onChange={event => { const file = event.target.files?.[0]; if (file) onNewLessonDataChange({ ...newLessonData, imageFile: file }); }} />
+                              </label>
+                            </div>
+                            {newLessonData?.imageFile && <div className="text-[13px] text-blue-600 font-medium">Đã chọn file: {newLessonData.imageFile.name}</div>}
+                          </FormField>
+                          <FormField label="Nội dung bài học">
+                            <div className="rounded-xl border border-slate-200 overflow-hidden">
+                              <RichTextEditor toolbarId="lms-new-lesson-editor" value={newLessonData?.content || ''} onChange={content => onNewLessonDataChange({ ...newLessonData, content })} onUploadVideo={onUploadLessonEditorVideo} />
+                            </div>
+                          </FormField>
+                          <div className="flex justify-end mt-4 pt-6 border-t border-slate-100">
+                            <button type="submit" className={baseButtonClass}><PlusCircle size={18} /> Tạo bài học</button>
+                          </div>
+                        </form>
+                      </CreatePanel>
+                    )}
+                  </div>
+                )}
+
                 <div className="gsap-animate p-6 md:p-8 bg-white border border-slate-200 rounded-[24px] shadow-sm">
                   <h3 className="flex items-center gap-3 text-xl font-black text-slate-900 mb-6 pb-4 border-b border-slate-100">
                     <span className="grid place-items-center w-10 h-10 rounded-xl bg-blue-50 text-blue-600"><PlayCircle size={18} /></span>
-                    Nội dung bài học
+                    Danh sách bài học
                   </h3>
                   <div className="flex flex-col gap-4">
                     {sortedLessons.length ? (
-                      sortedLessons.map(lesson => (
+                      sortedLessons.map((lesson, index) => (
                         <div
-                          key={lesson._id}
+                          key={lesson._id || lesson.id || `${lesson.title || 'lesson'}-${index}`}
                           className="group flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-2xl hover:border-blue-300 hover:shadow-md transition-all gap-4"
                           onClick={() => onOpenLesson?.(lesson)}
                         >
@@ -487,15 +642,26 @@ const LmsView = ({
                             </span>
 
                             {canManageLearning && (
-                              <button
-                                className="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-[13px] font-bold transition-colors opacity-0 group-hover:opacity-100"
-                                onClick={event => {
-                                  event.stopPropagation()
-                                  onDeleteLesson?.(lesson._id)
-                                }}
-                              >
-                                Xóa
-                              </button>
+                              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  className="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 text-[13px] font-bold transition-colors"
+                                  onClick={event => {
+                                    event.stopPropagation()
+                                    onEditLessonStart?.(lesson)
+                                  }}
+                                >
+                                  Sửa
+                                </button>
+                                <button
+                                  className="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-[13px] font-bold transition-colors"
+                                  onClick={event => {
+                                    event.stopPropagation()
+                                    onDeleteLesson?.(lesson._id)
+                                  }}
+                                >
+                                  Xóa
+                                </button>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -515,19 +681,14 @@ const LmsView = ({
                   </h3>
                   <div className="flex flex-col gap-6">
                     {visibleAssignments.length ? (
-                      visibleAssignments.map(assignment => {
+                      visibleAssignments.map((assignment, index) => {
                         const isQuiz = assignment.type === 'quiz'
                         return (
-                          <div key={assignment._id} className="flex flex-col gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                          <div key={assignment._id || assignment.id || `${assignment.title || 'assignment'}-${index}`} className="flex flex-col gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
                             <div>
                               <h4 className="text-xl font-black text-slate-900 mb-2">{assignment.title}</h4>
                               <p className="text-[15px] text-slate-600">{assignment.description || 'Không có mô tả.'}</p>
                               {renderAssignmentBody(assignment)}
-                              {assignment.dueAt && (
-                                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-[13px] font-bold mt-4">
-                                  Hạn nộp: {new Date(assignment.dueAt).toLocaleString()}
-                                </div>
-                              )}
                             </div>
 
                             {assignment.mySubmission && (

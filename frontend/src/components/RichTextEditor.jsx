@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ReactQuill, { Quill } from 'react-quill'
 import axios from 'axios'
 import 'react-quill/dist/quill.snow.css'
@@ -41,65 +41,29 @@ const normalizePastedText = text => {
   return normalized
 }
 
-const buildModules = toolbarId => ({
+const buildModules = handlers => ({
   toolbar: {
-    container: `#${toolbarId}`,
-    handlers: {}
+    container: [
+      ['bold', 'italic', 'underline'],
+      ['link', 'image', 'video']
+    ],
+    handlers
   }
 })
-
-const defaultInlineFormats = {
-  bold: false,
-  italic: false,
-  underline: false
-}
-
-const applyStickyFormats = (quill, formats, source = 'silent') => {
-  if (!quill) return
-
-  Object.entries(formats).forEach(([name, enabled]) => {
-    quill.format(name, enabled, source)
-  })
-}
-
-const toggleInlineFormat = (quill, format, savedRange, activeFormatsRef, onActiveFormatsChange) => {
-  if (!quill) return
-
-  const fallbackIndex = Math.max((quill.getLength?.() || 1) - 1, 0)
-  const range = quill.getSelection() || savedRange || { index: fallbackIndex, length: 0 }
-  if (!range) return
-
-  const nextFormats = {
-    ...activeFormatsRef.current,
-    [format]: !activeFormatsRef.current[format]
-  }
-
-  activeFormatsRef.current = nextFormats
-  onActiveFormatsChange(nextFormats)
-
-  quill.focus()
-  quill.setSelection(range.index, range.length, 'silent')
-
-  if (range.length > 0) {
-    quill.formatText(range.index, range.length, format, nextFormats[format], 'user')
-    quill.setSelection(range.index, range.length, 'silent')
-    applyStickyFormats(quill, nextFormats)
-    return
-  }
-
-  applyStickyFormats(quill, nextFormats, 'user')
-}
 
 const RichTextEditor = ({ value, onChange, placeholder, toolbarId }) => {
   const { showError } = useUI()
   const imageInputRef = useRef(null)
   const videoInputRef = useRef(null)
   const quillRef = useRef(null)
-  const lastRangeRef = useRef(null)
-  const activeFormatsRef = useRef(defaultInlineFormats)
+  const pendingSelectionRef = useRef(null)
+  const stickyFormatsRef = useRef({
+    bold: false,
+    italic: false,
+    underline: false
+  })
   const [imageProgress, setImageProgress] = useState(0)
   const [videoProgress, setVideoProgress] = useState(0)
-  const [activeFormats, setActiveFormats] = useState(defaultInlineFormats)
 
   const uploadToApi = async (file, type) => {
     if (!file) return null
@@ -138,22 +102,127 @@ const RichTextEditor = ({ value, onChange, placeholder, toolbarId }) => {
     videoInputRef.current?.click()
   }
 
-  const modules = useMemo(() => ({
-    ...buildModules(toolbarId),
-    toolbar: {
-      ...buildModules(toolbarId).toolbar,
-      handlers: {
-        ...buildModules(toolbarId).toolbar.handlers,
-        image: imageHandler,
-        video: videoHandler
+  const restoreSelectionSoon = useCallback(() => {
+    window.requestAnimationFrame(() => {
+      const quillInstance = quillRef.current?.getEditor?.()
+      const selection = pendingSelectionRef.current
+      if (!quillInstance || !selection) {
+        return
+      }
+
+      const maxIndex = Math.max((quillInstance.getLength?.() || 1) - 1, 0)
+      quillInstance.setSelection(Math.min(selection.index, maxIndex), selection.length || 0, 'silent')
+    })
+  }, [])
+
+  const applyInlineFormat = useCallback(format => {
+    const quillInstance = quillRef.current?.getEditor?.()
+    if (!quillInstance) {
+      return
+    }
+
+    const fallbackIndex = Math.max((quillInstance.getLength?.() || 1) - 1, 0)
+    const range = quillInstance.getSelection() || pendingSelectionRef.current || { index: fallbackIndex, length: 0 }
+    const currentFormats = quillInstance.getFormat(range)
+    const enabled = !currentFormats?.[format]
+
+    quillInstance.focus()
+    quillInstance.setSelection(range.index, range.length || 0, 'silent')
+
+    if (range.length > 0) {
+      quillInstance.formatText(range.index, range.length, format, enabled, 'user')
+      quillInstance.setSelection(range.index, range.length, 'silent')
+    } else {
+      quillInstance.format(format, enabled, 'user')
+    }
+
+    stickyFormatsRef.current = {
+      ...stickyFormatsRef.current,
+      [format]: enabled
+    }
+    pendingSelectionRef.current = quillInstance.getSelection() || range
+  }, [])
+
+  const modules = useMemo(
+    () => buildModules({
+      bold: () => applyInlineFormat('bold'),
+      italic: () => applyInlineFormat('italic'),
+      underline: () => applyInlineFormat('underline'),
+      image: imageHandler,
+      video: videoHandler
+    }),
+    [applyInlineFormat]
+  )
+
+  const handleEditorChange = useCallback((content, delta, source, editor) => {
+    const quillInstance = quillRef.current?.getEditor?.()
+    const selection = quillInstance?.getSelection?.()
+    if (selection) {
+      pendingSelectionRef.current = selection
+    }
+
+    onChange?.(content, delta, source, editor)
+
+    if (selection) {
+      restoreSelectionSoon()
+    }
+  }, [onChange, restoreSelectionSoon])
+
+  useEffect(() => {
+    const quillInstance = quillRef.current?.getEditor?.()
+    if (!quillInstance) {
+      return undefined
+    }
+
+    const syncStickyFormats = (range, oldRange, source) => {
+      if (range) {
+        pendingSelectionRef.current = range
+      }
+
+      if (!range || source !== 'user') {
+        return
+      }
+
+      const formats = quillInstance.getFormat(range)
+      stickyFormatsRef.current = {
+        bold: Boolean(formats.bold),
+        italic: Boolean(formats.italic),
+        underline: Boolean(formats.underline)
       }
     }
-  }), [toolbarId])
 
-  const handleInlineFormatClick = format => {
-    const quillInstance = quillRef.current?.getEditor?.()
-    toggleInlineFormat(quillInstance, format, lastRangeRef.current, activeFormatsRef, setActiveFormats)
-  }
+    const preserveStickyFormats = (delta, oldDelta, source) => {
+      if (source !== 'user') {
+        return
+      }
+
+      const range = quillInstance.getSelection()
+      if (!range) {
+        return
+      }
+
+      pendingSelectionRef.current = range
+      if (range.length === 0) {
+        Object.entries(stickyFormatsRef.current).forEach(([format, enabled]) => {
+          if (enabled) {
+            quillInstance.format(format, true, 'silent')
+          }
+        })
+      }
+    }
+
+    quillInstance.on('selection-change', syncStickyFormats)
+    quillInstance.on('text-change', preserveStickyFormats)
+
+    return () => {
+      quillInstance.off('selection-change', syncStickyFormats)
+      quillInstance.off('text-change', preserveStickyFormats)
+    }
+  }, [])
+
+  useEffect(() => {
+    restoreSelectionSoon()
+  }, [value, restoreSelectionSoon])
 
   useEffect(() => {
     const quillInstance = quillRef.current?.getEditor?.()
@@ -176,66 +245,11 @@ const RichTextEditor = ({ value, onChange, placeholder, toolbarId }) => {
       return normalizedDelta || delta
     })
 
-    const preserveStickyFormats = () => {
-      const range = quillInstance.getSelection()
-      if (range) {
-        lastRangeRef.current = range
-        if (range.length === 0) {
-          applyStickyFormats(quillInstance, activeFormatsRef.current)
-        }
-      }
-    }
-
-    quillInstance.on('selection-change', preserveStickyFormats)
-    quillInstance.on('text-change', preserveStickyFormats)
-
-    return () => {
-      quillInstance.off('selection-change', preserveStickyFormats)
-      quillInstance.off('text-change', preserveStickyFormats)
-    }
+    return undefined
   }, [])
 
   return (
     <div className="rich-editor">
-      <div id={toolbarId} className="ql-toolbar ql-snow editor-toolbar">
-        <span className="ql-formats">
-          <button
-            className={activeFormats.bold ? 'editor-format-button is-active' : 'editor-format-button'}
-            type="button"
-            aria-label="In đậm"
-            aria-pressed={activeFormats.bold}
-            onMouseDown={event => event.preventDefault()}
-            onClick={() => handleInlineFormatClick('bold')}
-          >
-            B
-          </button>
-          <button
-            className={activeFormats.italic ? 'editor-format-button is-active' : 'editor-format-button'}
-            type="button"
-            aria-label="In nghiêng"
-            aria-pressed={activeFormats.italic}
-            onMouseDown={event => event.preventDefault()}
-            onClick={() => handleInlineFormatClick('italic')}
-          >
-            <i>I</i>
-          </button>
-          <button
-            className={activeFormats.underline ? 'editor-format-button is-active' : 'editor-format-button'}
-            type="button"
-            aria-label="Gạch chân"
-            aria-pressed={activeFormats.underline}
-            onMouseDown={event => event.preventDefault()}
-            onClick={() => handleInlineFormatClick('underline')}
-          >
-            <u>U</u>
-          </button>
-        </span>
-        <span className="ql-formats">
-          <button className="ql-link" type="button" aria-label="Chèn liên kết" />
-          <button className="ql-image" type="button" aria-label="Chèn ảnh" />
-          <button className="ql-video" type="button" aria-label="Chèn video" />
-        </span>
-      </div>
       <input
         ref={imageInputRef}
         type="file"
@@ -291,7 +305,7 @@ const RichTextEditor = ({ value, onChange, placeholder, toolbarId }) => {
         modules={modules}
         formats={quillFormats}
         value={value}
-        onChange={onChange}
+        onChange={handleEditorChange}
         placeholder={placeholder}
       />
     </div>

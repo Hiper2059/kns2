@@ -168,7 +168,6 @@ function App() {
     courseId: '',
     title: '',
     description: '',
-    dueAt: '',
     type: 'quiz',
     questions: [
       { question: '', options: ['', '', '', ''], correctOptionIndex: 0 }
@@ -178,7 +177,6 @@ function App() {
   const [editAssignmentData, setEditAssignmentData] = useState({
     title: '',
     description: '',
-    dueAt: '',
     type: 'quiz',
     questions: [
       { question: '', options: ['', '', '', ''], correctOptionIndex: 0 }
@@ -1292,35 +1290,40 @@ function App() {
     }
   }
 
-  const handleCreateAssignment = async () => {
+  const handleCreateAssignment = async assignmentOverride => {
     if (!currentUser || (currentRole !== 'teacher' && currentRole !== 'admin')) {
       return
     }
 
-    if (!newAssignmentData.courseId || !newAssignmentData.title.trim()) {
+    const assignmentPayload = {
+      ...newAssignmentData,
+      ...(assignmentOverride || {})
+    }
+
+    if (!assignmentPayload.courseId || !assignmentPayload.title.trim()) {
       showWarning('Cậu chọn lớp và nhập tiêu đề bài tập nhé.')
       return
     }
 
     try {
-      const response = await api.post(`/api/courses/${newAssignmentData.courseId}/assignments`, {
-        title: newAssignmentData.title.trim(),
-        description: newAssignmentData.description,
-        dueAt: newAssignmentData.dueAt || null,
-        type: newAssignmentData.type || 'quiz',
-        questions: newAssignmentData.questions || []
+      const response = await api.post(`/api/courses/${assignmentPayload.courseId}/assignments`, {
+        title: assignmentPayload.title.trim(),
+        description: assignmentPayload.description,
+        type: assignmentPayload.type || 'quiz',
+        questions: assignmentPayload.questions || [],
+        lessonId: assignmentPayload.lessonId || null
       })
 
       const created = response.data?.assignment
-      if (String(newAssignmentData.courseId) === String(selectedTeacherCourseId)) {
+      if (created) {
         setCourseAssignments(prev => [created, ...prev])
       }
 
       setNewAssignmentData({
-        courseId: newAssignmentData.courseId,
+        courseId: assignmentPayload.courseId,
+        lessonId: assignmentPayload.lessonId || null,
         title: '',
         description: '',
-        dueAt: '',
         type: 'quiz',
         questions: [
           { question: '', options: ['', '', '', ''], correctOptionIndex: 0 }
@@ -1336,7 +1339,6 @@ function App() {
     setEditAssignmentData({
       title: assignment.title || '',
       description: assignment.description || '',
-      dueAt: assignment.dueAt ? new Date(assignment.dueAt).toISOString().slice(0, 16) : '',
       type: assignment.type || 'quiz',
       questions: Array.isArray(assignment.questions) && assignment.questions.length
         ? assignment.questions.map(item => ({
@@ -1353,7 +1355,6 @@ function App() {
     setEditAssignmentData({
       title: '',
       description: '',
-      dueAt: '',
       type: 'quiz',
       questions: [{ question: '', options: ['', '', '', ''], correctOptionIndex: 0 }]
     })
@@ -1368,7 +1369,6 @@ function App() {
       const response = await api.patch(`/api/assignments/${assignmentId}`, {
         title: editAssignmentData.title,
         description: editAssignmentData.description,
-        dueAt: editAssignmentData.dueAt || null,
         type: editAssignmentData.type || 'quiz',
         questions: editAssignmentData.questions || []
       })
@@ -1803,7 +1803,8 @@ function App() {
   }
 
   const handleCreateLesson = async () => {
-    if (!selectedTeacherCourseId) {
+    const targetCourseId = selectedCourse?._id || selectedTeacherCourseId
+    if (!targetCourseId) {
       showWarning('Cậu chọn lớp trước nhé.')
       return
     }
@@ -1834,7 +1835,7 @@ function App() {
         videoUrl = await uploadVideoFile(newLessonData.videoFile)
       }
 
-      const response = await api.post(`/api/courses/${selectedTeacherCourseId}/lessons`, {
+      const response = await api.post(`/api/courses/${targetCourseId}/lessons`, {
         title: newLessonData.title.trim(),
         content: newLessonData.content.trim(),
         videoUrl,
@@ -1851,7 +1852,7 @@ function App() {
         order: 1,
         imageFile: null
       })
-      fetchCourseLessons(selectedTeacherCourseId)
+      fetchCourseLessons(targetCourseId)
     } catch (error) {
       showError(error.response?.data?.message || 'Không thêm được bài học.')
     }
@@ -1926,8 +1927,9 @@ function App() {
       })
       showSuccess(response.data.message || 'Đã cập nhật bài học.')
       handleCancelEditLesson()
-      if (selectedTeacherCourseId) {
-        fetchCourseLessons(selectedTeacherCourseId)
+      const targetCourseId = selectedCourse?._id || selectedTeacherCourseId
+      if (targetCourseId) {
+        fetchCourseLessons(targetCourseId)
       }
     } catch (error) {
       showError(error.response?.data?.message || 'Không cập nhật được bài học.')
@@ -2556,6 +2558,17 @@ function App() {
                     onOpenCourseForum={handleOpenCourseForum}
                     onLoadEnrollments={fetchTeacherEnrollments}
                     onDeleteLesson={handleDeleteLesson}
+                    newLessonData={newLessonData}
+                    onNewLessonDataChange={setNewLessonData}
+                    onCreateLesson={handleCreateLesson}
+                    editLessonId={editLessonId}
+                    editLessonData={editLessonData}
+                    onEditLessonStart={handleStartEditLesson}
+                    onEditLessonChange={setEditLessonData}
+                    onEditLessonCancel={handleCancelEditLesson}
+                    onUpdateLesson={handleUpdateLesson}
+                    onUploadLessonEditorVideo={handleUploadLessonEditorVideo}
+                    onUploadEditLessonEditorVideo={handleUploadEditLessonEditorVideo}
                   />
                 } />
 
@@ -2585,6 +2598,17 @@ function App() {
                     onOpenCourseForum={handleOpenCourseForum}
                     onLoadEnrollments={fetchTeacherEnrollments}
                     onDeleteLesson={handleDeleteLesson}
+                    newLessonData={newLessonData}
+                    onNewLessonDataChange={setNewLessonData}
+                    onCreateLesson={handleCreateLesson}
+                    editLessonId={editLessonId}
+                    editLessonData={editLessonData}
+                    onEditLessonStart={handleStartEditLesson}
+                    onEditLessonChange={setEditLessonData}
+                    onEditLessonCancel={handleCancelEditLesson}
+                    onUpdateLesson={handleUpdateLesson}
+                    onUploadLessonEditorVideo={handleUploadLessonEditorVideo}
+                    onUploadEditLessonEditorVideo={handleUploadEditLessonEditorVideo}
                   />
                 } />
 
@@ -2627,33 +2651,7 @@ function App() {
                       newCourseData={newCourseData}
                       onNewCourseDataChange={setNewCourseData}
                       onCreateCourse={handleCreateCourse}
-                      newLessonData={newLessonData}
-                      onNewLessonDataChange={setNewLessonData}
-                      onCreateLesson={handleCreateLesson}
-                      assignments={courseAssignments}
-                      newAssignmentData={newAssignmentData}
-                      onNewAssignmentDataChange={setNewAssignmentData}
-                      onCreateAssignment={handleCreateAssignment}
-                      editAssignmentId={editAssignmentId}
-                      editAssignmentData={editAssignmentData}
-                      onEditAssignmentStart={handleEditAssignmentStart}
-                      onEditAssignmentChange={setEditAssignmentData}
-                      onEditAssignmentCancel={handleEditAssignmentCancel}
-                      onUpdateAssignment={handleUpdateAssignment}
-                      onDeleteAssignment={handleDeleteAssignment}
-                      assignmentSubmissions={assignmentSubmissions}
-                      onLoadAssignmentSubmissions={handleLoadAssignmentSubmissions}
-                      onGradeSubmission={handleGradeSubmission}
-                      editLessonId={editLessonId}
-                      editLessonData={editLessonData}
-                      onEditLessonStart={handleStartEditLesson}
-                      onEditLessonChange={setEditLessonData}
-                      onEditLessonCancel={handleCancelEditLesson}
-                      onUpdateLesson={handleUpdateLesson}
-                      onDeleteLesson={handleDeleteLesson}
                       onUploadCourseEditorVideo={handleUploadCourseEditorVideo}
-                      onUploadLessonEditorVideo={handleUploadLessonEditorVideo}
-                      onUploadEditLessonEditorVideo={handleUploadEditLessonEditorVideo}
                     />
                   ) : (
                     <Navigate to="/login" replace state={{ from: location }} />
@@ -2787,6 +2785,24 @@ function App() {
                     onOpenProfile={handleOpenProfile}
                     currentRole={currentRole}
                     onReportContent={handleReportContent}
+                    assignments={courseAssignments}
+                    newAssignmentData={newAssignmentData}
+                    onNewAssignmentDataChange={setNewAssignmentData}
+                    onCreateAssignment={handleCreateAssignment}
+                    editAssignmentId={editAssignmentId}
+                    editAssignmentData={editAssignmentData}
+                    onEditAssignmentStart={handleEditAssignmentStart}
+                    onEditAssignmentChange={setEditAssignmentData}
+                    onEditAssignmentCancel={handleEditAssignmentCancel}
+                    onUpdateAssignment={handleUpdateAssignment}
+                    onDeleteAssignment={handleDeleteAssignment}
+                    assignmentSubmissions={assignmentSubmissions}
+                    onLoadAssignmentSubmissions={handleLoadAssignmentSubmissions}
+                    onGradeSubmission={handleGradeSubmission}
+                    assignmentDrafts={assignmentDrafts}
+                    onAssignmentDraftChange={handleAssignmentDraftChange}
+                    onSubmitAssignment={handleSubmitAssignment}
+                    onSubmitQuizAssignment={handleSubmitQuizAssignment}
                   />
                 } />
               </Routes>

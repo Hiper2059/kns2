@@ -52,6 +52,7 @@ const baseInputClass = "w-full h-11 px-4 bg-slate-50 border border-slate-200 rou
 const baseButtonClass = "inline-flex items-center justify-center gap-2 h-11 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-[0_4px_14px_0_rgb(37,99,235,0.39)] cursor-pointer"
 const ghostButtonClass = "inline-flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-all cursor-pointer text-[13px]"
 const dangerButtonClass = "inline-flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-bold transition-all cursor-pointer text-[13px]"
+const createEmptyQuizQuestion = () => ({ question: '', options: ['', '', '', ''], correctOptionIndex: 0 })
 
 const LessonFullPage = ({
   lesson,
@@ -68,9 +69,28 @@ const LessonFullPage = ({
   currentUser,
   currentRole,
   onReportContent,
-  onOpenProfile
+  onOpenProfile,
+  assignments,
+  newAssignmentData,
+  onNewAssignmentDataChange,
+  onCreateAssignment,
+  editAssignmentId,
+  editAssignmentData,
+  onEditAssignmentStart,
+  onEditAssignmentChange,
+  onEditAssignmentCancel,
+  onUpdateAssignment,
+  onDeleteAssignment,
+  assignmentSubmissions,
+  onLoadAssignmentSubmissions,
+  onGradeSubmission,
+  assignmentDrafts,
+  onAssignmentDraftChange,
+  onSubmitAssignment,
+  onSubmitQuizAssignment
 }) => {
   const { showWarning, showError, showSuccess } = useUI()
+  const [quizDrafts, setQuizDrafts] = useState({})
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false)
   const [hasVideoEnded, setHasVideoEnded] = useState(false)
   const [hasSeeked, setHasSeeked] = useState(false)
@@ -137,6 +157,153 @@ const LessonFullPage = ({
     const url = lesson?.videoUrl || ''
     return /\.mpd(\?|$)/i.test(url)
   }, [lesson?.videoUrl])
+
+  const lessonAssignments = useMemo(() => {
+    return Array.isArray(assignments) ? assignments.filter(a => String(a.lesson || a.lessonId) === String(lesson?._id)) : []
+  }, [assignments, lesson?._id])
+
+  const handleQuizAnswer = (assignmentId, questionIndex, optionIndex) => {
+    setQuizDrafts(prev => {
+      const nextAnswers = [...(prev[assignmentId] || [])]
+      nextAnswers[questionIndex] = optionIndex
+      return { ...prev, [assignmentId]: nextAnswers }
+    })
+  }
+
+  const handleSubmitQuiz = async assignment => {
+    const answers = quizDrafts[assignment._id] || []
+    const questions = Array.isArray(assignment.questions) ? assignment.questions : []
+    const hasMissingAnswer = questions.some((question, index) => {
+      const answer = answers[index]
+      return !Number.isInteger(answer) || answer < 0 || answer >= (question.options || []).length
+    })
+
+    if (hasMissingAnswer) {
+      showWarning('Cậu trả lời hết các câu trước khi nộp nhé.')
+      return
+    }
+
+    const ok = await onSubmitQuizAssignment?.(assignment._id, answers)
+    if (ok) {
+      setQuizDrafts(prev => {
+        const next = { ...prev }
+        delete next[assignment._id]
+        return next
+      })
+    }
+  }
+
+  const getNewQuizQuestions = () => {
+    const questions = Array.isArray(newAssignmentData?.questions) && newAssignmentData.questions.length
+      ? newAssignmentData.questions
+      : [createEmptyQuizQuestion()]
+
+    return questions.map(question => ({
+      question: question.question || '',
+      options: [...(question.options || []), '', '', '', ''].slice(0, 4),
+      correctOptionIndex: Number(question.correctOptionIndex) || 0
+    }))
+  }
+
+  const updateNewQuizQuestion = (questionIndex, nextQuestion) => {
+    const questions = getNewQuizQuestions()
+    questions[questionIndex] = nextQuestion
+    onNewAssignmentDataChange?.({ ...newAssignmentData, questions })
+  }
+
+  const addNewQuizQuestion = () => {
+    onNewAssignmentDataChange?.({
+      ...newAssignmentData,
+      questions: [...getNewQuizQuestions(), createEmptyQuizQuestion()]
+    })
+  }
+
+  const removeNewQuizQuestion = questionIndex => {
+    const questions = getNewQuizQuestions().filter((_, index) => index !== questionIndex)
+    onNewAssignmentDataChange?.({
+      ...newAssignmentData,
+      questions: questions.length ? questions : [createEmptyQuizQuestion()]
+    })
+  }
+
+  const handleCreateLessonQuiz = () => {
+    const title = String(newAssignmentData?.title || '').trim()
+    if (!title) {
+      showWarning('Nhap tieu de quiz nhe!')
+      return
+    }
+
+    const questions = getNewQuizQuestions()
+      .map(item => {
+        const options = (item.options || []).map(option => String(option || '').trim()).filter(Boolean)
+        return {
+          question: String(item.question || '').trim(),
+          options,
+          correctOptionIndex: Math.min(Number(item.correctOptionIndex) || 0, Math.max(options.length - 1, 0))
+        }
+      })
+      .filter(item => item.question && item.options.length >= 2)
+
+    if (!questions.length) {
+      showWarning('Quiz cần ít nhất 1 câu hỏi và mỗi câu có tối thiểu 2 đáp án.')
+      return
+    }
+
+    onCreateAssignment?.({
+      courseId: course?._id,
+      lessonId: lesson?._id,
+      title,
+      description: '',
+      type: 'quiz',
+      questions
+    })
+  }
+
+  const renderAssignmentBody = assignment => {
+    const isQuiz = assignment.type === 'quiz'
+    const questions = Array.isArray(assignment.questions) ? assignment.questions : []
+    const draftAnswers = quizDrafts[assignment._id] || []
+    const isTeacherOrAdmin = currentRole === 'teacher' || currentRole === 'admin'
+    const answerLabel = index => String.fromCharCode(65 + index)
+
+    if (!isQuiz || !questions.length) {
+      return null
+    }
+
+    return (
+      <div className="flex flex-col gap-6 mt-4 p-5 bg-slate-50 border border-slate-200 rounded-xl">
+        {questions.map((question, index) => (
+          <div key={`${assignment._id}-question-${index}`}>
+            <strong className="block text-[15px] font-bold text-slate-800 mb-3">Câu {index + 1}: {question.question}</strong>
+            {currentUser && !isTeacherOrAdmin && !assignment.mySubmission ? (
+              <div className="flex flex-col gap-2.5">
+                {(question.options || []).map((option, optionIndex) => (
+                  <label key={`${assignment._id}-option-${index}-${optionIndex}`} className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg cursor-pointer hover:border-blue-300 transition-colors">
+                    <input
+                      type="radio"
+                      className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 focus:ring-blue-500"
+                      name={`${assignment._id}-${index}`}
+                      checked={draftAnswers[index] === optionIndex}
+                      onChange={() => handleQuizAnswer(assignment._id, index, optionIndex)}
+                    />
+                    <span className="text-[14px] text-slate-700 font-medium">{answerLabel(optionIndex)}. {option}</span>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {(question.options || []).map((option, optionIndex) => (
+                  <span key={`${assignment._id}-option-${index}-${optionIndex}`} className={`text-[14px] font-medium p-3 rounded-lg border ${question.correctOptionIndex === optionIndex ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200 text-slate-600'}`}>
+                    {answerLabel(optionIndex)}. {option} {question.correctOptionIndex === optionIndex && isTeacherOrAdmin && ' (Đúng)'}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    )
+  }
 
   useEffect(() => {
     setHasScrolledToEnd(false)
@@ -703,6 +870,132 @@ const LessonFullPage = ({
                   </div>
                 )}
 
+                {/* Assignments / Quiz Section */}
+                <div className="mt-16 pt-10 border-t border-slate-200">
+                  <h4 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-3">
+                    <CheckCircle2 className="text-blue-600" /> Bài tập / Quiz cho bài học này
+                    {lessonAssignments.length === 0 && <span className="text-[14px] font-medium text-slate-400 font-normal">(Không bắt buộc)</span>}
+                  </h4>
+                  {canEditLesson && (
+                    <div className="mb-8 p-6 bg-blue-50 border border-blue-200 rounded-2xl">
+                      <h5 className="font-bold text-blue-800 mb-4">Tạo quiz mới</h5>
+                      <div className="flex flex-col gap-4">
+                        <input
+                          type="text"
+                          className={baseInputClass}
+                          placeholder="Tiêu đề quiz"
+                          value={newAssignmentData?.title || ''}
+                          onChange={e => onNewAssignmentDataChange({ ...newAssignmentData, title: e.target.value })}
+                        />
+                        {getNewQuizQuestions().map((question, questionIndex) => (
+                          <div key={`new-quiz-question-${questionIndex}`} className="flex flex-col gap-3 rounded-xl border border-blue-100 bg-white p-4">
+                            <div className="flex items-center justify-between gap-3">
+                              <strong className="text-[14px] font-black text-slate-800">Câu {questionIndex + 1}</strong>
+                              {getNewQuizQuestions().length > 1 && (
+                                <button type="button" className={dangerButtonClass} onClick={() => removeNewQuizQuestion(questionIndex)}>
+                                  Xóa câu
+                                </button>
+                              )}
+                            </div>
+                            <input
+                              type="text"
+                              className={baseInputClass}
+                              placeholder="Nội dung câu hỏi"
+                              value={question.question}
+                              onChange={e => updateNewQuizQuestion(questionIndex, { ...question, question: e.target.value })}
+                            />
+                            <div className="grid gap-3 md:grid-cols-2">
+                              {question.options.map((option, optionIndex) => (
+                                <label key={`new-quiz-option-${questionIndex}-${optionIndex}`} className="flex items-center gap-2">
+                                  <input
+                                    type="radio"
+                                    name={`new-quiz-correct-${questionIndex}`}
+                                    checked={question.correctOptionIndex === optionIndex}
+                                    onChange={() => updateNewQuizQuestion(questionIndex, { ...question, correctOptionIndex: optionIndex })}
+                                  />
+                                  <input
+                                    type="text"
+                                    className={baseInputClass}
+                                    placeholder={`Đáp án ${String.fromCharCode(65 + optionIndex)}`}
+                                    value={option}
+                                    onChange={e => {
+                                      const options = [...question.options]
+                                      options[optionIndex] = e.target.value
+                                      updateNewQuizQuestion(questionIndex, { ...question, options })
+                                    }}
+                                  />
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                        <button type="button" className={ghostButtonClass} onClick={addNewQuizQuestion}>
+                          Thêm câu hỏi
+                        </button>
+                        <button
+                          className={baseButtonClass}
+                          onClick={handleCreateLessonQuiz}
+                        >
+                          Tạo quiz
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-6">
+                    {lessonAssignments.length ? (
+                      lessonAssignments.map(assignment => {
+                        const isQuiz = assignment.type === 'quiz'
+                        const isTeacherOrAdmin = currentRole === 'teacher' || currentRole === 'admin'
+                        return (
+                          <div key={assignment._id} className="flex flex-col gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                            <div>
+                              <div className="flex items-center justify-between">
+                                <h4 className="text-xl font-black text-slate-900 mb-2">{assignment.title}</h4>
+                                {canEditLesson && (
+                                  <div className="flex gap-2">
+                                    <button className={dangerButtonClass} onClick={() => onDeleteAssignment(assignment._id)}>Xóa</button>
+                                  </div>
+                                )}
+                              </div>
+                              <p className="text-[15px] text-slate-600">{assignment.description || ''}</p>
+                              {renderAssignmentBody(assignment)}
+                            </div>
+
+                            {assignment.mySubmission && (
+                              <div className="mt-2 p-5 bg-slate-50 border border-slate-200 rounded-xl">
+                                <div className="flex items-center justify-between text-[14px] mb-3">
+                                  <span className="font-bold text-slate-600">Trạng thái bài làm:</span>
+                                  <strong className={`px-3 py-1 rounded-lg font-bold ${assignment.mySubmission.status === 'graded' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700'}`}>
+                                    {assignment.mySubmission.status === 'graded'
+                                      ? `Đã chấm - ${assignment.mySubmission.score} điểm`
+                                      : 'Đang chờ chấm'}
+                                  </strong>
+                                </div>
+                              </div>
+                            )}
+
+                            {currentUser && !isTeacherOrAdmin && isQuiz && !assignment.mySubmission && (
+                              <div className="mt-4 flex flex-col gap-3">
+                                <button
+                                  className="inline-flex cursor-pointer self-start items-center justify-center gap-2 h-11 px-6 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold transition-all"
+                                  onClick={() => handleSubmitQuiz(assignment)}
+                                >
+                                  Nộp bài
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })
+                    ) : (
+                      <div className="py-8 text-center text-[15px] font-medium text-slate-500 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+                        Chưa có bài tập nào cho bài học này.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Comments Section */}
                 <div className="mt-16 pt-10 border-t border-slate-200">
                   <h4 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-3">
@@ -763,7 +1056,7 @@ const LessonFullPage = ({
                                     <button
                                       className="text-[12px] font-bold text-slate-500 hover:text-red-600 transition-colors flex items-center gap-1 cursor-pointer"
                                       onClick={async () => {
-                                        if (!confirm('Xác nhận xóa bình luận này?')) return
+                                        if (!confirm('Xóa bình luận này?')) return
                                         try {
                                           await api.delete(`/api/comments/${item._id}`)
                                           removeCommentBranch(item._id)

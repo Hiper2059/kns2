@@ -8,6 +8,12 @@ const assignmentSchema = new mongoose.Schema(
       required: true,
       index: true
     },
+    lesson: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Lesson',
+      required: false,
+      index: true
+    },
     title: {
       type: String,
       required: true,

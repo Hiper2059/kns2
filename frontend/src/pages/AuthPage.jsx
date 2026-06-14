@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { AlertTriangle, LogIn, ArrowRight, UserPlus, ShieldCheck } from 'lucide-react'
+import { AlertTriangle, ArrowRight, Eye, EyeOff, UserPlus, ShieldCheck } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { createApiClient } from '../api/apiClient'
 import { useAuth } from '../context/AuthContext'
@@ -26,13 +26,19 @@ const AuthPage = () => {
   })
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const handleAuthSuccess = (role) => {
     let dest = location.state?.from?.pathname || '/'
+    const fallbackDest = role === 'admin' ? '/admin' : role === 'teacher' ? '/teacher' : '/'
+
+    if ((dest === '/admin' && role !== 'admin') || (dest === '/teacher' && role !== 'teacher')) {
+      dest = fallbackDest
+    }
+
     if (dest === '/' || dest === '/login' || dest === '/register') {
-      if (role === 'admin') dest = '/admin'
-      else if (role === 'teacher') dest = '/teacher'
-      else dest = '/'
+      dest = fallbackDest
     }
     navigate(dest, { replace: true })
   }
@@ -49,7 +55,7 @@ const AuthPage = () => {
   }
 
   const loginWithCredentials = async () => {
-    const response = await api.post('/api/login', {
+    const response = await api.post('/api/auth/login', {
       username: formData.username,
       password: formData.password
     })
@@ -81,6 +87,10 @@ const AuthPage = () => {
       })
       await loginWithCredentials()
     } catch (err) {
+      if (isLoginPage && [400, 401, 403].includes(err.response?.status)) {
+        setError('Bạn sai tài khoản hoặc mật khẩu.')
+        return
+      }
       setError(err.response?.data?.message || 'Không kết nối được máy chủ. Vui lòng kiểm tra mạng và thử lại.')
     } finally {
       setIsLoading(false)
@@ -200,33 +210,53 @@ const AuthPage = () => {
                 Mật khẩu
                 {isLoginPage && <a href="#" className="text-[12px] font-bold text-blue-600 hover:text-blue-700 hover:underline normal-case tracking-normal">Quên mật khẩu?</a>}
               </label>
+              <div className="relative">
               <input
                 name="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
                 value={formData.password}
                 onChange={handleChange}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmit(e)}
                 placeholder="••••••••"
                 autoComplete={isLoginPage ? 'current-password' : 'new-password'}
-                className={baseInputClass}
+                className={`${baseInputClass} pr-12`}
               />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+                onClick={() => setShowPassword(prev => !prev)}
+                aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+              </div>
             </div>
 
             {!isLoginPage && (
               <div className="flex flex-col gap-2">
                 <label className="text-[12px] uppercase tracking-wider font-bold text-slate-500 ml-1">Xác nhận mật khẩu</label>
+                <div className="relative">
                 <input
                   name="confirmPassword"
-                  type="password"
+                  type={showConfirmPassword ? 'text' : 'password'}
                   required
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   onKeyDown={(e) => e.key === 'Enter' && handleSubmit(e)}
                   placeholder="••••••••"
                   autoComplete="new-password"
-                  className={baseInputClass}
+                  className={`${baseInputClass} pr-12`}
                 />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+                  onClick={() => setShowConfirmPassword(prev => !prev)}
+                  aria-label={showConfirmPassword ? 'Ẩn mật khẩu xác nhận' : 'Hiện mật khẩu xác nhận'}
+                >
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+                </div>
               </div>
             )}
 

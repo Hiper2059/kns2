@@ -27,6 +27,40 @@ const Navbar = ({
     closeMobileSidebar()
   }
 
+  const userMenu = (
+    <div className="inline-flex items-center gap-3 min-w-0">
+      <button
+        className="inline-flex items-center gap-2 pl-1.5 pr-3.5 py-1.5 border border-slate-200 rounded-full bg-white hover:bg-slate-50 transition-colors cursor-pointer shadow-sm min-w-0"
+        onClick={runAndClose(onOpenProfile)}
+        aria-label="Mở hồ sơ cá nhân"
+      >
+        <div className="w-6 h-6 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center text-[11px] font-bold text-slate-700 flex-shrink-0">
+          {currentUserAvatar ? (
+            <img src={currentUserAvatar} alt={currentUserLabel || currentUser} className="w-full h-full object-cover block" />
+          ) : (
+            (currentUserLabel || currentUser || 'U').charAt(0).toUpperCase()
+          )}
+        </div>
+        <span className="text-[13px] font-bold text-slate-700 max-w-[120px] truncate">
+          {currentUserLabel || currentUser}
+        </span>
+      </button>
+      <button
+        className="inline-flex items-center justify-center min-h-[34px] rounded-xl px-4 text-[13px] font-bold border border-slate-200 bg-white text-blue-600 hover:bg-blue-50 active:translate-y-px transition-all cursor-pointer shadow-sm"
+        onClick={runAndClose(onLogout)}
+      >
+        Đăng xuất
+      </button>
+    </div>
+  )
+
+  const authButtons = (
+    <div className="inline-flex items-center gap-2">
+      <button className="inline-flex items-center justify-center gap-1.5 min-h-[34px] rounded-lg px-3.5 text-[12px] font-black border border-slate-200 bg-white text-blue-600 hover:bg-blue-50 active:translate-y-px transition-all" onClick={runAndClose(() => onOpenAuth('login'))}>Đăng nhập</button>
+      <button className="inline-flex items-center justify-center gap-1.5 min-h-[34px] rounded-lg px-3.5 text-[12px] font-black border border-blue-600 bg-blue-600 text-white hover:bg-blue-700 active:translate-y-px transition-all" onClick={runAndClose(() => onOpenAuth('register'))}>Đăng ký</button>
+    </div>
+  )
+
   return (
     <header className={`fixed top-0 left-0 z-50 w-full min-h-[64px] px-4 md:px-[7.8vw] bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm transition-all duration-300 grid items-center gap-5 ${sidebarOpen ? 'grid-cols-1 gap-3 p-4 items-stretch' : 'grid-cols-[1fr_auto] md:grid-cols-[minmax(190px,auto)_minmax(0,1fr)_auto]'}`}>
       
@@ -83,37 +117,21 @@ const Navbar = ({
           </div>
         )}
 
-        {currentUser ? (
-          <div className={`inline-flex items-center gap-3 ${sidebarOpen ? 'inline-flex' : 'hidden md:inline-flex'}`}>
-            <button 
-              className="inline-flex items-center gap-2 pl-1.5 pr-3.5 py-1.5 border border-slate-200 rounded-full bg-white hover:bg-slate-50 transition-colors cursor-pointer shadow-sm"
-              onClick={runAndClose(onOpenProfile)}
-              aria-label="Mở hồ sơ cá nhân"
-            >
-              <div className="w-6 h-6 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center text-[11px] font-bold text-slate-700">
-                {currentUserAvatar ? (
-                  <img src={currentUserAvatar} alt={currentUserLabel || currentUser} className="w-full h-full object-cover block" />
-                ) : (
-                  (currentUserLabel || currentUser || 'U').charAt(0).toUpperCase()
-                )}
-              </div>
-              <span className="text-[13px] font-bold text-slate-700 max-w-[120px] truncate">
-                {currentUserLabel || currentUser}
-              </span>
-            </button>
-            <button 
-              className="inline-flex items-center justify-center min-h-[34px] rounded-xl px-4 text-[13px] font-bold border border-slate-200 bg-white text-blue-600 hover:bg-blue-50 active:translate-y-px transition-all cursor-pointer shadow-sm"
-              onClick={runAndClose(onLogout)}
-            >
-              Đăng xuất
-            </button>
-          </div>
-        ) : (
-          <div className={`inline-flex items-center gap-2 ${sidebarOpen ? 'inline-flex' : 'hidden md:inline-flex'}`}>
-            <button className="inline-flex items-center justify-center gap-1.5 min-h-[34px] rounded-lg px-3.5 text-[12px] font-black border border-slate-200 bg-white text-blue-600 hover:bg-blue-50 active:translate-y-px transition-all" onClick={runAndClose(() => onOpenAuth('login'))}>Đăng nhập</button>
-            <button className="inline-flex items-center justify-center gap-1.5 min-h-[34px] rounded-lg px-3.5 text-[12px] font-black border border-blue-600 bg-blue-600 text-white hover:bg-blue-700 active:translate-y-px transition-all" onClick={runAndClose(() => onOpenAuth('register'))}>Đăng ký</button>
+        {currentUser && !sidebarOpen && (
+          <div className="hidden md:inline-flex items-center gap-3">
+            {userMenu}
           </div>
         )}
+
+        {currentUser && sidebarOpen && userMenu}
+
+        {!currentUser && !sidebarOpen && (
+          <div className="hidden md:inline-flex">
+            {authButtons}
+          </div>
+        )}
+
+        {!currentUser && sidebarOpen && authButtons}
       </div>
     </header>
   )

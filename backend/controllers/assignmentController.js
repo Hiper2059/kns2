@@ -138,7 +138,7 @@ const listAssignments = catchAsync(async (req, res) => {
 
 const createAssignment = catchAsync(async (req, res) => {
   const { courseId } = req.params;
-  const { title, description, dueAt, type, questions } = req.body || {};
+  const { title, description, dueAt, type, questions, lessonId } = req.body || {};
   const trimmedTitle = String(title || '').trim();
   const assignmentType = type === 'quiz' ? 'quiz' : 'text';
   const normalizedQuestions = normalizeQuestions(questions);
@@ -158,6 +158,7 @@ const createAssignment = catchAsync(async (req, res) => {
 
   const created = await Assignment.create({
     course: course._id,
+    lesson: lessonId || null,
     title: trimmedTitle,
     description: String(description || '').trim(),
     type: assignmentType,
@@ -172,7 +173,7 @@ const createAssignment = catchAsync(async (req, res) => {
 
 const updateAssignment = catchAsync(async (req, res) => {
   const { assignmentId } = req.params;
-  const { title, description, dueAt, type, questions } = req.body || {};
+  const { title, description, dueAt, type, questions, lessonId } = req.body || {};
 
   if (!mongoose.Types.ObjectId.isValid(assignmentId)) {
     return res.status(400).json({ message: 'assignmentId khong hop le.' });
@@ -195,6 +196,7 @@ const updateAssignment = catchAsync(async (req, res) => {
     }
     assignment.title = trimmedTitle;
   }
+  if (lessonId !== undefined) assignment.lesson = lessonId || null;
   if (description !== undefined) assignment.description = String(description || '').trim();
   if (type !== undefined) assignment.type = type === 'quiz' ? 'quiz' : 'text';
   if (questions !== undefined) {
