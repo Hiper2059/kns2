@@ -173,6 +173,45 @@ const createPost = catchAsync(async (req, res) => {
   res.status(201).json({ post: payload });
 });
 
+const updatePost = catchAsync(async (req, res) => {
+  const { title, content, category } = req.body || {};
+  const trimmedTitle = String(title || '').trim();
+  const trimmedContent = String(content || '').trim();
+  const trimmedCategory = String(category || '').trim();
+
+  if (!trimmedTitle || !trimmedContent || !trimmedCategory) {
+    return res.status(400).json({ message: 'Thieu title, content hoac category.' });
+  }
+
+  const post = await ForumPost.findById(req.params.id);
+  const access = await ensurePostForumAccess(req, res, post, 'sua bai viet lop');
+  if (!access) {
+    return;
+  }
+
+  const isOwner = post.author === req.currentUser.username;
+  const isAdmin = req.currentUser.role === 'admin';
+
+  if (!isOwner && !isAdmin) {
+    return res.status(403).json({ message: 'Ban khong co quyen sua bai viet nay.' });
+  }
+
+  post.title = trimmedTitle;
+  post.content = trimmedContent;
+  post.category = trimmedCategory;
+  await post.save();
+
+  const payload = post.toObject();
+  payload.heartCount = (payload.heartUserIds || []).length;
+  payload.isHearted = req.currentUser?._id
+    ? (payload.heartUserIds || []).some(item => String(item) === String(req.currentUser._id))
+    : false;
+  const authorMap = await getDisplayNameMapByUsernames([post.author]);
+  payload.authorDisplayName = authorMap[post.author] || post.author;
+
+  res.json({ post: payload, message: 'Da cap nhat bai viet thanh cong.' });
+});
+
 const getPostIdsForCommentQuery = async (req, res) => {
   if (req.query.postId) {
     const postId = String(req.query.postId).trim();
@@ -599,6 +638,7 @@ const restoreComment = catchAsync(async (req, res) => {
 module.exports = {
   getPosts,
   createPost,
+  updatePost,
   getComments,
   createComment,
   deletePost,

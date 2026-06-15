@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import { clearTokens, setTokens } from '../api/apiClient';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { AUTH_EXPIRED_EVENT, clearTokens, setTokens } from '../api/apiClient';
 import { normalizeClientRole } from '../utils/appUtils'; // We will need to move this from App.jsx or appUtils
 
 const AuthContext = createContext();
@@ -40,14 +40,24 @@ export const AuthProvider = ({ children }) => {
     setIsAuthOpen(false);
   };
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setCurrentUser(null);
     setCurrentRole('student');
     localStorage.removeItem('zmate_current_user');
     localStorage.removeItem('zmate_current_role');
     localStorage.removeItem('zmate_token');
     clearTokens();
-  };
+  }, []);
+
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      logout();
+      pushAuthNotice('Phiên đăng nhập đã hết hạn, bạn đăng nhập lại nhé.', 'warning', 'Hết phiên');
+    };
+
+    window.addEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
+  }, [logout, pushAuthNotice]);
 
   const value = {
     currentUser,

@@ -36,15 +36,40 @@ const ForumView = ({
   forumScope,
   forumCourse,
   onOpenProfile,
+  currentUser,
   currentRole,
   onAdminDeletePost,
+  onUpdatePost,
   onAdminPunishComment
 }) => {
   const [isComposerOpen, setIsComposerOpen] = React.useState(false)
+  const [editingPostId, setEditingPostId] = React.useState(null)
+  const [editDraft, setEditDraft] = React.useState({ title: '', content: '', category: '' })
 
   const handlePostSubmit = async () => {
     await onPostSubmit();
     setIsComposerOpen(false);
+  }
+
+  const startEditPost = post => {
+    setEditingPostId(post.id)
+    setEditDraft({
+      title: post.title || '',
+      content: post.content || '',
+      category: post.category || ''
+    })
+  }
+
+  const cancelEditPost = () => {
+    setEditingPostId(null)
+    setEditDraft({ title: '', content: '', category: '' })
+  }
+
+  const saveEditPost = async post => {
+    const ok = await onUpdatePost?.(post, editDraft)
+    if (ok) {
+      cancelEditPost()
+    }
   }
 
   return (
@@ -170,7 +195,10 @@ const ForumView = ({
 
         {paginatedForumPosts.length ? (
           <div className="flex flex-col gap-5 min-w-0">
-            {paginatedForumPosts.map(post => (
+            {paginatedForumPosts.map(post => {
+              const canManagePost = currentRole === 'admin' || post.author === currentUser
+              const isEditing = editingPostId === post.id
+              return (
               <div key={post.id} className="flex flex-col bg-white border border-slate-200 rounded-[24px] overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                 {/* Post Header */}
                 <div className="flex items-center justify-between p-5 pb-4 border-b border-slate-50">
@@ -191,30 +219,94 @@ const ForumView = ({
                       </span>
                     </div>
                   </div>
-                  <button
-                    className={`inline-flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-bold transition-colors ${post.isHearted ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}
-                    onClick={() => onTogglePostReaction?.(post)}
-                    aria-label={post.isHearted ? 'Bỏ tim bài viết' : 'Thả tim bài viết'}
-                  >
-                    <Heart size={16} className={post.isHearted ? 'fill-current' : ''} />
-                    <span>{post.heartCount || 0}</span>
-                  </button>
-                  {currentRole === 'admin' && (
+                  <div className="flex items-center gap-2">
                     <button
-                      className="inline-flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-bold transition-colors bg-red-50 text-red-600 hover:bg-red-100"
-                      onClick={() => onAdminDeletePost?.(post)}
-                      aria-label="Xóa bài viết"
+                      className={`inline-flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-bold transition-colors ${post.isHearted ? 'bg-red-50 text-red-600 hover:bg-red-100' : 'bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}
+                      onClick={() => onTogglePostReaction?.(post)}
+                      aria-label={post.isHearted ? 'Bỏ tim bài viết' : 'Thả tim bài viết'}
                     >
-                      <Trash2 size={16} />
-                      <span>Xóa bài</span>
+                      <Heart size={16} className={post.isHearted ? 'fill-current' : ''} />
+                      <span>{post.heartCount || 0}</span>
                     </button>
-                  )}
+                    {canManagePost && (
+                      <>
+                        <button
+                          className="inline-flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-bold transition-colors bg-blue-50 text-blue-600 hover:bg-blue-100"
+                          onClick={() => isEditing ? cancelEditPost() : startEditPost(post)}
+                          aria-label="Sửa bài viết"
+                        >
+                          <PenSquare size={16} />
+                          <span>{isEditing ? 'Hủy sửa' : 'Sửa'}</span>
+                        </button>
+                        <button
+                          className="inline-flex cursor-pointer items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-bold transition-colors bg-red-50 text-red-600 hover:bg-red-100"
+                          onClick={() => onAdminDeletePost?.(post)}
+                          aria-label="Xóa bài viết"
+                        >
+                          <Trash2 size={16} />
+                          <span>Xóa bài</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* Post Content */}
                 <div className="p-5">
-                  <h4 className="text-xl font-black text-slate-900 mb-3">{post.title}</h4>
-                  <div className="prose prose-slate max-w-none text-[15px] prose-p:leading-relaxed" dangerouslySetInnerHTML={{ __html: post.content }}></div>
+                  {isEditing ? (
+                    <div className="flex flex-col gap-4">
+                      <input
+                        type="text"
+                        className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-[14px] font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                        value={editDraft.title}
+                        onChange={e => setEditDraft(prev => ({ ...prev, title: e.target.value }))}
+                        placeholder="Tiêu đề bài viết"
+                      />
+                      {forumScope === 'general' ? (
+                        <select
+                          className="w-full h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-[14px] font-semibold text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                          value={editDraft.category}
+                          onChange={e => setEditDraft(prev => ({ ...prev, category: e.target.value }))}
+                        >
+                          {categories.map((cat, i) => <option key={i} value={cat}>{cat}</option>)}
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          className="w-full h-11 px-4 bg-slate-100 border border-slate-200 rounded-xl text-[14px] font-semibold text-slate-500"
+                          value={editDraft.category}
+                          disabled
+                        />
+                      )}
+                      <div className="rounded-xl overflow-hidden border border-slate-200 bg-white">
+                        <RichTextEditor
+                          toolbarId={`forum-edit-toolbar-${post.id}`}
+                          value={editDraft.content}
+                          onChange={value => setEditDraft(prev => ({ ...prev, content: value }))}
+                          placeholder="Nội dung bài viết..."
+                        />
+                      </div>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          className="inline-flex cursor-pointer items-center justify-center h-10 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[13px] font-bold transition-colors"
+                          onClick={cancelEditPost}
+                        >
+                          Hủy
+                        </button>
+                        <button
+                          className="inline-flex cursor-pointer items-center justify-center h-10 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-bold transition-colors"
+                          onClick={() => saveEditPost(post)}
+                        >
+                          Lưu thay đổi
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <h4 className="text-xl font-black text-slate-900 mb-3">{post.title}</h4>
+                      <div className="prose prose-slate max-w-none text-[15px] prose-p:leading-relaxed" dangerouslySetInnerHTML={{ __html: post.content }}></div>
+                    </>
+                  )}
                 </div>
 
                 {/* Comments Section */}
@@ -296,7 +388,8 @@ const ForumView = ({
                   </div>
                 </div>
               </div>
-            ))}
+              )
+            })}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-20 px-4 text-center bg-white border border-slate-200 border-dashed rounded-[24px]">

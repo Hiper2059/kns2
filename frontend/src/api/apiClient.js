@@ -7,6 +7,8 @@ const TOKEN_KEYS = {
   signature: 'zmate_signature_token'
 }
 
+export const AUTH_EXPIRED_EVENT = 'zmate:auth-expired'
+
 export const getAccessToken = () => localStorage.getItem(TOKEN_KEYS.access)
 export const getRefreshToken = () => localStorage.getItem(TOKEN_KEYS.refresh)
 export const getSignatureToken = () => localStorage.getItem(TOKEN_KEYS.signature)
@@ -29,6 +31,19 @@ export const clearTokens = () => {
   localStorage.removeItem(TOKEN_KEYS.signature)
 }
 
+const isAuthRequest = url => {
+  const requestUrl = String(url || '')
+  return requestUrl.includes('/api/auth/login')
+    || requestUrl.includes('/api/auth/register')
+    || requestUrl.includes('/api/auth/refresh')
+}
+
+const notifyAuthExpired = () => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT))
+  }
+}
+
 export const createApiClient = baseURL => {
   const api = axios.create({ baseURL })
   let refreshPromise = null
@@ -47,12 +62,20 @@ export const createApiClient = baseURL => {
       const response = error?.response
       const originalRequest = error?.config
 
-      if (!response || response.status !== 401 || originalRequest?._retry) {
+      if (!response || response.status !== 401 || isAuthRequest(originalRequest?.url)) {
+        return Promise.reject(sanitizeApiError(error))
+      }
+
+      if (originalRequest?._retry) {
+        clearTokens()
+        notifyAuthExpired()
         return Promise.reject(sanitizeApiError(error))
       }
 
       const refreshToken = getRefreshToken()
       if (!refreshToken) {
+        clearTokens()
+        notifyAuthExpired()
         return Promise.reject(sanitizeApiError(error))
       }
 
@@ -69,6 +92,7 @@ export const createApiClient = baseURL => {
         const { accessToken, refreshToken: nextRefreshToken, signatureToken } = refreshResponse.data || {}
         if (!accessToken || !nextRefreshToken) {
           clearTokens()
+          notifyAuthExpired()
           return Promise.reject(sanitizeApiError(error))
         }
 
@@ -78,6 +102,7 @@ export const createApiClient = baseURL => {
       } catch (refreshError) {
         refreshPromise = null
         clearTokens()
+        notifyAuthExpired()
         return Promise.reject(sanitizeApiError(refreshError))
       }
     }

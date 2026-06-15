@@ -2070,7 +2070,8 @@ function App() {
   }
 
   const handleAdminDeletePost = async post => {
-    if (!currentUser || currentRole !== 'admin') {
+    const canDelete = currentUser && (currentRole === 'admin' || post?.author === currentUser)
+    if (!canDelete) {
       return
     }
 
@@ -2092,6 +2093,47 @@ function App() {
       fetchDeletedComments()
     } catch (error) {
       showError(error.response?.data?.message || 'Không xóa được bài viết.')
+    }
+  }
+
+  const handleUpdateForumPost = async (post, draft) => {
+    const canEdit = currentUser && (currentRole === 'admin' || post?.author === currentUser)
+    if (!canEdit || !post?.id) {
+      return false
+    }
+
+    const title = String(draft?.title || '').trim()
+    const content = String(draft?.content || '').trim()
+    const category = String(draft?.category || '').trim()
+
+    if (!title || !content || !category) {
+      showWarning('Cậu điền đủ tiêu đề, nội dung và danh mục nhé!')
+      return false
+    }
+
+    try {
+      const response = await api.patch(`/api/forum/posts/${post.id}`, {
+        title,
+        content,
+        category
+      })
+      const updatedPost = response.data?.post
+      setForumPosts(prev => prev.map(item => (
+        String(item.id) === String(post.id)
+          ? {
+              ...item,
+              title: updatedPost?.title || title,
+              content: updatedPost?.content || content,
+              category: updatedPost?.category || category,
+              authorDisplayName: updatedPost?.authorDisplayName || item.authorDisplayName
+            }
+          : item
+      )))
+      showSuccess(response.data?.message || 'Đã cập nhật bài viết.')
+      return true
+    } catch (error) {
+      showError(error.response?.data?.message || 'Không cập nhật được bài viết.')
+      return false
     }
   }
 
@@ -2634,8 +2676,10 @@ function App() {
                     forumScope={forumScope}
                     forumCourse={forumCourse}
                     onOpenProfile={handleOpenProfile}
+                    currentUser={currentUser}
                     currentRole={currentRole}
                     onAdminDeletePost={handleAdminDeletePost}
+                    onUpdatePost={handleUpdateForumPost}
                     onAdminPunishComment={handlePunishForumComment}
                   />
                 } />

@@ -2,6 +2,7 @@ const express = require('express');
 const {
   getPosts,
   createPost,
+  updatePost,
   getComments,
   createComment,
   deletePost,
@@ -22,6 +23,7 @@ const router = express.Router();
 
 router.get('/posts', optionalAuth, getPosts);
 router.post('/posts', requireActiveUser, createPost);
+router.patch('/posts/:id', requireActiveUser, updatePost);
 router.delete('/posts/:id', requireActiveUser, deletePost);
 router.patch('/posts/:id/reaction', requireActiveUser, togglePostReaction);
 
