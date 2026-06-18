@@ -121,11 +121,16 @@ const listAssignments = catchAsync(async (req, res) => {
   }, {});
 
   const enriched = assignments.map(assignment => {
-    const safeAssignment = isStudent ? sanitizeAssignmentForStudent(assignment) : assignment;
+    const mySubmission = submissionByAssignment[String(assignment._id)] || null;
+    const safeAssignment = isStudent && !mySubmission
+      ? sanitizeAssignmentForStudent(assignment)
+      : isStudent && mySubmission
+        ? assignment
+        : assignment;
     return {
       ...safeAssignment,
       submissionCount: submissionCounts[String(assignment._id)] || 0,
-      mySubmission: submissionByAssignment[String(assignment._id)] || null
+      mySubmission
     };
   });
 

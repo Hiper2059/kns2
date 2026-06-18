@@ -228,6 +228,7 @@ const LmsView = ({
     const isQuiz = assignment.type === 'quiz'
     const questions = Array.isArray(assignment.questions) ? assignment.questions : []
     const draftAnswers = quizDrafts[assignment._id] || []
+    const myAnswers = assignment.mySubmission?.answers || []
 
     if (!isQuiz || !questions.length) {
       return null
@@ -255,11 +256,29 @@ const LmsView = ({
               </div>
             ) : (
               <div className="flex flex-col gap-2">
-                {(question.options || []).map((option, optionIndex) => (
-                  <span key={`${assignment._id}-option-${index}-${optionIndex}`} className="text-[14px] text-slate-600 font-medium">
-                    {answerLabel(optionIndex)}. {option}
-                  </span>
-                ))}
+                {(question.options || []).map((option, optionIndex) => {
+                  const isCorrectAnswer = question.correctOptionIndex === optionIndex
+                  const studentPickedThis = myAnswers[index] === optionIndex
+                  const hasSubmission = Boolean(assignment.mySubmission)
+
+                  let optionClass = 'bg-white border-slate-200 text-slate-600'
+                  let badge = null
+
+                  if (hasSubmission && isCorrectAnswer) {
+                    optionClass = 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                    badge = <span className="ml-auto shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[12px] font-black">✓ Đáp án đúng</span>
+                  } else if (hasSubmission && studentPickedThis && !isCorrectAnswer) {
+                    optionClass = 'bg-red-50 border-red-300 text-red-700'
+                    badge = <span className="ml-auto shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-red-100 text-red-600 text-[12px] font-black">✗ Bạn chọn sai</span>
+                  }
+
+                  return (
+                    <span key={`${assignment._id}-option-${index}-${optionIndex}`} className={`flex items-center text-[14px] font-medium p-3 rounded-lg border transition-colors ${optionClass}`}>
+                      <span>{answerLabel(optionIndex)}. {option}</span>
+                      {badge}
+                    </span>
+                  )
+                })}
               </div>
             )}
           </div>

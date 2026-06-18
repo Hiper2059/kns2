@@ -265,6 +265,7 @@ const LessonFullPage = ({
     const draftAnswers = quizDrafts[assignment._id] || []
     const isTeacherOrAdmin = currentRole === 'teacher' || currentRole === 'admin'
     const answerLabel = index => String.fromCharCode(65 + index)
+    const myAnswers = assignment.mySubmission?.answers || []
 
     if (!isQuiz || !questions.length) {
       return null
@@ -292,11 +293,32 @@ const LessonFullPage = ({
               </div>
             ) : (
               <div className="flex flex-col gap-2">
-                {(question.options || []).map((option, optionIndex) => (
-                  <span key={`${assignment._id}-option-${index}-${optionIndex}`} className={`text-[14px] font-medium p-3 rounded-lg border ${question.correctOptionIndex === optionIndex ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200 text-slate-600'}`}>
-                    {answerLabel(optionIndex)}. {option} {question.correctOptionIndex === optionIndex && isTeacherOrAdmin && ' (Đúng)'}
-                  </span>
-                ))}
+                {(question.options || []).map((option, optionIndex) => {
+                  const isCorrectAnswer = question.correctOptionIndex === optionIndex
+                  const studentPickedThis = myAnswers[index] === optionIndex
+                  const hasSubmission = Boolean(assignment.mySubmission)
+
+                  let optionClass = 'bg-white border-slate-200 text-slate-600'
+                  let badge = null
+
+                  if (hasSubmission && !isTeacherOrAdmin && isCorrectAnswer) {
+                    optionClass = 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                    badge = <span className="ml-auto shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[12px] font-black">✓ Đáp án đúng</span>
+                  } else if (hasSubmission && !isTeacherOrAdmin && studentPickedThis && !isCorrectAnswer) {
+                    optionClass = 'bg-red-50 border-red-300 text-red-700'
+                    badge = <span className="ml-auto shrink-0 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-red-100 text-red-600 text-[12px] font-black">✗ Bạn chọn sai</span>
+                  } else if (isTeacherOrAdmin && isCorrectAnswer) {
+                    optionClass = 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                    badge = <span className="ml-auto shrink-0 text-[12px] font-bold text-emerald-600">(Đúng)</span>
+                  }
+
+                  return (
+                    <span key={`${assignment._id}-option-${index}-${optionIndex}`} className={`flex items-center text-[14px] font-medium p-3 rounded-lg border transition-colors ${optionClass}`}>
+                      <span>{answerLabel(optionIndex)}. {option}</span>
+                      {badge}
+                    </span>
+                  )
+                })}
               </div>
             )}
           </div>

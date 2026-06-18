@@ -31,3 +31,13 @@ temp.css
 # Temp files
 temp.css
 
+# Non-code files (reports, docs, extracted content)
+*.docx
+extracted_guide/
+extracted_report/
+guide.txt
+guide_text.txt
+report.txt
+backend-run.err.log
+backend-run.out.log
+

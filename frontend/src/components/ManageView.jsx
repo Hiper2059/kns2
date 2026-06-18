@@ -163,7 +163,7 @@ const ManageView = ({
   }
 
   return (
-    <div className="w-full h-[calc(100vh-64px)] min-w-0 flex flex-col lg:flex-row bg-white overflow-hidden">
+    <div className="w-full min-h-[calc(100vh-64px)] lg:h-[calc(100vh-64px)] min-w-0 flex flex-col lg:flex-row bg-white overflow-visible lg:overflow-hidden">
         
         {/* Sidebar */}
         <aside className="w-full lg:w-[260px] bg-slate-900 text-slate-300 flex flex-col flex-shrink-0">
@@ -216,7 +216,7 @@ const ManageView = ({
         </aside>
 
         {/* Main Content */}
-        <div className="flex-1 flex flex-col min-w-0 bg-slate-50">
+        <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-slate-50">
           <header className="h-[76px] px-6 md:px-8 flex items-center justify-between border-b border-slate-200 flex-shrink-0 bg-white">
             <h2 className="text-xl font-black text-slate-900 hidden md:block">
               {navMeta[activeSection]?.label || 'Tổng quan'}
@@ -230,7 +230,7 @@ const ManageView = ({
             </div>
           </header>
 
-          <section className="flex-1 p-6 md:p-8 overflow-y-auto">
+          <section className="flex-1 min-h-0 p-6 md:p-8 overflow-visible lg:overflow-y-auto">
             {activeSection === 'overview' && (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                 <div className="relative p-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 overflow-hidden shadow-sm">
