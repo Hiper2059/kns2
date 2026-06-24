@@ -1,0 +1,32 @@
+@startuml
+title Sequence - Đăng nhập
+autonumber
+skinparam dpi 180
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+skinparam sequenceMessageAlign center
+
+actor "Người dùng" as User
+boundary "Frontend\nAuthPage/AuthContext" as FE
+control "API\nAuthController" as API
+database "MongoDB\nusers" as DB
+collections "LocalStorage\nToken" as LS
+
+User -> FE: Nhập username, password
+FE -> API: POST /auth/login
+API -> DB: Tìm User theo username
+DB --> API: Thông tin User
+API -> API: Kiểm tra mật khẩu và trạng thái
+alt Hợp lệ
+  API -> DB: Lưu refreshTokenHash, signatureTokenHash
+  DB --> API: Cập nhật thành công
+  API --> FE: accessToken, refreshToken, signatureToken, user
+  FE -> LS: Lưu token
+  FE -> FE: Cập nhật người dùng hiện tại
+  FE --> User: Vào hệ thống
+else Sai thông tin hoặc bị khóa
+  API --> FE: Lỗi xác thực
+  FE --> User: Hiển thị thông báo lỗi
+end
+@enduml

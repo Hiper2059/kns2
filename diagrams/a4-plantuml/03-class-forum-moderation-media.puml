@@ -1,0 +1,152 @@
+@startuml
+!pragma layout smetana
+title Class Diagram - Diễn đàn, kiểm duyệt, danh mục
+left to right direction
+skinparam dpi 180
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam defaultFontName Arial
+skinparam defaultFontSize 16
+skinparam classFontSize 17
+skinparam classHeaderBackgroundColor #FFF3E1
+skinparam classBorderColor #7A6040
+
+class "Bài viết diễn đàn" as BaiVietDienDan {
+  +mãBàiViết: ObjectId
+  +tácGiả: String <<bắt buộc>>
+  +danhMục: String <<bắt buộc>>
+  +phạmVi: String = chung
+  +khóaHọc: ObjectId <<Khóa học>>
+  +tiêuĐề: String <<bắt buộc>>
+  +nộiDung: String <<bắt buộc>>
+  +đãXóa: Boolean
+  +thờiĐiểmXóa: Date
+  +ngườiXóa: String
+  +lýDoXóa: String
+  +danhSáchNgườiThảTim: String[]
+  +ngàyTạo: Date
+  +ngàyCậpNhật: Date
+}
+
+class "Bình luận diễn đàn" as BinhLuanDienDan {
+  +mãBìnhLuận: ObjectId
+  +bàiViết: ObjectId <<Bài viết diễn đàn, bắt buộc, đánh chỉ mục>>
+  +tácGiả: String <<bắt buộc>>
+  +nộiDungBìnhLuận: String <<bắt buộc>>
+  +đãXóa: Boolean
+  +thờiĐiểmXóa: Date
+  +ngườiXóa: String
+  +lýDoXóa: String
+  +ngàyTạo: Date
+  +ngàyCậpNhật: Date
+}
+
+class "Bình luận bài học" as BinhLuanBaiHoc {
+  +mãBìnhLuận: ObjectId
+  +bàiHọc: ObjectId <<Bài học, bắt buộc>>
+  +khóaHọc: ObjectId <<Khóa học, bắt buộc>>
+  +bìnhLuậnCha: ObjectId <<Bình luận bài học>>
+  +tácGiả: ObjectId <<Người dùng>>
+  +tênTácGiả: String
+  +nộiDung: String <<bắt buộc>>
+  +đãXóa: Boolean
+  +ngàyTạo: Date
+  +ngàyCậpNhật: Date
+}
+
+class "Báo cáo kiểm duyệt" as BaoCaoKiemDuyet {
+  +mãBáoCáo: ObjectId
+  +loạiĐốiTượng: String <<bắt buộc>>
+  +mãĐốiTượng: String <<bắt buộc>>
+  +tácGiảĐốiTượng: String
+  +nộiDung: String <<bắt buộc>>
+  +ngườiBáoCáo: String <<bắt buộc>>
+  +quyếtĐịnh: String <<bắt buộc>>
+  +lýDo: String
+  +độTinCậy: Number
+  +ngàyTạo: Date
+  +ngàyCậpNhật: Date
+}
+
+class "Danh mục" as DanhMuc {
+  +mãDanhMục: ObjectId
+  +tênDanhMục: String <<bắt buộc, duy nhất>>
+  +ngườiTạo: String
+  +ngàyTạo: Date
+  +ngàyCậpNhật: Date
+}
+
+class "Liên kết đoạn phim" as LienKetDoanPhim {
+  +mãĐoạnPhim: ObjectId
+  +danhMục: String <<bắt buộc>>
+  +đườngDẫn: String <<bắt buộc, duy nhất>>
+  +ngườiThêm: String <<bắt buộc>>
+  +ngàyTạo: Date
+  +ngàyCậpNhật: Date
+}
+
+class "Bộ điều khiển diễn đàn" as BoDieuKhienDienDan {
+  +lấyDanhSáchBàiViết(yêuCầu, phảnHồi): Promise
+  +tạoBàiViết(yêuCầu, phảnHồi): Promise
+  +cậpNhậtBàiViết(yêuCầu, phảnHồi): Promise
+  +xóaBàiViết(yêuCầu, phảnHồi): Promise
+  +thảTimBàiViết(yêuCầu, phảnHồi): Promise
+  +lấyDanhSáchBìnhLuận(yêuCầu, phảnHồi): Promise
+  +tạoBìnhLuận(yêuCầu, phảnHồi): Promise
+  +xóaBìnhLuận(yêuCầu, phảnHồi): Promise
+  +khôiPhụcBàiViết(yêuCầu, phảnHồi): Promise
+  +khôiPhụcBìnhLuận(yêuCầu, phảnHồi): Promise
+}
+
+class "Bộ điều khiển kiểm duyệt" as BoDieuKhienKiemDuyet {
+  +tạoBáoCáoViPhạm(yêuCầu, phảnHồi): Promise
+  +lấyDanhSáchBáoCáo(yêuCầu, phảnHồi): Promise
+  +xóaBáoCáo(yêuCầu, phảnHồi): Promise
+  +xóaTấtCảBáoCáo(yêuCầu, phảnHồi): Promise
+}
+
+class "Bộ điều khiển bình luận bài học" as BoDieuKhienBinhLuanBaiHoc {
+  +lấyBìnhLuậnBàiHọc(yêuCầu, phảnHồi): Promise
+  +tạoBìnhLuậnBàiHọc(yêuCầu, phảnHồi): Promise
+  +xóaBìnhLuậnBàiHọc(yêuCầu, phảnHồi): Promise
+}
+
+class "Bộ điều khiển danh mục" as BoDieuKhienDanhMuc {
+  +lấyDanhSáchDanhMục(yêuCầu, phảnHồi): Promise
+  +tạoDanhMục(yêuCầu, phảnHồi): Promise
+  +xóaDanhMục(yêuCầu, phảnHồi): Promise
+}
+
+class "Bộ điều khiển đoạn phim" as BoDieuKhienDoanPhim {
+  +lấyDanhSáchĐoạnPhim(yêuCầu, phảnHồi): Promise
+  +thêmĐoạnPhim(yêuCầu, phảnHồi): Promise
+  +xóaĐoạnPhim(yêuCầu, phảnHồi): Promise
+}
+
+class "Dịch vụ kiểm duyệt" as DichVuKiemDuyet {
+  +đánhGiáKiểmDuyệt(vănBản): Promise
+}
+
+BaiVietDienDan "1" -- "0..*" BinhLuanDienDan
+BaiVietDienDan "0..*" -- "0..1" DanhMuc : thuộc danh mục
+BaiVietDienDan "0..*" -- "0..1" KhoaHoc : diễn đàn lớp
+BinhLuanBaiHoc "0..*" -- "1" BaiHoc
+BinhLuanBaiHoc "0..*" -- "1" KhoaHoc
+BinhLuanBaiHoc "0..*" -- "0..1" BinhLuanBaiHoc : phản hồi
+BaoCaoKiemDuyet ..> BaiVietDienDan : báo cáo
+BaoCaoKiemDuyet ..> BinhLuanDienDan : báo cáo
+BaoCaoKiemDuyet ..> BinhLuanBaiHoc : báo cáo
+LienKetDoanPhim "0..*" -- "0..1" DanhMuc : thuộc danh mục
+BoDieuKhienDienDan ..> BaiVietDienDan
+BoDieuKhienDienDan ..> BinhLuanDienDan
+BoDieuKhienKiemDuyet ..> BaoCaoKiemDuyet
+BoDieuKhienKiemDuyet ..> DichVuKiemDuyet
+BoDieuKhienBinhLuanBaiHoc ..> BinhLuanBaiHoc
+BoDieuKhienDanhMuc ..> DanhMuc
+BoDieuKhienDoanPhim ..> LienKetDoanPhim
+
+note right of BaoCaoKiemDuyet
+loạiĐốiTượng: bài viết | bình luận | bình luận bài học
+quyếtĐịnh: giữ lại | xóa
+end note
+@enduml

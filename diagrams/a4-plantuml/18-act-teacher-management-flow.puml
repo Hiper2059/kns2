@@ -1,0 +1,42 @@
+@startuml
+title Activity - Luồng quản lý của giảng viên
+skinparam dpi 180
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+
+start
+:Giảng viên mở Studio;
+if (Có quyền teacher/admin?) then (Có)
+  :Xem danh sách khóa học của mình;
+else (Không)
+  :Từ chối truy cập;
+  stop
+endif
+
+if (Cần tạo khóa học?) then (Có)
+  :Nhập tên, danh mục, mô tả, ảnh;
+  :Tạo khóa học;
+endif
+
+:Chọn khóa học;
+if (Cần tạo bài học?) then (Có)
+  :Nhập tiêu đề, nội dung, video, thứ tự;
+  :Tạo bài học;
+endif
+
+if (Cần tạo bài tập?) then (Có)
+  :Nhập mô tả hoặc câu hỏi quiz;
+  :Tạo bài tập;
+endif
+
+if (Có bài nộp cần chấm?) then (Có)
+  :Mở danh sách bài nộp;
+  :Nhập điểm và nhận xét;
+  :Cập nhật trạng thái graded;
+endif
+
+:Theo dõi học viên và tiến độ;
+stop
+@enduml
+

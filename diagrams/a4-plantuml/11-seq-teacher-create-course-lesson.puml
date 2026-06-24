@@ -1,0 +1,29 @@
+@startuml
+title Sequence - Giảng viên tạo khóa học và bài học
+autonumber
+skinparam dpi 180
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+
+actor "Giảng viên" as Teacher
+boundary "Frontend\nTeacherView" as FE
+control "API\nCourse/Lesson" as API
+database "MongoDB\ncourses/lessons" as DB
+
+Teacher -> FE: Nhập thông tin khóa học
+FE -> API: POST /courses
+API -> API: Kiểm tra role teacher/admin và validate dữ liệu
+API -> DB: Tạo Course
+DB --> API: Course mới
+API --> FE: Thông tin khóa học
+FE --> Teacher: Hiển thị khóa học vừa tạo
+
+Teacher -> FE: Nhập bài học cho khóa học
+FE -> API: POST /courses/{courseId}/lessons
+API -> API: Kiểm tra quyền sở hữu khóa học
+API -> DB: Tạo Lesson và slug
+DB --> API: Lesson mới
+API --> FE: Thông tin bài học
+FE --> Teacher: Cập nhật danh sách bài học
+@enduml

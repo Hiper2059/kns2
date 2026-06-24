@@ -296,13 +296,13 @@ const upsertSubmission = catchAsync(async (req, res) => {
     submissionPayload = {
       course: assignment.course,
       studentName: req.currentUser.username,
-      content: `Da nop trac nghiem (${correctCount}/${questions.length} cau dung).`,
+      content: `Đã nộp trắc nghiệm (${correctCount}/${questions.length} câu đúng).`,
       fileUrl: '',
       answers: normalizedAnswers.slice(0, questions.length),
       autoScore: score,
       status: 'graded',
       score,
-      feedback: `${correctCount}/${questions.length} cau dung`,
+      feedback: `${correctCount}/${questions.length} câu đúng`,
       submittedAt: new Date(),
       gradedAt: new Date()
     };

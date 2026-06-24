@@ -1,0 +1,145 @@
+@startuml
+allowmixing
+title ERD - Cấu trúc người dùng, danh mục và khóa học
+top to bottom direction
+skinparam dpi 180
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 16
+skinparam classFontSize 16
+skinparam linetype ortho
+skinparam rectangle {
+  BackgroundColor #F8FBFF
+  BorderColor #6688AA
+}
+
+entity "NGƯỜI DÙNG" as nguoi_dung {
+  * mãNgườiDùng: ObjectId
+  --
+  * tênĐăngNhập: String <<duy nhất>>
+  mãBămMậtKhẩu: String
+  mãBămTokenLàmMới: String
+  mãBămTokenChữKý: String
+  vaiTrò: String
+  trạngThái: String
+  sốLầnViPhạm: Number
+  lầnViPhạmGầnNhất: Date
+  điểmTíchLũy: Number
+  hồSơNhúng: Object
+  ngàyTạo: Date
+  ngàyCậpNhật: Date
+}
+
+entity "HỒ SƠ NGƯỜI DÙNG" as ho_so {
+  * mãHồSơ: ObjectId
+  --
+  * ngườiDùng: ObjectId
+  tênHiểnThị: String
+  nghệDanh: String
+  đườngDẫnẢnhĐạiDiện: String
+  giớiThiệu: String
+  hồSơGiảngViên: Object
+  hồSơHọcViên: Object
+  ngàyTạo: Date
+  ngàyCậpNhật: Date
+}
+
+entity "DANH MỤC" as danh_muc {
+  * mãDanhMục: ObjectId
+  --
+  * tênDanhMục: String <<duy nhất>>
+  ngườiTạo: String
+  ngàyTạo: Date
+  ngàyCậpNhật: Date
+}
+
+entity "KHÓA HỌC" as khoa_hoc {
+  * mãKhóaHọc: ObjectId
+  --
+  * tiêuĐề: String
+  * danhMục: String
+  môTả: String
+  đườngDẫnẢnh: String
+  * giảngViên: ObjectId
+  * tênGiảngViên: String
+  trạngThái: String
+  ngàyTạo: Date
+  ngàyCậpNhật: Date
+}
+
+entity "BÀI HỌC" as bai_hoc {
+  * mãBàiHọc: ObjectId
+  --
+  * khóaHọc: ObjectId
+  * tiêuĐề: String
+  nộiDung: String
+  đườngDẫnĐoạnPhim: String
+  đườngDẫnẢnh: String
+  đườngDẫnTĩnh: String
+  thứTự: Number
+  ngườiTạo: ObjectId
+  tênNgườiTạo: String
+  danhSáchNgườiThảTim: String[]
+  ngàyTạo: Date
+  ngàyCậpNhật: Date
+}
+
+entity "BÀI TẬP" as bai_tap {
+  * mãBàiTập: ObjectId
+  --
+  * khóaHọc: ObjectId
+  bàiHọc: ObjectId
+  * tiêuĐề: String
+  môTả: String
+  loạiBàiTập: String
+  câuHỏi: Object[]
+  hạnNộp: Date
+  * ngườiTạo: ObjectId
+  tênNgườiTạo: String
+  ngàyTạo: Date
+  ngàyCậpNhật: Date
+}
+
+rectangle "có hồ sơ" as q_co_ho_so <<quan hệ>>
+rectangle "giảng dạy" as q_giang_day <<quan hệ>>
+rectangle "phân loại" as q_phan_loai <<quan hệ>>
+rectangle "bao gồm" as q_bao_gom <<quan hệ>>
+rectangle "giao bài" as q_giao_bai <<quan hệ>>
+rectangle "gắn với" as q_gan_voi <<quan hệ>>
+rectangle "tạo bài học" as q_tao_bai_hoc <<quan hệ>>
+rectangle "tạo bài tập" as q_tao_bai_tap <<quan hệ>>
+
+nguoi_dung -- q_co_ho_so : 1,1
+q_co_ho_so -- ho_so : 0,1
+
+nguoi_dung -- q_giang_day : 0,n
+q_giang_day -- khoa_hoc : 1,1
+
+danh_muc .. q_phan_loai : 0,n
+q_phan_loai .. khoa_hoc : 0,n
+
+khoa_hoc -- q_bao_gom : 1,1
+q_bao_gom -- bai_hoc : 1,n
+
+khoa_hoc -- q_giao_bai : 1,1
+q_giao_bai -- bai_tap : 0,n
+
+bai_hoc -- q_gan_voi : 0,1
+q_gan_voi -- bai_tap : 0,n
+
+nguoi_dung -- q_tao_bai_hoc : 0,n
+q_tao_bai_hoc -- bai_hoc : 0,1
+
+nguoi_dung -- q_tao_bai_tap : 0,n
+q_tao_bai_tap -- bai_tap : 1,1
+
+note bottom of q_phan_loai
+Khóa học lưu danh mục bằng chuỗi tên danh mục,
+không phải khóa ngoại ObjectId cứng.
+end note
+
+note right of nguoi_dung
+vaiTrò: quản trị viên | giảng viên | học viên
+trạngThái: hoạt động | tạm khóa | cấm
+end note
+@enduml

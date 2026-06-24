@@ -1,0 +1,23 @@
+@startuml
+title Sequence - Học viên nộp bài tập
+autonumber
+skinparam dpi 180
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+
+actor "Học viên" as Student
+boundary "Frontend\nLmsView/LessonFullPage" as FE
+control "API\nAssignmentController" as API
+database "MongoDB\nassignments/submissions" as DB
+
+Student -> FE: Nhập bài làm hoặc chọn đáp án quiz
+FE -> API: POST /assignments/{assignmentId}/submissions
+API -> DB: Lấy Assignment
+DB --> API: Thông tin bài tập
+API -> API: Kiểm tra quyền học viên và tính điểm tự động nếu là quiz
+API -> DB: Upsert Submission theo assignment + student
+DB --> API: Submission đã lưu
+API --> FE: Kết quả nộp bài
+FE --> Student: Hiển thị trạng thái đã nộp
+@enduml

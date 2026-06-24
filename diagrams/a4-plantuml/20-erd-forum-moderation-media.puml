@@ -1,0 +1,169 @@
+@startuml
+allowmixing
+title ERD - Diễn đàn, kiểm duyệt, danh mục và video
+top to bottom direction
+skinparam dpi 180
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 16
+skinparam classFontSize 16
+skinparam linetype ortho
+skinparam rectangle {
+  BackgroundColor #F8FBFF
+  BorderColor #6688AA
+}
+
+entity "NGƯỜI DÙNG" as nguoi_dung {
+  * mãNgườiDùng: ObjectId
+  --
+  * tênĐăngNhập: String
+  vaiTrò: String
+  trạngThái: String
+}
+
+entity "KHÓA HỌC" as khoa_hoc {
+  * mãKhóaHọc: ObjectId
+  --
+  * tiêuĐề: String
+  * danhMục: String
+}
+
+entity "BÀI HỌC" as bai_hoc {
+  * mãBàiHọc: ObjectId
+  --
+  * khóaHọc: ObjectId
+  * tiêuĐề: String
+}
+
+entity "DANH MỤC" as danh_muc {
+  * mãDanhMục: ObjectId
+  --
+  * tênDanhMục: String <<duy nhất>>
+  ngườiTạo: String
+  ngàyTạo: Date
+  ngàyCậpNhật: Date
+}
+
+entity "LIÊN KẾT VIDEO" as video {
+  * mãVideo: ObjectId
+  --
+  * danhMục: String
+  * đườngDẫn: String <<duy nhất>>
+  * ngườiThêm: String
+  ngàyTạo: Date
+  ngàyCậpNhật: Date
+}
+
+entity "BÀI VIẾT DIỄN ĐÀN" as bai_viet {
+  * mãBàiViết: ObjectId
+  --
+  * tácGiả: String
+  * danhMục: String
+  phạmVi: String
+  khóaHọc: ObjectId
+  * tiêuĐề: String
+  * nộiDung: String
+  đãXóa: Boolean
+  thờiĐiểmXóa: Date
+  ngườiXóa: String
+  lýDoXóa: String
+  danhSáchNgườiThảTim: String[]
+  ngàyTạo: Date
+  ngàyCậpNhật: Date
+}
+
+entity "BÌNH LUẬN DIỄN ĐÀN" as binh_luan {
+  * mãBìnhLuận: ObjectId
+  --
+  * bàiViết: ObjectId
+  * tácGiả: String
+  * nộiDungBìnhLuận: String
+  đãXóa: Boolean
+  thờiĐiểmXóa: Date
+  ngườiXóa: String
+  lýDoXóa: String
+  ngàyTạo: Date
+  ngàyCậpNhật: Date
+}
+
+entity "BÌNH LUẬN BÀI HỌC" as binh_luan_bai_hoc {
+  * mãBìnhLuận: ObjectId
+  --
+  * bàiHọc: ObjectId
+  * khóaHọc: ObjectId
+  bìnhLuậnCha: ObjectId
+  tácGiả: ObjectId
+  tênTácGiả: String
+  * nộiDung: String
+  đãXóa: Boolean
+  ngàyTạo: Date
+  ngàyCậpNhật: Date
+}
+
+entity "BÁO CÁO KIỂM DUYỆT" as bao_cao {
+  * mãBáoCáo: ObjectId
+  --
+  * loạiĐốiTượng: String
+  * mãĐốiTượng: String
+  tácGiảĐốiTượng: String
+  * nộiDung: String
+  * ngườiBáoCáo: String
+  * quyếtĐịnh: String
+  lýDo: String
+  độTinCậy: Number
+  ngàyTạo: Date
+  ngàyCậpNhật: Date
+}
+
+rectangle "phân loại" as q_dm_bai_viet <<quan hệ>>
+rectangle "phân loại" as q_dm_video <<quan hệ>>
+rectangle "thuộc diễn đàn lớp" as q_dien_dan_lop <<quan hệ>>
+rectangle "có bình luận" as q_co_binh_luan <<quan hệ>>
+rectangle "bình luận bài học" as q_binh_luan_bai_hoc <<quan hệ>>
+rectangle "phản hồi" as q_phan_hoi <<quan hệ>>
+rectangle "viết bình luận bài học" as q_tac_gia_bl_bai_hoc <<quan hệ>>
+rectangle "báo cáo" as q_bao_cao <<quan hệ>>
+
+danh_muc .. q_dm_bai_viet : 0,n
+q_dm_bai_viet .. bai_viet : 0,n
+
+danh_muc .. q_dm_video : 0,n
+q_dm_video .. video : 0,n
+
+khoa_hoc -- q_dien_dan_lop : 0,1
+q_dien_dan_lop -- bai_viet : 0,n
+
+bai_viet -- q_co_binh_luan : 1,1
+q_co_binh_luan -- binh_luan : 0,n
+
+bai_hoc -- q_binh_luan_bai_hoc : 1,1
+q_binh_luan_bai_hoc -- binh_luan_bai_hoc : 0,n
+
+binh_luan_bai_hoc -- q_phan_hoi : 0,1
+q_phan_hoi -- binh_luan_bai_hoc : 0,n
+
+nguoi_dung -- q_tac_gia_bl_bai_hoc : 0,n
+q_tac_gia_bl_bai_hoc -- binh_luan_bai_hoc : 0,n
+
+nguoi_dung .. q_bao_cao : 0,n
+q_bao_cao .. bao_cao : 1,1
+bao_cao .. bai_viet : 0,n
+bao_cao .. binh_luan : 0,n
+bao_cao .. binh_luan_bai_hoc : 0,n
+
+note bottom of q_dm_bai_viet
+Bài viết và video lưu danh mục bằng tên,
+không phải khóa ngoại ObjectId cứng.
+end note
+
+note right of bai_viet
+tácGiả của bài viết diễn đàn là String.
+Quan hệ với NGƯỜI DÙNG chỉ mang ý nghĩa nghiệp vụ,
+không phải khóa ngoại cứng trong schema.
+end note
+
+note right of bao_cao
+Báo cáo kiểm duyệt dùng loạiĐốiTượng + mãĐốiTượng.
+Đây là quan hệ đa hình, không phải một khóa ngoại cố định.
+end note
+@enduml

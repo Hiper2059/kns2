@@ -990,8 +990,8 @@ const LessonFullPage = ({
                                   <span className="font-bold text-slate-600">Trạng thái bài làm:</span>
                                   <strong className={`px-3 py-1 rounded-lg font-bold ${assignment.mySubmission.status === 'graded' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700'}`}>
                                     {assignment.mySubmission.status === 'graded'
-                                      ? `Đã chấm - ${assignment.mySubmission.score} điểm`
-                                      : 'Đang chờ chấm'}
+                                      ? `Đã chấm - ${assignment.mySubmission.score}${assignment.type === 'quiz' ? '%' : ' điểm'}`
+                                      : assignment.mySubmission.status === 'submitted' ? 'Đã nộp - Đang chờ chấm' : 'Đang chờ chấm'}
                                   </strong>
                                 </div>
                               </div>

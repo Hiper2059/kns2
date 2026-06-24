@@ -1,0 +1,33 @@
+@startuml
+title Sequence - Học viên đăng ký khóa học
+autonumber
+skinparam dpi 180
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+
+actor "Học viên" as Student
+boundary "Frontend\nLmsView" as FE
+control "API\nCourse/Enrollment" as API
+database "MongoDB\ncourses/enrollments" as DB
+
+Student -> FE: Mở danh sách khóa học
+FE -> API: GET /courses
+API -> DB: Lấy khóa học đã xuất bản
+DB --> API: Danh sách khóa học
+API --> FE: courses
+FE --> Student: Hiển thị khóa học
+
+Student -> FE: Chọn đăng ký
+FE -> API: POST /courses/{courseId}/enroll
+API -> DB: Kiểm tra Course và Enrollment đã tồn tại
+alt Chưa đăng ký
+  API -> DB: Tạo Enrollment
+  DB --> API: Enrollment mới
+  API --> FE: Đăng ký thành công
+  FE --> Student: Cập nhật trạng thái đã đăng ký
+else Đã đăng ký hoặc lỗi quyền
+  API --> FE: Thông báo lỗi
+  FE --> Student: Hiển thị lỗi
+end
+@enduml

@@ -1,0 +1,32 @@
+@startuml
+title Sequence - Làm mới token và đăng xuất
+autonumber
+skinparam dpi 180
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+
+actor "Người dùng" as User
+boundary "Frontend\napiClient/AuthContext" as FE
+control "API\nAuthController" as API
+database "MongoDB\nusers" as DB
+collections "LocalStorage\nToken" as LS
+
+group Làm mới token
+  FE -> API: POST /auth/refresh
+  API -> DB: Đối chiếu refreshTokenHash
+  DB --> API: User hợp lệ
+  API --> FE: Access token mới
+  FE -> LS: Cập nhật access token
+end
+
+group Đăng xuất
+  User -> FE: Chọn đăng xuất
+  FE -> API: POST /auth/logout
+  API -> DB: Xóa refreshTokenHash, signatureTokenHash
+  DB --> API: Đã cập nhật
+  API --> FE: Thành công
+  FE -> LS: Xóa token localStorage
+  FE --> User: Quay về màn hình đăng nhập
+end
+@enduml

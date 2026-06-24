@@ -1,0 +1,34 @@
+@startuml
+title Sequence - Giảng viên tạo và chấm bài tập
+autonumber
+skinparam dpi 180
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+
+actor "Giảng viên" as Teacher
+boundary "Frontend\nTeacherView" as FE
+control "API\nAssignmentController" as API
+database "MongoDB\nassignments/submissions" as DB
+
+Teacher -> FE: Nhập bài tập
+FE -> API: POST /courses/{courseId}/assignments
+API -> API: Kiểm tra role và quyền khóa học
+API -> DB: Tạo Assignment
+DB --> API: Assignment mới
+API --> FE: Danh sách bài tập cập nhật
+FE --> Teacher: Hiển thị bài tập
+
+Teacher -> FE: Mở danh sách bài nộp
+FE -> API: GET /assignments/{assignmentId}/submissions
+API -> DB: Lấy Submission của bài tập
+DB --> API: Danh sách bài nộp
+API --> FE: submissions
+
+Teacher -> FE: Nhập điểm và nhận xét
+FE -> API: PATCH /submissions/{submissionId}/grade
+API -> DB: Cập nhật score, feedback, status, gradedAt
+DB --> API: Submission đã chấm
+API --> FE: Kết quả chấm
+FE --> Teacher: Hiển thị điểm mới
+@enduml

@@ -222,6 +222,7 @@ const AuthPage = () => {
                 autoComplete={isLoginPage ? 'current-password' : 'new-password'}
                 className={`${baseInputClass} pr-12`}
               />
+              {formData.password && (
               <button
                 type="button"
                 className="absolute right-3 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
@@ -230,6 +231,7 @@ const AuthPage = () => {
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
+              )}
               </div>
             </div>
 
@@ -248,6 +250,7 @@ const AuthPage = () => {
                   autoComplete="new-password"
                   className={`${baseInputClass} pr-12`}
                 />
+                {formData.confirmPassword && (
                 <button
                   type="button"
                   className="absolute right-3 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
@@ -256,6 +259,7 @@ const AuthPage = () => {
                 >
                   {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
+                )}
                 </div>
               </div>
             )}

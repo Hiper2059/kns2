@@ -1,0 +1,116 @@
+@startuml
+!pragma layout smetana
+title Class Diagram - Xác thực và người dùng
+left to right direction
+skinparam dpi 180
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam defaultFontName Arial
+skinparam defaultFontSize 16
+skinparam classFontSize 17
+skinparam classHeaderBackgroundColor #E8F1FF
+skinparam classBorderColor #456078
+skinparam packageStyle rectangle
+
+class "Người dùng" as NguoiDung {
+  +mãNgườiDùng: ObjectId
+  +tênĐăngNhập: String <<bắt buộc, duy nhất>>
+  +mãBămMậtKhẩu: String
+  +mãBămTokenLàmMới: String
+  +mãBămTokenChữKý: String
+  +vaiTrò: String = học viên
+  +trạngThái: String = hoạt động
+  +sốLầnViPhạm: Number = 0
+  +lầnViPhạmGầnNhất: Date
+  +điểmTíchLũy: Number = 0
+  +hồSơNhúng: HồSơNgườiDùngNhúng
+  +ngàyTạo: Date
+  +ngàyCậpNhật: Date
+  --
+  +kiểmTraTrướcKhiLưu(): void
+}
+
+class "Hồ sơ người dùng" as HoSoNguoiDung {
+  +mãHồSơ: ObjectId
+  +ngườiDùng: ObjectId <<Người dùng, bắt buộc, duy nhất>>
+  +tênHiểnThị: String
+  +nghệDanh: String
+  +đườngDẫnẢnhĐạiDiện: String
+  +giớiThiệu: String
+  +hồSơGiảngViên: HồSơGiảngViên
+  +hồSơHọcViên: HồSơHọcViên
+  +ngàyTạo: Date
+  +ngàyCậpNhật: Date
+}
+
+class "Hồ sơ giảng viên" as HoSoGiangVien {
+  +mônChính: String
+  +chứngChỉ: String
+  +bằngCấp: String
+  +thànhTíchCáNhân: String
+  +sốNămGiảngDạy: String
+  +câuLạcBộGiảngDạy: String
+  +thànhTíchHọcViên: String
+  +triếtLýGiảngDạy: String
+  +sốĐiệnThoại: String
+  +email: String
+  +fanpage: String
+  +địaChỉ: String
+}
+
+class "Hồ sơ học viên" as HoSoHocVien {
+  +ngàySinh: String
+  +lớp: String
+  +điểmMạnh: String
+  +mụcTiêuNgắnHạn: String
+  +mụcTiêuDàiHạn: String
+  +ghiChúGiảngViên: String
+}
+
+class "Bộ điều khiển xác thực" as BoDieuKhienXacThuc {
+  +đăngKý(yêuCầu, phảnHồi): Promise
+  +đăngNhập(yêuCầu, phảnHồi): Promise
+  +làmMớiMãTruyCập(yêuCầu, phảnHồi): Promise
+  +đăngXuất(yêuCầu, phảnHồi): Promise
+}
+
+class "Bộ điều khiển người dùng" as BoDieuKhienNguoiDung {
+  +lấyDanhSáchNgườiDùng(yêuCầu, phảnHồi): Promise
+  +tạoNgườiDùng(yêuCầu, phảnHồi): Promise
+  +cậpNhậtVaiTrò(yêuCầu, phảnHồi): Promise
+  +cậpNhậtTrạngThái(yêuCầu, phảnHồi): Promise
+  +cậpNhậtThôngTinNgườiDùng(yêuCầu, phảnHồi): Promise
+  +xóaNgườiDùng(yêuCầu, phảnHồi): Promise
+  +lấyHồSơCủaTôi(yêuCầu, phảnHồi): Promise
+  +cậpNhậtHồSơCủaTôi(yêuCầu, phảnHồi): Promise
+  +lấyHồSơCôngKhai(yêuCầu, phảnHồi): Promise
+}
+
+class "Dịch vụ hồ sơ người dùng" as DichVuHoSoNguoiDung {
+  +đảmBảoTồnTạiHồSơ(ngườiDùng, dữLiệuNhập): Promise
+  +lấyHồSơTheoNgườiDùng(ngườiDùng): Promise
+  +cậpNhậtHồSơTheoNgườiDùng(ngườiDùng, dữLiệuCậpNhật): Promise
+  +lấyBảnĐồHồSơTheoMãNgườiDùng(danhSáchMãNgườiDùng): Promise
+  +lấyBảnĐồTênHiểnThịTheoTênĐăngNhập(danhSáchTênĐăngNhập): Promise
+}
+
+class "Lớp trung gian xác thực" as LopTrungGianXacThuc {
+  +xácThựcNếuCó(yêuCầu, phảnHồi, bướcTiếpTheo): void
+  +yêuCầuTàiKhoảnHoạtĐộng(yêuCầu, phảnHồi, bướcTiếpTheo): void
+  +yêuCầuQuảnTrịViên(yêuCầu, phảnHồi, bướcTiếpTheo): void
+  +yêuCầuGiảngViênHoặcQuảnTrịViên(yêuCầu, phảnHồi, bướcTiếpTheo): void
+}
+
+NguoiDung "1" o-- "0..1" HoSoNguoiDung : có hồ sơ riêng
+HoSoNguoiDung *-- "0..1" HoSoGiangVien
+HoSoNguoiDung *-- "0..1" HoSoHocVien
+BoDieuKhienXacThuc ..> NguoiDung
+BoDieuKhienNguoiDung ..> NguoiDung
+BoDieuKhienNguoiDung ..> DichVuHoSoNguoiDung
+LopTrungGianXacThuc ..> NguoiDung
+
+note right of NguoiDung
+vaiTrò: quản trị viên | giảng viên | học viên
+trạngThái: hoạt động | tạm khóa | cấm
+end note
+@enduml

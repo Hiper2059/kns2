@@ -1,0 +1,37 @@
+@startuml
+title Sequence - Báo cáo vi phạm và admin xử lý
+autonumber
+skinparam dpi 180
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+
+actor "Người dùng" as User
+boundary "Frontend" as FE
+control "API\nModerationController" as API
+entity "AI Moderation" as AI
+database "MongoDB\nreports/posts/comments" as DB
+actor "Admin" as Admin
+
+User -> FE: Báo cáo nội dung vi phạm
+FE -> API: POST /moderation/report
+API -> AI: Đánh giá nội dung
+AI --> API: decision, reason, confidence
+API -> DB: Lưu ModerationReport
+DB --> API: Report mới
+API --> FE: Kết quả tiếp nhận
+FE --> User: Hiển thị thông báo
+
+Admin -> FE: Mở danh sách báo cáo
+FE -> API: GET /moderation/reports
+API -> DB: Lấy reports
+DB --> API: Danh sách reports
+API --> FE: reports
+FE --> Admin: Hiển thị báo cáo
+
+Admin -> FE: Xóa báo cáo đã xử lý
+FE -> API: DELETE /moderation/reports/{id}
+API -> DB: Xóa ModerationReport
+DB --> API: Thành công
+API --> FE: Đã xóa
+@enduml

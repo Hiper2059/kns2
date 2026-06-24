@@ -1,0 +1,34 @@
+@startuml
+title Sequence - Học viên xem và hoàn thành bài học
+autonumber
+skinparam dpi 180
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+
+actor "Học viên" as Student
+boundary "Frontend\nLessonFullPage" as FE
+control "API\nLessonController" as API
+database "MongoDB\nlessons/enrollments/views" as DB
+
+Student -> FE: Mở bài học theo slug
+FE -> API: GET /lessons/slug/{slug}
+API -> DB: Tìm Lesson và Course liên quan
+DB --> API: Dữ liệu bài học
+API --> FE: lesson, course, lessons
+FE --> Student: Hiển thị nội dung bài học
+
+Student -> FE: Hoàn thành bài học
+FE -> API: POST /lessons/{lessonId}/complete
+API -> DB: Kiểm tra Enrollment của học viên
+alt Đủ điều kiện hoàn thành
+  API -> DB: Cập nhật completedLessons, progressPercent, points
+  API -> DB: Ghi LessonView nếu cần
+  DB --> API: Kết quả cập nhật
+  API --> FE: Tiến độ mới
+  FE --> Student: Hiển thị đã hoàn thành
+else Chưa đăng ký hoặc không đủ điều kiện
+  API --> FE: Thông báo lỗi
+  FE --> Student: Hiển thị lỗi
+end
+@enduml

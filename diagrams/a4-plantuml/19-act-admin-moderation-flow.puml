@@ -1,0 +1,40 @@
+@startuml
+title Activity - Luồng quản trị và kiểm duyệt
+skinparam dpi 180
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+
+start
+:Admin mở trang quản trị;
+if (Có quyền admin?) then (Có)
+  :Tải dữ liệu người dùng, báo cáo, danh mục, video;
+else (Không)
+  :Từ chối truy cập;
+  stop
+endif
+
+if (Quản lý người dùng?) then (Có)
+  :Tạo tài khoản hoặc đổi vai trò/trạng thái;
+  if (Xóa người dùng?) then (Có)
+    :Xóa user và dữ liệu liên quan theo service;
+  endif
+endif
+
+if (Quản lý nội dung diễn đàn?) then (Có)
+  :Xem bài viết, bình luận, nội dung đã xóa;
+  if (Nội dung vi phạm?) then (Có)
+    :Xóa hoặc phạt tác giả;
+  else (Không)
+    :Khôi phục nếu bị xóa nhầm;
+  endif
+endif
+
+if (Quản lý dữ liệu phụ trợ?) then (Có)
+  :Thêm/xóa danh mục hoặc video;
+endif
+
+:Cập nhật màn hình quản trị;
+stop
+@enduml
+

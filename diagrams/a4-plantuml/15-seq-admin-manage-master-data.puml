@@ -1,0 +1,42 @@
+@startuml
+title Sequence - Admin quản lý người dùng, danh mục, video
+autonumber
+skinparam dpi 180
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+
+actor "Admin" as Admin
+boundary "Frontend\nManageView" as FE
+control "API\nUser/Category/Video" as API
+database "MongoDB" as DB
+
+Admin -> FE: Mở trang quản trị
+FE -> API: GET /users, GET /categories, GET /videos
+API -> DB: Lấy dữ liệu quản trị
+DB --> API: users, categories, videos
+API --> FE: Dữ liệu tổng hợp
+FE --> Admin: Hiển thị bảng quản trị
+
+alt Quản lý người dùng
+  Admin -> FE: Tạo hoặc cập nhật user
+  FE -> API: POST/PATCH /users
+  API -> DB: Ghi User
+  DB --> API: User đã cập nhật
+  API --> FE: Kết quả
+else Quản lý danh mục
+  Admin -> FE: Thêm hoặc xóa danh mục
+  FE -> API: POST/DELETE /categories
+  API -> DB: Ghi Category
+  DB --> API: Kết quả
+  API --> FE: Danh mục mới
+else Quản lý video
+  Admin -> FE: Thêm hoặc xóa video
+  FE -> API: POST/DELETE /videos
+  API -> DB: Ghi VideoLink
+  DB --> API: Kết quả
+  API --> FE: Video mới
+end
+
+FE --> Admin: Cập nhật màn hình quản trị
+@enduml

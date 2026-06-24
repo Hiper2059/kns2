@@ -1,0 +1,34 @@
+@startuml
+title Activity - Đăng nhập và điều hướng theo vai trò
+skinparam dpi 180
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+
+start
+:Người dùng mở hệ thống;
+if (Đã có access token hợp lệ?) then (Có)
+  :Khôi phục phiên đăng nhập;
+else (Không)
+  :Hiển thị trang đăng nhập;
+  :Nhập tài khoản và mật khẩu;
+  :Gửi yêu cầu đăng nhập;
+  if (Thông tin hợp lệ?) then (Có)
+    :Lưu token và thông tin người dùng;
+  else (Không)
+    :Hiển thị lỗi đăng nhập;
+    stop
+  endif
+endif
+
+if (Vai trò là admin?) then (Có)
+  :Cho phép vào trang quản trị;
+elseif (Vai trò là teacher?) then (Có)
+  :Cho phép vào Studio giảng viên;
+else (student)
+  :Cho phép vào khu học tập;
+endif
+:Hiển thị giao diện chính;
+stop
+@enduml
+

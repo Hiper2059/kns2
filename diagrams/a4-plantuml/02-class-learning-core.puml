@@ -1,0 +1,169 @@
+@startuml
+!pragma layout smetana
+title Class Diagram - Khóa học, bài học, bài tập
+left to right direction
+skinparam dpi 180
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam defaultFontName Arial
+skinparam defaultFontSize 16
+skinparam classFontSize 17
+skinparam classHeaderBackgroundColor #EAF7EA
+skinparam classBorderColor #4E7351
+skinparam packageStyle rectangle
+
+class "Khóa học" as KhoaHoc {
+  +mãKhóaHọc: ObjectId
+  +tiêuĐề: String <<bắt buộc>>
+  +danhMục: String <<bắt buộc>>
+  +môTả: String
+  +đườngDẫnẢnh: String
+  +giảngViên: ObjectId <<Người dùng, bắt buộc>>
+  +tênGiảngViên: String <<bắt buộc>>
+  +trạngThái: String = đã xuất bản
+  +ngàyTạo: Date
+  +ngàyCậpNhật: Date
+}
+
+class "Bài học" as BaiHoc {
+  +mãBàiHọc: ObjectId
+  +khóaHọc: ObjectId <<Khóa học, bắt buộc>>
+  +tiêuĐề: String <<bắt buộc>>
+  +nộiDung: String
+  +đườngDẫnĐoạnPhim: String
+  +đườngDẫnẢnh: String
+  +đườngDẫnTĩnh: String
+  +thứTự: Number = 1
+  +ngườiTạo: ObjectId <<Người dùng>>
+  +tênNgườiTạo: String
+  +danhSáchNgườiThảTim: String[]
+  +ngàyTạo: Date
+  +ngàyCậpNhật: Date
+}
+
+class "Bài tập" as BaiTap {
+  +mãBàiTập: ObjectId
+  +khóaHọc: ObjectId <<Khóa học, bắt buộc, đánh chỉ mục>>
+  +bàiHọc: ObjectId <<Bài học, đánh chỉ mục>>
+  +tiêuĐề: String <<bắt buộc>>
+  +môTả: String
+  +loạiBàiTập: String = tự luận
+  +câuHỏi: CâuHỏiTrắcNghiệm[]
+  +hạnNộp: Date
+  +ngườiTạo: ObjectId <<Người dùng, bắt buộc>>
+  +tênNgườiTạo: String
+  +ngàyTạo: Date
+  +ngàyCậpNhật: Date
+}
+
+class "Câu hỏi trắc nghiệm" as CauHoiTracNghiem {
+  +nộiDungCâuHỏi: String
+  +danhSáchLựaChọn: String[]
+  +vịTríĐápÁnĐúng: Number
+}
+
+class "Bài nộp" as BaiNop {
+  +mãBàiNộp: ObjectId
+  +bàiTập: ObjectId <<Bài tập, bắt buộc, đánh chỉ mục>>
+  +khóaHọc: ObjectId <<Khóa học, bắt buộc, đánh chỉ mục>>
+  +họcViên: ObjectId <<Người dùng, bắt buộc, đánh chỉ mục>>
+  +tênHọcViên: String
+  +nộiDung: String
+  +đườngDẫnTệp: String
+  +đápÁn: Number[]
+  +điểmTựĐộng: Number
+  +trạngThái: String = đã nộp
+  +điểm: Number
+  +phảnHồi: String
+  +thờiĐiểmNộp: Date
+  +thờiĐiểmChấm: Date
+  +ngàyTạo: Date
+  +ngàyCậpNhật: Date
+}
+
+class "Ghi danh" as GhiDanh {
+  +mãGhiDanh: ObjectId
+  +họcViên: ObjectId <<Người dùng, bắt buộc>>
+  +tênHọcViên: String <<bắt buộc>>
+  +khóaHọc: ObjectId <<Khóa học, bắt buộc>>
+  +tênKhóaHọc: String <<bắt buộc>>
+  +giảngViên: ObjectId <<Người dùng, bắt buộc>>
+  +tênGiảngViên: String <<bắt buộc>>
+  +trạngThái: String = đang học
+  +bàiHọcĐãHoànThành: ObjectId[]
+  +phầnTrămTiếnĐộ: Number
+  +điểm: Number
+  +đánhGiá: ĐánhGiá
+  +ngàyTạo: Date
+  +ngàyCậpNhật: Date
+}
+
+class "Đánh giá" as DanhGia {
+  +điểm: Number
+  +ghiChú: String
+  +ngàyCậpNhật: Date
+}
+
+class "Lượt xem bài học" as LuotXemBaiHoc {
+  +mãLượtXem: ObjectId
+  +bàiHọc: ObjectId <<Bài học, bắt buộc>>
+  +khóaHọc: ObjectId <<Khóa học, bắt buộc>>
+  +ngườiXem: ObjectId <<Người dùng>>
+  +vaiTròNgườiXem: String
+  +thờiĐiểmXem: Date
+  +ngàyTạo: Date
+  +ngàyCậpNhật: Date
+}
+
+class "Bộ điều khiển khóa học" as BoDieuKhienKhoaHoc {
+  +lấyDanhSáchKhóaHọc(yêuCầu, phảnHồi): Promise
+  +lấyKhóaHọcCủaTôi(yêuCầu, phảnHồi): Promise
+  +lấyChiTiếtKhóaHọc(yêuCầu, phảnHồi): Promise
+  +tạoKhóaHọc(yêuCầu, phảnHồi): Promise
+  +cậpNhậtKhóaHọc(yêuCầu, phảnHồi): Promise
+  +xóaKhóaHọc(yêuCầu, phảnHồi): Promise
+}
+
+class "Bộ điều khiển bài học" as BoDieuKhienBaiHoc {
+  +lấyDanhSáchBàiHọc(yêuCầu, phảnHồi): Promise
+  +lấyBàiHọcTheoĐườngDẫn(yêuCầu, phảnHồi): Promise
+  +tạoBàiHọc(yêuCầu, phảnHồi): Promise
+  +cậpNhậtBàiHọc(yêuCầu, phảnHồi): Promise
+  +xóaBàiHọc(yêuCầu, phảnHồi): Promise
+  +thảTimBàiHọc(yêuCầu, phảnHồi): Promise
+  +hoànThànhBàiHọc(yêuCầu, phảnHồi): Promise
+}
+
+class "Bộ điều khiển bài tập" as BoDieuKhienBaiTap {
+  +lấyDanhSáchBàiTập(yêuCầu, phảnHồi): Promise
+  +tạoBàiTập(yêuCầu, phảnHồi): Promise
+  +cậpNhậtBàiTập(yêuCầu, phảnHồi): Promise
+  +xóaBàiTập(yêuCầu, phảnHồi): Promise
+  +nộpHoặcCậpNhậtBài(yêuCầu, phảnHồi): Promise
+  +lấyDanhSáchBàiNộp(yêuCầu, phảnHồi): Promise
+  +chấmBàiNộp(yêuCầu, phảnHồi): Promise
+}
+
+class "Bộ điều khiển ghi danh" as BoDieuKhienGhiDanh {
+  +đăngKýKhóaHọc(yêuCầu, phảnHồi): Promise
+  +lấyGhiDanhCủaTôi(yêuCầu, phảnHồi): Promise
+  +lấyHọcViênTrongKhóa(yêuCầu, phảnHồi): Promise
+  +đánhGiáHọcViên(yêuCầu, phảnHồi): Promise
+  +lấyBảngXếpHạngKhóaHọc(yêuCầu, phảnHồi): Promise
+}
+
+KhoaHoc "1" -- "0..*" BaiHoc
+KhoaHoc "1" -- "0..*" BaiTap
+KhoaHoc "1" -- "0..*" GhiDanh
+BaiHoc "0..1" -- "0..*" BaiTap
+BaiTap "1" *-- "0..*" CauHoiTracNghiem
+BaiTap "1" -- "0..*" BaiNop
+GhiDanh *-- "1" DanhGia
+BaiHoc "1" -- "0..*" LuotXemBaiHoc
+BoDieuKhienKhoaHoc ..> KhoaHoc
+BoDieuKhienBaiHoc ..> BaiHoc
+BoDieuKhienBaiHoc ..> GhiDanh
+BoDieuKhienBaiTap ..> BaiTap
+BoDieuKhienBaiTap ..> BaiNop
+BoDieuKhienGhiDanh ..> GhiDanh
+@enduml

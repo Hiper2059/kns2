@@ -35,6 +35,7 @@ temp.css
 *.docx
 extracted_guide/
 extracted_report/
+extracted_final/
 guide.txt
 guide_text.txt
 report.txt

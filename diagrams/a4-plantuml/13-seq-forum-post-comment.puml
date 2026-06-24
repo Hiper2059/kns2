@@ -1,0 +1,29 @@
+@startuml
+title Sequence - Đăng bài và bình luận diễn đàn
+autonumber
+skinparam dpi 180
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+
+actor "Người dùng" as User
+boundary "Frontend\nForumView" as FE
+control "API\nForumController" as API
+database "MongoDB\nforumposts/forumcomments" as DB
+
+User -> FE: Nhập bài viết
+FE -> API: POST /forum/posts
+API -> API: Kiểm tra đăng nhập và quyền diễn đàn lớp nếu có
+API -> DB: Tạo ForumPost
+DB --> API: Post mới
+API --> FE: Bài viết mới
+FE --> User: Hiển thị bài viết
+
+User -> FE: Nhập bình luận
+FE -> API: POST /forum/comments
+API -> API: Kiểm tra bài viết và quyền truy cập
+API -> DB: Tạo ForumComment
+DB --> API: Comment mới
+API --> FE: Bình luận mới
+FE --> User: Cập nhật danh sách bình luận
+@enduml

@@ -1,0 +1,152 @@
+@startuml
+allowmixing
+title ERD - Ghi danh, tiến độ học và bài nộp
+top to bottom direction
+skinparam dpi 180
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 16
+skinparam classFontSize 16
+skinparam linetype ortho
+skinparam rectangle {
+  BackgroundColor #F8FBFF
+  BorderColor #6688AA
+}
+
+entity "NGƯỜI DÙNG" as nguoi_dung {
+  * mãNgườiDùng: ObjectId
+  --
+  * tênĐăngNhập: String <<duy nhất>>
+  vaiTrò: String
+  trạngThái: String
+  điểmTíchLũy: Number
+}
+
+entity "KHÓA HỌC" as khoa_hoc {
+  * mãKhóaHọc: ObjectId
+  --
+  * tiêuĐề: String
+  * danhMục: String
+  * giảngViên: ObjectId
+  trạngThái: String
+}
+
+entity "BÀI HỌC" as bai_hoc {
+  * mãBàiHọc: ObjectId
+  --
+  * khóaHọc: ObjectId
+  * tiêuĐề: String
+  thứTự: Number
+}
+
+entity "BÀI TẬP" as bai_tap {
+  * mãBàiTập: ObjectId
+  --
+  * khóaHọc: ObjectId
+  bàiHọc: ObjectId
+  * tiêuĐề: String
+  loạiBàiTập: String
+  câuHỏi: Object[]
+  hạnNộp: Date
+}
+
+entity "GHI DANH" as ghi_danh {
+  * mãGhiDanh: ObjectId
+  --
+  * họcViên: ObjectId
+  * tênHọcViên: String
+  * khóaHọc: ObjectId
+  * tênKhóaHọc: String
+  * giảngViên: ObjectId
+  * tênGiảngViên: String
+  trạngThái: String
+  bàiHọcĐãHoànThành: ObjectId[]
+  phầnTrămTiếnĐộ: Number
+  điểm: Number
+  đánhGiá: Object
+  ngàyTạo: Date
+  ngàyCậpNhật: Date
+}
+
+entity "BÀI NỘP" as bai_nop {
+  * mãBàiNộp: ObjectId
+  --
+  * bàiTập: ObjectId
+  * khóaHọc: ObjectId
+  * họcViên: ObjectId
+  tênHọcViên: String
+  nộiDung: String
+  đườngDẫnTệp: String
+  đápÁn: Number[]
+  điểmTựĐộng: Number
+  trạngThái: String
+  điểm: Number
+  phảnHồi: String
+  thờiĐiểmNộp: Date
+  thờiĐiểmChấm: Date
+}
+
+entity "LƯỢT XEM BÀI HỌC" as luot_xem {
+  * mãLượtXem: ObjectId
+  --
+  * bàiHọc: ObjectId
+  * khóaHọc: ObjectId
+  ngườiXem: ObjectId
+  vaiTròNgườiXem: String
+  thờiĐiểmXem: Date
+}
+
+rectangle "ghi danh" as q_ghi_danh <<quan hệ>>
+rectangle "thuộc khóa" as q_bai_hoc_thuoc_khoa <<quan hệ>>
+rectangle "thuộc khóa" as q_bai_tap_thuoc_khoa <<quan hệ>>
+rectangle "gắn bài học" as q_bai_tap_gan_bai_hoc <<quan hệ>>
+rectangle "nộp bài" as q_nop_bai <<quan hệ>>
+rectangle "nhận bài nộp" as q_nhan_bai_nop <<quan hệ>>
+rectangle "xem bài học" as q_xem_bai <<quan hệ>>
+rectangle "hoàn thành" as q_hoan_thanh <<quan hệ>>
+rectangle "chấm điểm" as q_cham_diem <<quan hệ>>
+
+nguoi_dung -- q_ghi_danh : 0,n
+q_ghi_danh -- khoa_hoc : 0,n
+q_ghi_danh -- ghi_danh : 1,1
+
+khoa_hoc -- q_bai_hoc_thuoc_khoa : 1,1
+q_bai_hoc_thuoc_khoa -- bai_hoc : 1,n
+
+khoa_hoc -- q_bai_tap_thuoc_khoa : 1,1
+q_bai_tap_thuoc_khoa -- bai_tap : 0,n
+
+bai_hoc -- q_bai_tap_gan_bai_hoc : 0,1
+q_bai_tap_gan_bai_hoc -- bai_tap : 0,n
+
+nguoi_dung -- q_nop_bai : 0,n
+q_nop_bai -- bai_nop : 1,1
+
+bai_tap -- q_nhan_bai_nop : 1,1
+q_nhan_bai_nop -- bai_nop : 0,n
+
+nguoi_dung -- q_xem_bai : 0,n
+q_xem_bai -- bai_hoc : 0,n
+q_xem_bai -- luot_xem : 1,1
+
+ghi_danh .. q_hoan_thanh : 0,n
+q_hoan_thanh .. bai_hoc : 0,n
+
+nguoi_dung -- q_cham_diem : 0,n
+q_cham_diem -- bai_nop : 0,n
+
+note bottom of ghi_danh
+Unique index: mỗi học viên chỉ ghi danh
+một lần trong cùng một khóa học.
+end note
+
+note bottom of bai_nop
+Unique index: mỗi học viên chỉ có một
+bài nộp mới nhất cho một bài tập.
+end note
+
+note right of q_hoan_thanh
+Danh sách bài học hoàn thành được lưu
+trong mảng bàiHọcĐãHoànThành của GHI DANH.
+end note
+@enduml

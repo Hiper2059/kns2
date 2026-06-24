@@ -1,0 +1,42 @@
+@startuml
+title Activity - Luồng học tập của học viên
+skinparam dpi 180
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 17
+
+start
+:Học viên mở danh sách khóa học;
+:Lọc hoặc chọn danh mục;
+:Chọn khóa học;
+if (Đã đăng ký khóa học?) then (Có)
+  :Mở nội dung khóa học;
+else (Chưa)
+  :Gửi yêu cầu đăng ký;
+  if (Đăng ký thành công?) then (Có)
+    :Tạo enrollment;
+  else (Không)
+    :Hiển thị lỗi;
+    stop
+  endif
+endif
+
+:Chọn bài học;
+:Xem nội dung hoặc video;
+if (Đủ điều kiện hoàn thành?) then (Có)
+  :Đánh dấu hoàn thành bài học;
+  :Cập nhật tiến độ và điểm;
+else (Không)
+  :Tiếp tục học;
+endif
+
+if (Có bài tập?) then (Có)
+  :Làm bài text hoặc quiz;
+  :Nộp bài;
+  :Nhận trạng thái bài nộp;
+else (Không)
+  :Chuyển bài học tiếp theo;
+endif
+stop
+@enduml
+
