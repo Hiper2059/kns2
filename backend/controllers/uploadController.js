@@ -2,6 +2,7 @@ const fs = require('fs');
 const config = require('../config/env');
 const { cloudinary } = require('../utils/cloudinary');
 const catchAsync = require('../utils/catchAsync');
+const { uploadLargeVideo } = require('../services/cloudinaryUploadService');
 
 const isCloudinaryConfigured = () =>
   Boolean(config.cloudinary.cloudName && config.cloudinary.apiKey && config.cloudinary.apiSecret);
@@ -27,7 +28,7 @@ const uploadToCloudinary = (filePath, resourceType) => {
   };
 
   if (resourceType === 'video' && typeof cloudinary.uploader.upload_large === 'function') {
-    return cloudinary.uploader.upload_large(filePath, uploadOptions);
+    return uploadLargeVideo(cloudinary.uploader, filePath, uploadOptions);
   }
 
   return cloudinary.uploader.upload(filePath, uploadOptions);
@@ -69,6 +70,11 @@ const uploadVideo = catchAsync(async (req, res) => {
     }
 
     const result = await uploadToCloudinary(filePath, 'video');
+
+    console.info('Cloudinary video uploaded:', {
+      publicId: result.public_id,
+      bytes: result.bytes
+    });
 
     res.json({
       url: result.secure_url,
