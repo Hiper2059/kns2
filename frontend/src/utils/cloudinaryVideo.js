@@ -6,7 +6,8 @@ export const getPlayableCloudinaryVideoUrl = value => {
   const url = String(value || '')
   if (
     !url.includes('res.cloudinary.com/') ||
-    !url.includes(CLOUDINARY_VIDEO_UPLOAD_SEGMENT)
+    !url.includes(CLOUDINARY_VIDEO_UPLOAD_SEGMENT) ||
+    !MOV_EXTENSION.test(url)
   ) {
     return url
   }
@@ -16,16 +17,12 @@ export const getPlayableCloudinaryVideoUrl = value => {
     return url
   }
 
-  let result = url.replace(
-    CLOUDINARY_VIDEO_UPLOAD_SEGMENT,
-    `${CLOUDINARY_VIDEO_UPLOAD_SEGMENT}${TRANSCODE_PARAMS}/`
-  )
-
-  if (MOV_EXTENSION.test(result)) {
-    result = result.replace(MOV_EXTENSION, '.mp4')
-  }
-
-  return result
+  return url
+    .replace(
+      CLOUDINARY_VIDEO_UPLOAD_SEGMENT,
+      `${CLOUDINARY_VIDEO_UPLOAD_SEGMENT}${TRANSCODE_PARAMS}/`
+    )
+    .replace(MOV_EXTENSION, '.mp4')
 }
 
 /**

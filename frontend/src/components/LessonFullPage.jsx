@@ -508,13 +508,17 @@ const LessonFullPage = ({
     } else if (isDash) {
       try {
         dashPlayer = dashjs.MediaPlayer().create()
+
+
         dashPlayer.initialize(video, src, false)
         video.addEventListener('loadedmetadata', handleLoaded)
       } catch (err) {
         console.warn('dash init error', err)
       }
     } else if (isDirectVideo) {
+      console.log('[LessonFullPage] Setting direct video source:', src)
       video.src = src
+      video.load()
       video.addEventListener('loadedmetadata', handleLoaded)
     }
 
