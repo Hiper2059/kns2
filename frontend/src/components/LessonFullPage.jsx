@@ -4,6 +4,7 @@ import dashjs from 'dashjs'
 import RichTextEditor from './RichTextEditor'
 import LessonVideoUploadButton from './LessonVideoUploadButton'
 import { getApiErrorMessage } from '../utils/apiMessages'
+import { getPlayableCloudinaryVideoUrl } from '../utils/cloudinaryVideo'
 import { useUI } from '../context/UIContext'
 import { ArrowLeft, Heart, Edit3, CheckCircle2, AlertCircle, MessageSquare, Reply, Flag, Trash2, ListVideo } from 'lucide-react'
 
@@ -100,6 +101,7 @@ const LessonFullPage = ({
   const [youtubeContainerEl, setYoutubeContainerEl] = useState(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isUploadingLessonVideo, setIsUploadingLessonVideo] = useState(false)
+  const [videoPlaybackError, setVideoPlaybackError] = useState('')
   const playerRef = useRef(null)
   const videoElRef = useRef(null)
   const contentRef = useRef(null)
@@ -145,11 +147,15 @@ const LessonFullPage = ({
 
   const videoId = useMemo(() => getYouTubeId(lesson?.videoUrl), [lesson?.videoUrl])
   const requiresVideo = Boolean(lesson?.videoUrl)
+  const playbackVideoUrl = useMemo(
+    () => getPlayableCloudinaryVideoUrl(lesson?.videoUrl),
+    [lesson?.videoUrl]
+  )
   const isDirectVideo = useMemo(() => {
-    const url = lesson?.videoUrl || ''
+    const url = playbackVideoUrl
     if (!url) return false
     return /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url)
-  }, [lesson?.videoUrl])
+  }, [playbackVideoUrl])
 
   const isHls = useMemo(() => {
     const url = lesson?.videoUrl || ''
@@ -467,12 +473,26 @@ const LessonFullPage = ({
     const handleLoaded = () => {
       if (!mounted) return
       setVideoReady(true)
+      setVideoPlaybackError('')
       lastTimeRef.current = 0
       setHasVideoEnded(false)
       setHasSeeked(false)
     }
 
-    const src = lesson?.videoUrl || ''
+    const src = playbackVideoUrl
+    const handleError = () => {
+      if (!mounted) return
+      const error = video.error
+      console.error('[LessonFullPage] Video playback error:', {
+        code: error?.code,
+        message: error?.message || '',
+        src
+      })
+      setVideoReady(false)
+      setVideoPlaybackError('Không thể phát video. Video có thể đang được Cloudinary xử lý hoặc codec chưa tương thích.')
+    }
+
+    setVideoPlaybackError('')
 
     if (isHls) {
       if (Hls.isSupported()) {
@@ -501,6 +521,7 @@ const LessonFullPage = ({
     video.addEventListener('timeupdate', handleTimeUpdate)
     video.addEventListener('seeking', handleSeeking)
     video.addEventListener('ended', handleEnded)
+    video.addEventListener('error', handleError)
 
     return () => {
       mounted = false
@@ -508,6 +529,7 @@ const LessonFullPage = ({
       video.removeEventListener('seeking', handleSeeking)
       video.removeEventListener('ended', handleEnded)
       video.removeEventListener('loadedmetadata', handleLoaded)
+      video.removeEventListener('error', handleError)
       if (hls) {
         hls.destroy()
         hls = null
@@ -518,7 +540,7 @@ const LessonFullPage = ({
       }
       try { video.removeAttribute('src'); video.load() } catch (err) { console.warn('video cleanup error', err) }
     }
-  }, [isDirectVideo, isHls, isDash, lesson?._id, lesson?.videoUrl])
+  }, [isDirectVideo, isHls, isDash, lesson?._id, playbackVideoUrl])
 
   const videoSatisfied =
     !requiresVideo ||
@@ -795,6 +817,11 @@ const LessonFullPage = ({
                   ) : isDirectVideo || isHls || isDash ? (
                     <div className="absolute inset-0 w-full h-full flex items-center justify-center">
                       <video ref={videoElRef} controls className="max-w-full max-h-full w-full h-full" playsInline />
+                      {videoPlaybackError && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-slate-950/85 px-6 text-center text-sm font-bold text-red-300">
+                          {videoPlaybackError}
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <>

@@ -1,7 +1,11 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const { uploadLargeVideo } = require('../services/cloudinaryUploadService');
+const {
+  buildVideoUploadOptions,
+  getUploadedVideoUrl,
+  uploadLargeVideo
+} = require('../services/cloudinaryUploadService');
 
 test('chờ callback upload_large rồi trả URL video MOV', async () => {
   let finishUpload;
@@ -60,4 +64,35 @@ test('báo lỗi khi Cloudinary không trả secure_url', async () => {
     uploadLargeVideo(uploader, 'video.mp4', { resource_type: 'video' }),
     /secure_url/
   );
+});
+
+test('yêu cầu Cloudinary tạo MP4 H.264/AAC cho file MOV', () => {
+  const options = buildVideoUploadOptions(
+    { originalname: 'chim-bo-cau.mov', mimetype: 'video/quicktime' },
+    { folder: 'kns', resource_type: 'video' }
+  );
+
+  assert.equal(options.eager_async, false);
+  assert.equal(options.timeout, 180000);
+  assert.deepEqual(options.eager, [{
+    format: 'mp4',
+    video_codec: 'h264',
+    audio_codec: 'aac'
+  }]);
+});
+
+test('dùng URL MP4 đã chuyển đổi cho file MOV', () => {
+  const result = {
+    secure_url: 'https://res.cloudinary.com/demo/video/upload/kns/chim.mov',
+    eager: [{
+      secure_url: 'https://res.cloudinary.com/demo/video/upload/v1/kns/chim.mp4'
+    }]
+  };
+
+  const url = getUploadedVideoUrl(result, {
+    originalname: 'chim.mov',
+    mimetype: 'video/quicktime'
+  });
+
+  assert.match(url, /\.mp4$/);
 });
