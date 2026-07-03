@@ -516,10 +516,9 @@ const LessonFullPage = ({
         console.warn('dash init error', err)
       }
     } else if (isDirectVideo) {
-      console.log('[LessonFullPage] Setting direct video source:', src)
-      video.src = src
-      video.load()
+      console.log('[LessonFullPage] Setting direct video source natively via JSX')
       video.addEventListener('loadedmetadata', handleLoaded)
+      if (video.readyState >= 1) handleLoaded()
     }
 
     video.addEventListener('timeupdate', handleTimeUpdate)
@@ -542,7 +541,9 @@ const LessonFullPage = ({
         try { dashPlayer.reset() } catch (err) { console.warn('dash reset error', err) }
         dashPlayer = null
       }
-      try { video.removeAttribute('src'); video.load() } catch (err) { console.warn('video cleanup error', err) }
+      if (!isDirectVideo) {
+        try { video.removeAttribute('src'); video.load() } catch (err) { console.warn('video cleanup error', err) }
+      }
     }
   }, [isDirectVideo, isHls, isDash, lesson?._id, playbackVideoUrl])
 
@@ -820,7 +821,14 @@ const LessonFullPage = ({
                     <div className="absolute inset-0 w-full h-full" ref={setYoutubeContainerEl}></div>
                   ) : isDirectVideo || isHls || isDash ? (
                     <div className="absolute inset-0 w-full h-full flex items-center justify-center">
-                      <video ref={videoElRef} controls className="max-w-full max-h-full w-full h-full" playsInline />
+                      <video 
+                        ref={videoElRef} 
+                        src={isDirectVideo ? playbackVideoUrl : undefined}
+                        preload="metadata"
+                        controls 
+                        className="max-w-full max-h-full w-full h-full" 
+                        playsInline 
+                      />
                       {videoPlaybackError && (
                         <div className="absolute inset-0 flex items-center justify-center bg-slate-950/85 px-6 text-center text-sm font-bold text-red-300">
                           {videoPlaybackError}
