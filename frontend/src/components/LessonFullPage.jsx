@@ -154,7 +154,7 @@ const LessonFullPage = ({
   const isDirectVideo = useMemo(() => {
     const url = playbackVideoUrl
     if (!url) return false
-    return /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url)
+    return /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url) || url.includes('res.cloudinary.com/')
   }, [playbackVideoUrl])
 
   const isHls = useMemo(() => {

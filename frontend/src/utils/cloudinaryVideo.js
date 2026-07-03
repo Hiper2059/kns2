@@ -34,11 +34,24 @@ export const transformHtmlVideoUrls = html => {
     return html
   }
 
-  return html.replace(
+  // 1. Transform existing <video> tags
+  let transformedHtml = html.replace(
     /(<video[^>]*\ssrc=["'])([^"']+)(["'])/gi,
     (match, before, srcUrl, after) => {
-      const transformed = getPlayableCloudinaryVideoUrl(srcUrl)
-      return `${before}${transformed}${after}`
+      const transformedUrl = getPlayableCloudinaryVideoUrl(srcUrl)
+      return `${before}${transformedUrl}${after}`
     }
   )
+
+  // 2. Transform legacy <iframe> tags containing Cloudinary URLs into <video> tags
+  // The standard Quill video blot uses iframes which breaks raw Cloudinary video URLs.
+  transformedHtml = transformedHtml.replace(
+    /<iframe[^>]*\ssrc=["']([^"']+res\.cloudinary\.com[^"']+)["'][^>]*><\/iframe>/gi,
+    (match, srcUrl) => {
+      const transformedUrl = getPlayableCloudinaryVideoUrl(srcUrl)
+      return `<video controls playsinline preload="metadata" style="max-width:100%;height:auto;border-radius:0.5rem" src="${transformedUrl}"></video>`
+    }
+  )
+
+  return transformedHtml
 }
