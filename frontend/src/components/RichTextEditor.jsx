@@ -4,7 +4,13 @@ import axios from 'axios'
 import 'react-quill/dist/quill.snow.css'
 import { getApiErrorMessage } from '../utils/apiMessages'
 import { useUI } from '../context/UIContext'
+import {
+  DIRECT_VIDEO_FORMAT,
+  registerDirectVideoBlot
+} from './editor/directVideoBlot'
 import './RichTextEditor.css'
+
+registerDirectVideoBlot(Quill)
 
 const quillFormats = [
   'bold',
@@ -12,7 +18,8 @@ const quillFormats = [
   'underline',
   'link',
   'image',
-  'video'
+  'video',
+  DIRECT_VIDEO_FORMAT
 ]
 
 const latexTextReplacements = [
@@ -288,7 +295,8 @@ const RichTextEditor = ({ value, onChange, placeholder, toolbarId }) => {
           const quillInstance = quillRef.current?.getEditor?.()
           const range = quillInstance?.getSelection?.() || { index: quillInstance?.getLength?.() || 0 }
           if (url && quillInstance) {
-            quillInstance.clipboard.dangerouslyPasteHTML(range.index, `<p><video controls src="${url}" style="max-width:100%"></video></p>`, 'user')
+            quillInstance.insertEmbed(range.index, DIRECT_VIDEO_FORMAT, url, 'user')
+            quillInstance.setSelection(range.index + 1, 0, 'silent')
           }
           e.target.value = ''
         }}
