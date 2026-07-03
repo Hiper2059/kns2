@@ -4,7 +4,7 @@ import dashjs from 'dashjs'
 import RichTextEditor from './RichTextEditor'
 import LessonVideoUploadButton from './LessonVideoUploadButton'
 import { getApiErrorMessage } from '../utils/apiMessages'
-import { getPlayableCloudinaryVideoUrl } from '../utils/cloudinaryVideo'
+import { getPlayableCloudinaryVideoUrl, transformHtmlVideoUrls } from '../utils/cloudinaryVideo'
 import { useUI } from '../context/UIContext'
 import { ArrowLeft, Heart, Edit3, CheckCircle2, AlertCircle, MessageSquare, Reply, Flag, Trash2, ListVideo } from 'lucide-react'
 
@@ -903,7 +903,7 @@ const LessonFullPage = ({
                 <div 
                   ref={contentRef}
                   className="prose prose-slate md:prose-lg max-w-none prose-headings:font-black prose-a:text-blue-600 prose-img:rounded-2xl prose-img:shadow-sm"
-                  dangerouslySetInnerHTML={{ __html: lesson.content || '' }}
+                  dangerouslySetInnerHTML={{ __html: transformHtmlVideoUrls(lesson.content) || '' }}
                 ></div>
 
                 {/* Completion Block */}

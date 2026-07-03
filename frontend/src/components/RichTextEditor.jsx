@@ -3,6 +3,7 @@ import ReactQuill, { Quill } from 'react-quill'
 import axios from 'axios'
 import 'react-quill/dist/quill.snow.css'
 import { getApiErrorMessage } from '../utils/apiMessages'
+import { getPlayableCloudinaryVideoUrl } from '../utils/cloudinaryVideo'
 import { useUI } from '../context/UIContext'
 import {
   DIRECT_VIDEO_FORMAT,
@@ -295,7 +296,7 @@ const RichTextEditor = ({ value, onChange, placeholder, toolbarId }) => {
           const quillInstance = quillRef.current?.getEditor?.()
           const range = quillInstance?.getSelection?.() || { index: quillInstance?.getLength?.() || 0 }
           if (url && quillInstance) {
-            quillInstance.insertEmbed(range.index, DIRECT_VIDEO_FORMAT, url, 'user')
+            quillInstance.insertEmbed(range.index, DIRECT_VIDEO_FORMAT, getPlayableCloudinaryVideoUrl(url), 'user')
             quillInstance.setSelection(range.index + 1, 0, 'silent')
           }
           e.target.value = ''

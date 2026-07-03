@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { useUI } from '../context/UIContext'
+import { transformHtmlVideoUrls } from '../utils/cloudinaryVideo'
 import {
   BookOpen,
   CheckCircle2,
@@ -434,7 +435,7 @@ const LmsView = ({
                     <h1 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight">{selectedCourse.title}</h1>
                     <div
                       className="prose prose-slate max-w-none text-[15px] leading-relaxed text-slate-600 mt-2"
-                      dangerouslySetInnerHTML={{ __html: selectedCourse.description || 'Chưa có mô tả chi tiết.' }}
+                      dangerouslySetInnerHTML={{ __html: transformHtmlVideoUrls(selectedCourse.description) || 'Chưa có mô tả chi tiết.' }}
                     />
                     <div className="flex flex-wrap items-center gap-4 mt-4 text-[14px] font-bold text-slate-500">
                       <button className="inline-flex cursor-pointer items-center px-3 py-1.5 rounded-lg bg-slate-200 text-slate-800 hover:bg-slate-300 transition-colors" onClick={() => onOpenProfile?.(selectedCourse.teacher)}>

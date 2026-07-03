@@ -1,4 +1,5 @@
 import React, { useState, Fragment } from 'react'
+import { transformHtmlVideoUrls } from '../utils/cloudinaryVideo'
 import {
   BarChart3,
   BookOpen,
@@ -628,7 +629,7 @@ const ManageView = ({
                       <div key={post.id} className="p-5 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-slate-300 transition-colors flex flex-col md:flex-row justify-between items-start gap-6">
                         <div className="flex-1">
                           <p className="text-[14px] font-bold text-slate-800 mb-2"><strong className="text-lg text-slate-900 block mb-1">{post.title}</strong> Đăng bởi <span className="text-blue-600">{post.author}</span> · Chuyên mục: <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-600">{post.category}</span></p>
-                          <div className="text-[14px] text-slate-600 bg-slate-50 p-4 rounded-lg border border-slate-100 line-clamp-3 prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: post.content }}></div>
+                          <div className="text-[14px] text-slate-600 bg-slate-50 p-4 rounded-lg border border-slate-100 line-clamp-3 prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: transformHtmlVideoUrls(post.content) }}></div>
                         </div>
                         <button className={`${dangerButtonClass} flex-shrink-0 mt-2`} onClick={() => onAdminDeletePost(post)}>Xóa bài viết này</button>
                       </div>

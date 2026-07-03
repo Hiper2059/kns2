@@ -15,6 +15,7 @@ import {
 } from './data/skills'
 import { getApiErrorMessage, getApiSuccessMessage } from './utils/apiMessages'
 import { getRankInfo, groupVideosByCategory, normalizeText } from './utils/appUtils'
+import { getPlayableCloudinaryVideoUrl } from './utils/cloudinaryVideo'
 import './App.css'
 
 const ForumView = lazy(() => import('./components/ForumView'))
@@ -2014,7 +2015,7 @@ function App() {
       const url = await uploadVideoFile(file)
       setNewCourseData(prev => ({
         ...prev,
-        description: `${prev.description || ''}<p><video controls src="${url}" style="max-width:100%"></video></p>`
+        description: `${prev.description || ''}<p><video controls src="${getPlayableCloudinaryVideoUrl(url)}" style="max-width:100%"></video></p>`
       }))
     } catch {
       showError('Không upload được video.')
@@ -2032,7 +2033,7 @@ function App() {
       const url = await uploadVideoFile(file)
       setNewLessonData(prev => ({
         ...prev,
-        content: `${prev.content || ''}<p><video controls src="${url}" style="max-width:100%"></video></p>`
+        content: `${prev.content || ''}<p><video controls src="${getPlayableCloudinaryVideoUrl(url)}" style="max-width:100%"></video></p>`
       }))
     } catch {
       showError('Không upload được video.')
@@ -2050,7 +2051,7 @@ function App() {
       const url = await uploadVideoFile(file)
       setEditLessonData(prev => ({
         ...prev,
-        content: `${prev.content || ''}<p><video controls src="${url}" style="max-width:100%"></video></p>`
+        content: `${prev.content || ''}<p><video controls src="${getPlayableCloudinaryVideoUrl(url)}" style="max-width:100%"></video></p>`
       }))
     } catch {
       showError('Không upload được video.')

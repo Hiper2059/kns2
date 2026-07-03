@@ -1,5 +1,6 @@
 import React from 'react'
 import RichTextEditor from './RichTextEditor'
+import { transformHtmlVideoUrls } from '../utils/cloudinaryVideo'
 import { MessageSquare, Heart, AlertTriangle, Send, ChevronLeft, ChevronRight, PenSquare, Hash, UserCircle2, Trash2 } from 'lucide-react'
 
 const ComposeField = ({ label, hint, children, className = '', as = 'label' }) => {
@@ -304,7 +305,7 @@ const ForumView = ({
                   ) : (
                     <>
                       <h4 className="text-xl font-black text-slate-900 mb-3">{post.title}</h4>
-                      <div className="prose prose-slate max-w-none text-[15px] prose-p:leading-relaxed" dangerouslySetInnerHTML={{ __html: post.content }}></div>
+                      <div className="prose prose-slate max-w-none text-[15px] prose-p:leading-relaxed" dangerouslySetInnerHTML={{ __html: transformHtmlVideoUrls(post.content) }}></div>
                     </>
                   )}
                 </div>

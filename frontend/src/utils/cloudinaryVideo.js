@@ -1,20 +1,47 @@
 const CLOUDINARY_VIDEO_UPLOAD_SEGMENT = '/video/upload/'
 const MOV_EXTENSION = /\.mov(?=([?#]|$))/i
+const TRANSCODE_PARAMS = 'f_mp4,vc_h264,ac_aac'
 
 export const getPlayableCloudinaryVideoUrl = value => {
   const url = String(value || '')
   if (
     !url.includes('res.cloudinary.com/') ||
-    !url.includes(CLOUDINARY_VIDEO_UPLOAD_SEGMENT) ||
-    !MOV_EXTENSION.test(url)
+    !url.includes(CLOUDINARY_VIDEO_UPLOAD_SEGMENT)
   ) {
     return url
   }
 
-  return url
-    .replace(
-      CLOUDINARY_VIDEO_UPLOAD_SEGMENT,
-      `${CLOUDINARY_VIDEO_UPLOAD_SEGMENT}f_mp4,vc_h264,ac_aac/`
-    )
-    .replace(MOV_EXTENSION, '.mp4')
+  // Already has transcoding params
+  if (url.includes(TRANSCODE_PARAMS)) {
+    return url
+  }
+
+  let result = url.replace(
+    CLOUDINARY_VIDEO_UPLOAD_SEGMENT,
+    `${CLOUDINARY_VIDEO_UPLOAD_SEGMENT}${TRANSCODE_PARAMS}/`
+  )
+
+  if (MOV_EXTENSION.test(result)) {
+    result = result.replace(MOV_EXTENSION, '.mp4')
+  }
+
+  return result
+}
+
+/**
+ * Transform all Cloudinary video src URLs inside HTML content
+ * so <video> elements with Cloudinary URLs become playable.
+ */
+export const transformHtmlVideoUrls = html => {
+  if (!html || typeof html !== 'string' || !html.includes('res.cloudinary.com/')) {
+    return html
+  }
+
+  return html.replace(
+    /(<video[^>]*\ssrc=["'])([^"']+)(["'])/gi,
+    (match, before, srcUrl, after) => {
+      const transformed = getPlayableCloudinaryVideoUrl(srcUrl)
+      return `${before}${transformed}${after}`
+    }
+  )
 }
