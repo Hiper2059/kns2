@@ -1734,6 +1734,27 @@ function App() {
     return response.data?.url || ''
   }
 
+  const handleUploadLessonVideoFile = async file => {
+    const videoError = validateVideoFile(file)
+    if (videoError) {
+      showError(videoError)
+      return ''
+    }
+
+    try {
+      const url = await uploadVideoFile(file)
+      if (!url) {
+        showError('Cloudinary không trả về link video.')
+        return ''
+      }
+      showSuccess('Đã tải video lên Cloudinary.')
+      return url
+    } catch (error) {
+      showError(error.response?.data?.message || 'Không upload được video.')
+      return ''
+    }
+  }
+
   const handleAdminUploadVideo = async file => {
     if (!file) {
       return
@@ -1806,12 +1827,12 @@ function App() {
     const targetCourseId = selectedCourse?._id || selectedTeacherCourseId
     if (!targetCourseId) {
       showWarning('Cậu chọn lớp trước nhé.')
-      return
+      return false
     }
 
     if (!newLessonData.title.trim()) {
       showWarning('Cậu điền tiêu đề bài học trước nhé.')
-      return
+      return false
     }
 
     try {
@@ -1820,7 +1841,7 @@ function App() {
         const errorMessage = validateImageFile(newLessonData.imageFile)
         if (errorMessage) {
           showError(errorMessage)
-          return
+          return false
         }
         imageUrl = await uploadImageFile(newLessonData.imageFile)
       }
@@ -1830,7 +1851,7 @@ function App() {
         const videoError = validateVideoFile(newLessonData.videoFile)
         if (videoError) {
           showError(videoError)
-          return
+          return false
         }
         videoUrl = await uploadVideoFile(newLessonData.videoFile)
       }
@@ -1853,8 +1874,10 @@ function App() {
         imageFile: null
       })
       fetchCourseLessons(targetCourseId)
+      return true
     } catch (error) {
       showError(error.response?.data?.message || 'Không thêm được bài học.')
+      return false
     }
   }
 
@@ -2609,6 +2632,7 @@ function App() {
                     onEditLessonChange={setEditLessonData}
                     onEditLessonCancel={handleCancelEditLesson}
                     onUpdateLesson={handleUpdateLesson}
+                    onUploadLessonVideoFile={handleUploadLessonVideoFile}
                     onUploadLessonEditorVideo={handleUploadLessonEditorVideo}
                     onUploadEditLessonEditorVideo={handleUploadEditLessonEditorVideo}
                   />
@@ -2649,6 +2673,7 @@ function App() {
                     onEditLessonChange={setEditLessonData}
                     onEditLessonCancel={handleCancelEditLesson}
                     onUpdateLesson={handleUpdateLesson}
+                    onUploadLessonVideoFile={handleUploadLessonVideoFile}
                     onUploadLessonEditorVideo={handleUploadLessonEditorVideo}
                     onUploadEditLessonEditorVideo={handleUploadEditLessonEditorVideo}
                   />
@@ -2824,6 +2849,7 @@ function App() {
                     canComplete={canCompleteLesson}
                     isCompleted={isLessonCompleted}
                     onLessonUpdated={handleLessonUpdated}
+                    onUploadLessonVideoFile={handleUploadLessonVideoFile}
                     api={api}
                     currentUser={currentUser}
                     onOpenProfile={handleOpenProfile}

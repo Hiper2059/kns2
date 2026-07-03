@@ -16,12 +16,12 @@ import {
   Pencil,
   Trash2,
   Image as ImageIcon,
-  Film,
   FileText,
   ChevronUp,
   ChevronDown
 } from 'lucide-react'
 import RichTextEditor from './RichTextEditor'
+import LessonVideoUploadButton from './LessonVideoUploadButton'
 
 const baseInputClass = "h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-[14px] font-medium text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-400"
 const baseFileInputClass = "block w-full text-[14px] text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-[14px] file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors file:cursor-pointer"
@@ -92,6 +92,7 @@ const LmsView = ({
   onEditLessonChange,
   onEditLessonCancel,
   onUpdateLesson,
+  onUploadLessonVideoFile,
   onUploadLessonEditorVideo,
   onUploadEditLessonEditorVideo
 }) => {
@@ -99,10 +100,34 @@ const LmsView = ({
   const [quizDrafts, setQuizDrafts] = useState({})
   const [courseSearch, setCourseSearch] = useState('')
   const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false)
+  const [isNewLessonVideoUploading, setIsNewLessonVideoUploading] = useState(false)
+  const [isEditLessonVideoUploading, setIsEditLessonVideoUploading] = useState(false)
   const isTeacher = currentRole === 'teacher'
   const isAdmin = currentRole === 'admin'
   const canManageLearning = isTeacher || isAdmin
   const coursePool = isTeacher ? teacherCourses : courses
+
+  const handleCreateLessonSubmit = async event => {
+    event.preventDefault()
+    if (isNewLessonVideoUploading) {
+      showWarning('Video đang được tải lên, cậu chờ hoàn tất nhé.')
+      return
+    }
+
+    const created = await onCreateLesson?.()
+    if (created) setIsCreateLessonOpen(false)
+  }
+
+  const handleUpdateLessonSubmit = async event => {
+    event.preventDefault()
+    if (isEditLessonVideoUploading) {
+      showWarning('Video đang được tải lên, cậu chờ hoàn tất nhé.')
+      return
+    }
+
+    await onUpdateLesson?.(editLessonId)
+  }
+
   function stripHtml(value) {
     return String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
   }
@@ -542,23 +567,23 @@ const LmsView = ({
                         isOpen={true}
                         onToggle={onEditLessonCancel}
                       >
-                        <form className="flex flex-col gap-6" onSubmit={event => { event.preventDefault(); onUpdateLesson(editLessonId); }}>
+                        <form className="flex flex-col gap-6" onSubmit={handleUpdateLessonSubmit}>
                           <FormField label="Tiêu đề bài học" hint="Ví dụ: Bài 1: Giới thiệu">
                             <input required type="text" className={baseInputClass} value={editLessonData?.title || ''} onChange={event => onEditLessonChange({ ...editLessonData, title: event.target.value })} />
                           </FormField>
                           <FormField label="Số thứ tự (Order)" hint="Thứ tự hiển thị của bài học">
                             <input required type="number" min="1" className={baseInputClass} value={editLessonData?.order || 1} onChange={event => onEditLessonChange({ ...editLessonData, order: Number(event.target.value) })} />
                           </FormField>
-                          <FormField label="URL Video (Tùy chọn)" hint="Link video YouTube hoặc Vimeo">
+                          <FormField label="Video chính (Tùy chọn)" hint="Dán link hoặc tải file lên Cloudinary; video này hiển thị trong khung lớn phía trên." as="div">
                             <div className="flex gap-2">
                               <input type="url" className={`${baseInputClass} flex-1`} value={editLessonData?.videoUrl || ''} onChange={event => onEditLessonChange({ ...editLessonData, videoUrl: event.target.value })} />
-                              <label className={ghostButtonClass}>
-                                <Film size={18} />
-                                <span>Tải video lên</span>
-                                <input type="file" className="hidden" accept="video/mp4,video/webm" onChange={event => { const file = event.target.files?.[0]; if (file) onEditLessonChange({ ...editLessonData, videoFile: file }); }} />
-                              </label>
+                              <LessonVideoUploadButton
+                                className={ghostButtonClass}
+                                onUpload={onUploadLessonVideoFile}
+                                onUploaded={videoUrl => onEditLessonChange(prev => ({ ...prev, videoUrl, videoFile: null }))}
+                                onUploadingChange={setIsEditLessonVideoUploading}
+                              />
                             </div>
-                            {editLessonData?.videoFile && <div className="text-[13px] text-blue-600 font-medium">Đã chọn file: {editLessonData.videoFile.name}</div>}
                           </FormField>
                           <FormField label="URL Ảnh nền (Tùy chọn)" hint="Link ảnh bìa của bài học">
                             <div className="flex gap-2">
@@ -571,14 +596,14 @@ const LmsView = ({
                             </div>
                             {editLessonData?.imageFile && <div className="text-[13px] text-blue-600 font-medium">Đã chọn file: {editLessonData.imageFile.name}</div>}
                           </FormField>
-                          <FormField label="Nội dung bài học">
+                          <FormField label="Nội dung bài học" hint="Nút video trong trình soạn thảo chỉ chèn video vào nội dung, không thay video chính phía trên.">
                             <div className="rounded-xl border border-slate-200 overflow-hidden">
                               <RichTextEditor toolbarId="lms-edit-lesson-editor" value={editLessonData?.content || ''} onChange={content => onEditLessonChange({ ...editLessonData, content })} onUploadVideo={onUploadEditLessonEditorVideo} />
                             </div>
                           </FormField>
                           <div className="flex items-center gap-3 justify-end mt-4 pt-6 border-t border-slate-100">
                             <button type="button" className={ghostButtonClass} onClick={onEditLessonCancel}>Hủy</button>
-                            <button type="submit" className={baseButtonClass}><CheckCircle2 size={18} /> Cập nhật</button>
+                            <button type="submit" className={baseButtonClass} disabled={isEditLessonVideoUploading}><CheckCircle2 size={18} /> Cập nhật</button>
                           </div>
                         </form>
                       </CreatePanel>
@@ -590,23 +615,23 @@ const LmsView = ({
                         isOpen={isCreateLessonOpen}
                         onToggle={() => setIsCreateLessonOpen(prev => !prev)}
                       >
-                        <form className="flex flex-col gap-6" onSubmit={event => { event.preventDefault(); onCreateLesson(); setIsCreateLessonOpen(false); }}>
+                        <form className="flex flex-col gap-6" onSubmit={handleCreateLessonSubmit}>
                           <FormField label="Tiêu đề bài học" hint="Ví dụ: Bài 1: Giới thiệu">
                             <input required type="text" className={baseInputClass} value={newLessonData?.title || ''} onChange={event => onNewLessonDataChange({ ...newLessonData, title: event.target.value })} />
                           </FormField>
                           <FormField label="Số thứ tự (Order)" hint="Thứ tự hiển thị của bài học">
                             <input required type="number" min="1" className={baseInputClass} value={newLessonData?.order || 1} onChange={event => onNewLessonDataChange({ ...newLessonData, order: Number(event.target.value) })} />
                           </FormField>
-                          <FormField label="URL Video (Tùy chọn)" hint="Link video YouTube hoặc Vimeo">
+                          <FormField label="Video chính (Tùy chọn)" hint="Dán link hoặc tải file lên Cloudinary; video này hiển thị trong khung lớn phía trên." as="div">
                             <div className="flex gap-2">
                               <input type="url" className={`${baseInputClass} flex-1`} value={newLessonData?.videoUrl || ''} onChange={event => onNewLessonDataChange({ ...newLessonData, videoUrl: event.target.value })} />
-                              <label className={ghostButtonClass}>
-                                <Film size={18} />
-                                <span>Tải video lên</span>
-                                <input type="file" className="hidden" accept="video/mp4,video/webm" onChange={event => { const file = event.target.files?.[0]; if (file) onNewLessonDataChange({ ...newLessonData, videoFile: file }); }} />
-                              </label>
+                              <LessonVideoUploadButton
+                                className={ghostButtonClass}
+                                onUpload={onUploadLessonVideoFile}
+                                onUploaded={videoUrl => onNewLessonDataChange(prev => ({ ...prev, videoUrl, videoFile: null }))}
+                                onUploadingChange={setIsNewLessonVideoUploading}
+                              />
                             </div>
-                            {newLessonData?.videoFile && <div className="text-[13px] text-blue-600 font-medium">Đã chọn file: {newLessonData.videoFile.name}</div>}
                           </FormField>
                           <FormField label="URL Ảnh nền (Tùy chọn)" hint="Link ảnh bìa của bài học">
                             <div className="flex gap-2">
@@ -619,13 +644,13 @@ const LmsView = ({
                             </div>
                             {newLessonData?.imageFile && <div className="text-[13px] text-blue-600 font-medium">Đã chọn file: {newLessonData.imageFile.name}</div>}
                           </FormField>
-                          <FormField label="Nội dung bài học">
+                          <FormField label="Nội dung bài học" hint="Nút video trong trình soạn thảo chỉ chèn video vào nội dung, không thay video chính phía trên.">
                             <div className="rounded-xl border border-slate-200 overflow-hidden">
                               <RichTextEditor toolbarId="lms-new-lesson-editor" value={newLessonData?.content || ''} onChange={content => onNewLessonDataChange({ ...newLessonData, content })} onUploadVideo={onUploadLessonEditorVideo} />
                             </div>
                           </FormField>
                           <div className="flex justify-end mt-4 pt-6 border-t border-slate-100">
-                            <button type="submit" className={baseButtonClass}><PlusCircle size={18} /> Tạo bài học</button>
+                            <button type="submit" className={baseButtonClass} disabled={isNewLessonVideoUploading}><PlusCircle size={18} /> Tạo bài học</button>
                           </div>
                         </form>
                       </CreatePanel>

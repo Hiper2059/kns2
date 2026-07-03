@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Hls from 'hls.js'
 import dashjs from 'dashjs'
 import RichTextEditor from './RichTextEditor'
+import LessonVideoUploadButton from './LessonVideoUploadButton'
 import { getApiErrorMessage } from '../utils/apiMessages'
 import { useUI } from '../context/UIContext'
 import { ArrowLeft, Heart, Edit3, CheckCircle2, AlertCircle, MessageSquare, Reply, Flag, Trash2, ListVideo } from 'lucide-react'
@@ -65,6 +66,7 @@ const LessonFullPage = ({
   canComplete,
   isCompleted,
   onLessonUpdated,
+  onUploadLessonVideoFile,
   api,
   currentUser,
   currentRole,
@@ -97,6 +99,7 @@ const LessonFullPage = ({
   const [videoReady, setVideoReady] = useState(false)
   const [youtubeContainerEl, setYoutubeContainerEl] = useState(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [isUploadingLessonVideo, setIsUploadingLessonVideo] = useState(false)
   const playerRef = useRef(null)
   const videoElRef = useRef(null)
   const contentRef = useRef(null)
@@ -667,6 +670,11 @@ const LessonFullPage = ({
   const handleSaveLessonEdit = async () => {
     if (!lesson?._id) return
 
+    if (isUploadingLessonVideo) {
+      showWarning('Video đang được tải lên, cậu chờ hoàn tất nhé.')
+      return
+    }
+
     if (!editDraft.title.trim()) {
       showWarning('Cậu điền tiêu đề bài học trước nhé.')
       return
@@ -827,7 +835,15 @@ const LessonFullPage = ({
                       </div>
                       <div className="flex flex-col gap-1.5">
                         <label className="text-[13px] font-bold text-amber-900/70">Video URL</label>
-                        <input type="text" className="w-full h-11 px-4 bg-white border border-amber-200 rounded-xl text-[14px] font-semibold focus:outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/20" value={editDraft.videoUrl} onChange={e => setEditDraft(prev => ({ ...prev, videoUrl: e.target.value }))} />
+                        <div className="flex gap-2">
+                          <input type="text" className="w-full h-11 px-4 bg-white border border-amber-200 rounded-xl text-[14px] font-semibold focus:outline-none focus:border-amber-500 focus:ring-4 focus:ring-amber-500/20" value={editDraft.videoUrl} onChange={e => setEditDraft(prev => ({ ...prev, videoUrl: e.target.value }))} />
+                          <LessonVideoUploadButton
+                            className="inline-flex shrink-0 items-center justify-center gap-2 h-11 px-4 rounded-xl bg-white hover:bg-amber-100 text-amber-800 font-bold transition-all border border-amber-200"
+                            onUpload={onUploadLessonVideoFile}
+                            onUploaded={videoUrl => setEditDraft(prev => ({ ...prev, videoUrl }))}
+                            onUploadingChange={setIsUploadingLessonVideo}
+                          />
+                        </div>
                       </div>
                       <div className="flex flex-col gap-1.5">
                         <label className="text-[13px] font-bold text-amber-900/70">Ảnh minh họa (URL)</label>
@@ -846,7 +862,7 @@ const LessonFullPage = ({
                       />
                     </div>
                     <div className="flex flex-wrap items-center gap-3 border-t border-amber-200/50 pt-5">
-                      <button className="inline-flex items-center justify-center h-11 px-6 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold transition-all shadow-sm" onClick={handleSaveLessonEdit} disabled={isSavingLesson}>
+                      <button className="inline-flex items-center justify-center h-11 px-6 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold transition-all shadow-sm disabled:opacity-60" onClick={handleSaveLessonEdit} disabled={isSavingLesson || isUploadingLessonVideo}>
                         {isSavingLesson ? 'Đang lưu...' : 'Lưu cập nhật'}
                       </button>
                       <button className="inline-flex items-center justify-center h-11 px-4 rounded-xl bg-white hover:bg-amber-100 text-amber-800 font-bold transition-all border border-amber-200" onClick={() => setEditMode(false)}>
