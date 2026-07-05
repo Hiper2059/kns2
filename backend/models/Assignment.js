@@ -25,8 +25,12 @@ const assignmentSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['text', 'quiz'],
+      enum: ['text', 'quiz', 'practical', 'final_exam'],
       default: 'text'
+    },
+    isFinal: {
+      type: Boolean,
+      default: false
     },
     questions: {
       type: [

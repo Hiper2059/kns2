@@ -237,35 +237,47 @@ const LessonFullPage = ({
 
   const handleCreateLessonQuiz = () => {
     const title = String(newAssignmentData?.title || '').trim()
+    const type = newAssignmentData?.type || 'quiz'
     if (!title) {
-      showWarning('Nhap tieu de quiz nhe!')
+      showWarning('Vui lòng nhập tiêu đề bài tập!')
       return
     }
 
-    const questions = getNewQuizQuestions()
-      .map(item => {
-        const options = (item.options || []).map(option => String(option || '').trim()).filter(Boolean)
-        return {
-          question: String(item.question || '').trim(),
-          options,
-          correctOptionIndex: Math.min(Number(item.correctOptionIndex) || 0, Math.max(options.length - 1, 0))
-        }
+    if (type === 'quiz') {
+      const questions = getNewQuizQuestions()
+        .map(item => {
+          const options = (item.options || []).map(option => String(option || '').trim()).filter(Boolean)
+          return {
+            question: String(item.question || '').trim(),
+            options,
+            correctOptionIndex: Math.min(Number(item.correctOptionIndex) || 0, Math.max(options.length - 1, 0))
+          }
+        })
+        .filter(item => item.question && item.options.length >= 2)
+
+      if (!questions.length) {
+        showWarning('Quiz cần ít nhất 1 câu hỏi và mỗi câu có tối thiểu 2 đáp án.')
+        return
+      }
+
+      onCreateAssignment?.({
+        courseId: course?._id,
+        lessonId: lesson?._id,
+        title,
+        description: newAssignmentData?.description || '',
+        type,
+        questions
       })
-      .filter(item => item.question && item.options.length >= 2)
-
-    if (!questions.length) {
-      showWarning('Quiz cần ít nhất 1 câu hỏi và mỗi câu có tối thiểu 2 đáp án.')
-      return
+    } else {
+      onCreateAssignment?.({
+        courseId: course?._id,
+        lessonId: lesson?._id,
+        title,
+        description: newAssignmentData?.description || '',
+        type,
+        questions: []
+      })
     }
-
-    onCreateAssignment?.({
-      courseId: course?._id,
-      lessonId: lesson?._id,
-      title,
-      description: '',
-      type: 'quiz',
-      questions
-    })
   }
 
   const renderAssignmentBody = assignment => {
@@ -955,16 +967,35 @@ const LessonFullPage = ({
                   </h4>
                   {canEditLesson && (
                     <div className="mb-8 p-6 bg-blue-50 border border-blue-200 rounded-2xl">
-                      <h5 className="font-bold text-blue-800 mb-4">Tạo quiz mới</h5>
+                      <h5 className="font-bold text-blue-800 mb-4">Tạo Bài tập / Quiz mới</h5>
                       <div className="flex flex-col gap-4">
+                        <select
+                          className={baseInputClass}
+                          value={newAssignmentData?.type || 'quiz'}
+                          onChange={e => onNewAssignmentDataChange({ ...newAssignmentData, type: e.target.value })}
+                        >
+                          <option value="quiz">Trắc nghiệm</option>
+                          <option value="text">Tự luận</option>
+                          <option value="practical">Báo cáo / Thực hành (Video)</option>
+                          <option value="final_exam">Kiểm tra cuối khóa</option>
+                        </select>
                         <input
                           type="text"
                           className={baseInputClass}
-                          placeholder="Tiêu đề quiz"
+                          placeholder="Tiêu đề bài tập"
                           value={newAssignmentData?.title || ''}
                           onChange={e => onNewAssignmentDataChange({ ...newAssignmentData, title: e.target.value })}
                         />
-                        {getNewQuizQuestions().map((question, questionIndex) => (
+                        {(newAssignmentData?.type || 'quiz') !== 'quiz' && (
+                          <textarea
+                            className={baseInputClass}
+                            placeholder="Mô tả / Yêu cầu đề bài (Tùy chọn)"
+                            rows={3}
+                            value={newAssignmentData?.description || ''}
+                            onChange={e => onNewAssignmentDataChange({ ...newAssignmentData, description: e.target.value })}
+                          />
+                        )}
+                        {(newAssignmentData?.type || 'quiz') === 'quiz' && getNewQuizQuestions().map((question, questionIndex) => (
                           <div key={`new-quiz-question-${questionIndex}`} className="flex flex-col gap-3 rounded-xl border border-blue-100 bg-white p-4">
                             <div className="flex items-center justify-between gap-3">
                               <strong className="text-[14px] font-black text-slate-800">Câu {questionIndex + 1}</strong>
@@ -1006,14 +1037,16 @@ const LessonFullPage = ({
                             </div>
                           </div>
                         ))}
-                        <button type="button" className={ghostButtonClass} onClick={addNewQuizQuestion}>
-                          Thêm câu hỏi
-                        </button>
+                        {(newAssignmentData?.type || 'quiz') === 'quiz' && (
+                          <button type="button" className={ghostButtonClass} onClick={addNewQuizQuestion}>
+                            Thêm câu hỏi
+                          </button>
+                        )}
                         <button
                           className={baseButtonClass}
                           onClick={handleCreateLessonQuiz}
                         >
-                          Tạo quiz
+                          Tạo bài tập
                         </button>
                       </div>
                     </div>
@@ -1058,8 +1091,116 @@ const LessonFullPage = ({
                                   className="inline-flex cursor-pointer self-start items-center justify-center gap-2 h-11 px-6 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold transition-all"
                                   onClick={() => handleSubmitQuiz(assignment)}
                                 >
+                                  Nộp bài trắc nghiệm
+                                </button>
+                              </div>
+                            )}
+
+                            {currentUser && !isTeacherOrAdmin && !isQuiz && (!assignment.mySubmission || assignment.mySubmission.status === 'revision_requested') && (
+                              <div className="mt-4 flex flex-col gap-3 p-5 bg-blue-50 border border-blue-200 rounded-xl">
+                                <h5 className="font-bold text-blue-800 mb-2">Nộp bài của bạn</h5>
+                                {(assignment.type === 'practical' || assignment.type === 'final_exam') && (
+                                  <div className="flex flex-col gap-2">
+                                    <label className="text-[14px] font-bold text-slate-700">Video minh chứng (Bắt buộc nếu bài yêu cầu thực hành):</label>
+                                    <div className="flex items-center gap-3">
+                                      <input
+                                        type="text"
+                                        className={baseInputClass}
+                                        placeholder="Link Youtube/Drive hoặc tải lên video..."
+                                        value={assignmentDrafts[assignment._id]?.videoUrl || ''}
+                                        onChange={e => onAssignmentDraftChange?.(assignment._id, { ...assignmentDrafts[assignment._id], videoUrl: e.target.value })}
+                                      />
+                                      <LessonVideoUploadButton 
+                                        onUploadSuccess={(url) => onAssignmentDraftChange?.(assignment._id, { ...assignmentDrafts[assignment._id], videoUrl: url })}
+                                      />
+                                    </div>
+                                    {assignmentDrafts[assignment._id]?.videoUrl && (
+                                      <video src={getPlayableCloudinaryVideoUrl(assignmentDrafts[assignment._id]?.videoUrl)} controls className="w-full max-w-sm rounded-lg mt-2 bg-black" />
+                                    )}
+                                  </div>
+                                )}
+                                <textarea
+                                  className={baseInputClass}
+                                  placeholder={assignment.type === 'text' ? 'Nhập nội dung bài nộp...' : 'Ghi chú thêm (Tùy chọn)...'}
+                                  rows={4}
+                                  value={assignmentDrafts[assignment._id]?.content || ''}
+                                  onChange={e => onAssignmentDraftChange?.(assignment._id, { ...assignmentDrafts[assignment._id], content: e.target.value })}
+                                />
+                                <button
+                                  className="inline-flex cursor-pointer self-start items-center justify-center gap-2 h-11 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all mt-2"
+                                  onClick={() => onSubmitAssignment?.(assignment._id, assignmentDrafts[assignment._id] || {})}
+                                >
                                   Nộp bài
                                 </button>
+                              </div>
+                            )}
+
+                            {isTeacherOrAdmin && (
+                              <div className="mt-4 p-5 bg-slate-50 border border-slate-200 rounded-xl">
+                                <div className="flex items-center justify-between mb-4">
+                                  <h5 className="font-bold text-slate-800">Danh sách bài nộp</h5>
+                                  <button className={ghostButtonClass} onClick={() => onLoadAssignmentSubmissions?.(assignment._id)}>
+                                    Tải / Làm mới danh sách
+                                  </button>
+                                </div>
+                                
+                                {assignmentSubmissions?.[assignment._id] ? (
+                                  assignmentSubmissions[assignment._id].length > 0 ? (
+                                    <div className="flex flex-col gap-4">
+                                      {assignmentSubmissions[assignment._id].map(sub => (
+                                        <div key={sub._id} className="p-4 bg-white border border-slate-200 rounded-lg">
+                                          <div className="flex justify-between items-center mb-2">
+                                            <strong className="text-[15px] text-slate-800">{sub.studentName}</strong>
+                                            <span className={`px-2 py-1 rounded text-[12px] font-bold ${sub.status === 'graded' ? 'bg-emerald-100 text-emerald-700' : sub.status === 'revision_requested' ? 'bg-amber-100 text-amber-700' : 'bg-slate-200 text-slate-700'}`}>
+                                              {sub.status === 'graded' ? `Đã chấm (${sub.score})` : sub.status === 'revision_requested' ? 'Yêu cầu làm lại' : 'Chưa chấm'}
+                                            </span>
+                                          </div>
+                                          {sub.content && <div className="text-[14px] text-slate-600 mb-3 bg-slate-50 p-3 rounded-md">{sub.content}</div>}
+                                          {sub.videoUrl && (
+                                            <div className="mb-3">
+                                              <a href={sub.videoUrl} target="_blank" rel="noreferrer" className="text-blue-600 text-[14px] underline mb-2 font-bold inline-block">Xem Video / Link Báo cáo</a>
+                                              <video src={getPlayableCloudinaryVideoUrl(sub.videoUrl)} controls className="w-full max-w-md rounded-lg bg-black" />
+                                            </div>
+                                          )}
+                                          
+                                          {!isQuiz && (
+                                            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center gap-3">
+                                              <input
+                                                type="number"
+                                                className="h-10 px-3 rounded-lg border border-slate-300 text-[14px] w-24 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                                                placeholder="Điểm"
+                                                id={`score-${sub._id}`}
+                                                defaultValue={sub.score ?? ''}
+                                              />
+                                              <select 
+                                                id={`status-${sub._id}`} 
+                                                className="h-10 px-3 rounded-lg border border-slate-300 text-[14px] focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                                                defaultValue={sub.status === 'revision_requested' ? 'revision_requested' : 'graded'}
+                                              >
+                                                <option value="graded">Chấm hoàn thành</option>
+                                                <option value="revision_requested">Yêu cầu làm lại</option>
+                                              </select>
+                                              <button
+                                                className="h-10 px-5 rounded-lg bg-emerald-600 text-white font-bold text-[14px] hover:bg-emerald-700 transition-colors"
+                                                onClick={() => {
+                                                  const score = document.getElementById(`score-${sub._id}`).value;
+                                                  const status = document.getElementById(`status-${sub._id}`).value;
+                                                  onGradeSubmission?.(sub._id, { score, status });
+                                                }}
+                                              >
+                                                Lưu điểm
+                                              </button>
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <p className="text-[14px] text-slate-500 italic">Chưa có ai nộp bài.</p>
+                                  )
+                                ) : (
+                                  <p className="text-[14px] text-slate-500 italic">Bấm "Tải danh sách" để xem danh sách bài nộp.</p>
+                                )}
                               </div>
                             )}
                           </div>

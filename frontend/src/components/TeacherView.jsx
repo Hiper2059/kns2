@@ -47,11 +47,11 @@ const TeacherView = ({
       <header className="p-8 md:p-10 bg-slate-900 rounded-[24px] text-white shadow-[0_20px_50px_rgba(15,23,42,0.5)] mb-8 relative overflow-hidden">
         <div className="relative z-10">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-[12px] font-black uppercase tracking-wide mb-4">
-            Studio giảng viên
+            Tạo khóa học
           </span>
-          <h2 className="text-3xl md:text-4xl font-black mb-3">Khu vực giảng viên</h2>
+          <h2 className="text-3xl md:text-4xl font-black mb-3">Tạo khóa học mới</h2>
           <p className="text-[15px] font-medium text-slate-300 max-w-2xl">
-            Tạo lớp học mới. Để tạo bài giảng và bài trắc nghiệm, vui lòng truy cập vào chi tiết lớp học trong mục Khóa học.
+            Tạo khóa học mới. Để tạo bài giảng và bài trắc nghiệm, vui lòng truy cập vào chi tiết khóa học trong mục Khóa học.
           </p>
         </div>
         <div className="absolute -right-20 -top-20 w-96 h-96 bg-blue-500/20 rounded-full blur-[80px] pointer-events-none"></div>
@@ -59,14 +59,14 @@ const TeacherView = ({
 
       <CreatePanel
         eyebrow="Tạo Mới"
-        title="Tạo lớp học mới"
-        description="Thiết lập thông tin cơ bản: tên lớp, chủ đề, ảnh đại diện và mô tả."
+        title="Tạo khóa học mới"
+        description="Thiết lập thông tin cơ bản: tên khóa học, chủ đề, ảnh đại diện và mô tả."
         isOpen={isCreateCourseOpen}
         onToggle={() => setIsCreateCourseOpen(prev => !prev)}
       >
         <div className="flex flex-col gap-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField label="Tên lớp học">
+            <FormField label="Tên khóa học">
               <input type="text" className={baseInputClass} placeholder="Nhập tên khóa học..." value={newCourseData.title} onChange={event => onNewCourseDataChange({ ...newCourseData, title: event.target.value })} />
             </FormField>
             <FormField label="Chủ đề">
@@ -83,13 +83,13 @@ const TeacherView = ({
               </div>
             </FormField>
           </div>
-          <FormField label="Mô tả lớp học" as="div" className="col-span-full">
+          <FormField label="Mô tả khóa học" as="div" className="col-span-full">
             <div className="border border-slate-200 rounded-xl overflow-hidden focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10 transition-all">
               <RichTextEditor
                 toolbarId="course-editor-toolbar"
                 value={newCourseData.description}
                 onChange={value => onNewCourseDataChange({ ...newCourseData, description: value })}
-                placeholder="Mô tả chi tiết nội dung lớp học..."
+                placeholder="Mô tả chi tiết nội dung khóa học..."
               />
             </div>
           </FormField>
@@ -100,9 +100,9 @@ const TeacherView = ({
           </FormField>
         </div>
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-slate-100">
-          <span className="text-[14px] text-slate-500 font-medium">Vui lòng kiểm tra kỹ thông tin trước khi tạo lớp.</span>
+          <span className="text-[14px] text-slate-500 font-medium">Vui lòng kiểm tra kỹ thông tin trước khi tạo khóa học.</span>
           <button type="button" className={`${baseButtonClass} w-full md:w-auto`} onClick={onCreateCourse}>
-            <PlusCircle size={18} className="mr-2" /> Tạo lớp học
+            <PlusCircle size={18} className="mr-2" /> Tạo khóa học
           </button>
         </div>
       </CreatePanel>

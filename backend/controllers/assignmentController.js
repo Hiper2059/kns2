@@ -122,11 +122,9 @@ const listAssignments = catchAsync(async (req, res) => {
 
   const enriched = assignments.map(assignment => {
     const mySubmission = submissionByAssignment[String(assignment._id)] || null;
-    const safeAssignment = isStudent && !mySubmission
+    const safeAssignment = isStudent
       ? sanitizeAssignmentForStudent(assignment)
-      : isStudent && mySubmission
-        ? assignment
-        : assignment;
+      : assignment;
     return {
       ...safeAssignment,
       submissionCount: submissionCounts[String(assignment._id)] || 0,
@@ -145,7 +143,7 @@ const createAssignment = catchAsync(async (req, res) => {
   const { courseId } = req.params;
   const { title, description, dueAt, type, questions, lessonId } = req.body || {};
   const trimmedTitle = String(title || '').trim();
-  const assignmentType = type === 'quiz' ? 'quiz' : 'text';
+  const assignmentType = ['quiz', 'practical', 'final_exam'].includes(type) ? type : 'text';
   const normalizedQuestions = normalizeQuestions(questions);
 
   if (!trimmedTitle) {
@@ -203,7 +201,7 @@ const updateAssignment = catchAsync(async (req, res) => {
   }
   if (lessonId !== undefined) assignment.lesson = lessonId || null;
   if (description !== undefined) assignment.description = String(description || '').trim();
-  if (type !== undefined) assignment.type = type === 'quiz' ? 'quiz' : 'text';
+  if (type !== undefined) assignment.type = ['quiz', 'practical', 'final_exam'].includes(type) ? type : 'text';
   if (questions !== undefined) {
     const normalizedQuestions = normalizeQuestions(questions);
     if ((type === 'quiz' || assignment.type === 'quiz') && !normalizedQuestions.length) {
@@ -242,7 +240,7 @@ const deleteAssignment = catchAsync(async (req, res) => {
 
 const upsertSubmission = catchAsync(async (req, res) => {
   const { assignmentId } = req.params;
-  const { content, fileUrl, answers } = req.body || {};
+  const { content, fileUrl, videoUrl, answers } = req.body || {};
   const trimmedContent = String(content || '').trim();
 
   if (!mongoose.Types.ObjectId.isValid(assignmentId)) {
@@ -256,6 +254,10 @@ const upsertSubmission = catchAsync(async (req, res) => {
   const assignment = await Assignment.findById(assignmentId).lean();
   if (!assignment) {
     return res.status(404).json({ message: 'Khong tim thay bai tap.' });
+  }
+
+  if (assignment.dueAt && new Date() > new Date(assignment.dueAt)) {
+    return res.status(400).json({ message: 'Da qua han nop bai.' });
   }
 
   const enrolled = await Enrollment.findOne({
@@ -307,8 +309,8 @@ const upsertSubmission = catchAsync(async (req, res) => {
       gradedAt: new Date()
     };
   } else {
-    if (!trimmedContent) {
-      return res.status(400).json({ message: 'Noi dung bai nop khong duoc rong.' });
+    if (!trimmedContent && !fileUrl && !videoUrl) {
+      return res.status(400).json({ message: 'Can it nhat noi dung, file hoac video.' });
     }
 
     submissionPayload = {
@@ -316,6 +318,7 @@ const upsertSubmission = catchAsync(async (req, res) => {
       studentName: req.currentUser.username,
       content: trimmedContent,
       fileUrl: String(fileUrl || '').trim(),
+      videoUrl: String(videoUrl || '').trim(),
       answers: [],
       autoScore: null,
       status: 'submitted',
@@ -394,7 +397,7 @@ const listSubmissions = catchAsync(async (req, res) => {
 
 const gradeSubmission = catchAsync(async (req, res) => {
   const { submissionId } = req.params;
-  const { score, feedback } = req.body || {};
+  const { score, feedback, status } = req.body || {};
 
   if (!mongoose.Types.ObjectId.isValid(submissionId)) {
     return res.status(400).json({ message: 'submissionId khong hop le.' });
@@ -418,7 +421,7 @@ const gradeSubmission = catchAsync(async (req, res) => {
   if (feedback !== undefined) {
     submission.feedback = String(feedback).trim();
   }
-  submission.status = 'graded';
+  submission.status = ['graded', 'revision_requested'].includes(status) ? status : 'graded';
   submission.gradedAt = new Date();
 
   await submission.save();

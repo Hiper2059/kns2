@@ -32,6 +32,10 @@ const submissionSchema = new mongoose.Schema(
       type: String,
       default: ''
     },
+    videoUrl: {
+      type: String,
+      default: ''
+    },
     answers: {
       type: [Number],
       default: []
@@ -42,7 +46,7 @@ const submissionSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['submitted', 'graded'],
+      enum: ['submitted', 'graded', 'revision_requested'],
       default: 'submitted'
     },
     score: {

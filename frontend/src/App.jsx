@@ -1232,19 +1232,22 @@ function App() {
     setAssignmentDrafts(prev => ({ ...prev, [assignmentId]: value }))
   }
 
-  const handleSubmitAssignment = async assignmentId => {
+  const handleSubmitAssignment = async (assignmentId, draftData = null) => {
     if (!ensureAuthenticated('nộp bài')) {
       return
     }
 
-    const content = (assignmentDrafts[assignmentId] || '').trim()
-    if (!content) {
-      showWarning('Cậu nhập nội dung bài nộp trước nhé!')
+    const draft = draftData || assignmentDrafts[assignmentId] || {}
+    const content = typeof draft === 'string' ? draft.trim() : String(draft.content || '').trim()
+    const videoUrl = typeof draft === 'string' ? '' : String(draft.videoUrl || '').trim()
+
+    if (!content && !videoUrl) {
+      showWarning('Vui lòng nhập nội dung hoặc đính kèm video!')
       return
     }
 
     try {
-      const response = await api.post(`/api/assignments/${assignmentId}/submissions`, { content })
+      const response = await api.post(`/api/assignments/${assignmentId}/submissions`, { content, videoUrl })
       const submission = response.data?.submission
 
       setCourseAssignments(prev =>

@@ -9,10 +9,10 @@ const { getPaginationParams, buildPagination } = require('../utils/pagination');
 const catchAsync = require('../utils/catchAsync');
 
 const createReport = catchAsync(async (req, res) => {
-  const { targetType, targetId, targetAuthor, content } = req.body;
+  const { targetType, targetId } = req.body;
   const reporter = req.currentUser?.username || '';
 
-  if (!targetType || !targetId || !content || !reporter) {
+  if (!targetType || !targetId || !reporter) {
     return res.status(400).json({ message: 'Thiếu dữ liệu report.' });
   }
 
@@ -20,12 +20,37 @@ const createReport = catchAsync(async (req, res) => {
     return res.status(400).json({ message: 'targetType không hợp lệ.' });
   }
 
-  const moderation = await evaluateModeration(content.trim());
+  let realContent = '';
+  let realAuthor = '';
+
+  const hasValidObjectId = mongoose.Types.ObjectId.isValid(targetId);
+  if (!hasValidObjectId) {
+    return res.status(400).json({ message: 'targetId không hợp lệ.' });
+  }
+
+  if (targetType === 'post') {
+    const post = await ForumPost.findById(targetId);
+    if (!post || post.isDeleted) return res.status(404).json({ message: 'Không tìm thấy bài viết.' });
+    realContent = post.content || '';
+    realAuthor = post.authorName || '';
+  } else if (targetType === 'comment') {
+    const comment = await ForumComment.findById(targetId);
+    if (!comment || comment.isDeleted) return res.status(404).json({ message: 'Không tìm thấy bình luận diễn đàn.' });
+    realContent = comment.content || '';
+    realAuthor = comment.authorName || '';
+  } else if (targetType === 'lesson_comment') {
+    const comment = await LessonComment.findById(targetId);
+    if (!comment || comment.isDeleted) return res.status(404).json({ message: 'Không tìm thấy bình luận bài học.' });
+    realContent = comment.content || '';
+    realAuthor = comment.authorName || '';
+  }
+
+  const moderation = await evaluateModeration(realContent.trim());
   const report = await ModerationReport.create({
     targetType,
     targetId: String(targetId),
-    targetAuthor: targetAuthor ? String(targetAuthor).trim() : '',
-    content: content.trim(),
+    targetAuthor: String(realAuthor).trim(),
+    content: realContent.trim(),
     reporter: String(reporter).trim(),
     decision: moderation.decision,
     reason: moderation.reason,
@@ -33,7 +58,6 @@ const createReport = catchAsync(async (req, res) => {
   });
 
   if (moderation.decision === 'delete') {
-    const hasValidObjectId = mongoose.Types.ObjectId.isValid(targetId);
     if (targetType === 'post') {
       if (hasValidObjectId) {
         const deletedAt = new Date();

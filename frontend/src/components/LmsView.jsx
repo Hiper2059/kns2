@@ -586,7 +586,7 @@ const LmsView = ({
                               />
                             </div>
                           </FormField>
-                          <FormField label="URL Ảnh nền (Tùy chọn)" hint="Link ảnh bìa của bài học">
+                          <FormField as="div" label="URL Ảnh nền (Tùy chọn)" hint="Link ảnh bìa của bài học">
                             <div className="flex gap-2">
                               <input type="url" className={`${baseInputClass} flex-1`} value={editLessonData?.imageUrl || ''} onChange={event => onEditLessonChange({ ...editLessonData, imageUrl: event.target.value })} />
                               <label className={ghostButtonClass}>
@@ -634,7 +634,7 @@ const LmsView = ({
                               />
                             </div>
                           </FormField>
-                          <FormField label="URL Ảnh nền (Tùy chọn)" hint="Link ảnh bìa của bài học">
+                          <FormField as="div" label="URL Ảnh nền (Tùy chọn)" hint="Link ảnh bìa của bài học">
                             <div className="flex gap-2">
                               <input type="url" className={`${baseInputClass} flex-1`} value={newLessonData?.imageUrl || ''} onChange={event => onNewLessonDataChange({ ...newLessonData, imageUrl: event.target.value })} />
                               <label className={ghostButtonClass}>
