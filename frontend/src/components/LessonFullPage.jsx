@@ -1165,6 +1165,46 @@ const LessonFullPage = ({
                                             </span>
                                           </div>
                                           {sub.content && <div className="text-[14px] text-slate-600 mb-3 bg-slate-50 p-3 rounded-md">{sub.content}</div>}
+                                          {isQuiz && sub.answers && sub.answers.length > 0 && (
+                                            <div className="mt-3 flex flex-col gap-3 mb-3">
+                                              {Array.isArray(assignment.questions) && assignment.questions.map((q, qIndex) => {
+                                                const studentAns = sub.answers[qIndex];
+                                                const isTrueCorrect = Number(q.correctOptionIndex);
+                                                return (
+                                                  <div key={`quiz-sub-${qIndex}`} className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                                                    <p className="font-bold text-[13px] text-slate-800 mb-2">Câu {qIndex + 1}: {q.question}</p>
+                                                    <div className="flex flex-col gap-1">
+                                                      {(q.options || []).map((opt, optIdx) => {
+                                                        const isSelected = studentAns === optIdx;
+                                                        const isCorrect = isTrueCorrect === optIdx;
+                                                        let color = 'text-slate-600';
+                                                        let bg = '';
+                                                        let label = '';
+                                                        if (isSelected && isCorrect) {
+                                                          color = 'text-emerald-700 font-bold';
+                                                          bg = 'bg-emerald-100';
+                                                          label = ' (Học sinh chọn - Đúng)';
+                                                        } else if (isSelected && !isCorrect) {
+                                                          color = 'text-red-600 font-bold';
+                                                          bg = 'bg-red-50';
+                                                          label = ' (Học sinh chọn - Sai)';
+                                                        } else if (isCorrect) {
+                                                          color = 'text-emerald-600 font-bold';
+                                                          label = ' (Đáp án đúng)';
+                                                        }
+                                                        return (
+                                                          <div key={`quiz-sub-opt-${optIdx}`} className={`text-[13px] px-2 py-1.5 rounded ${bg} ${color}`}>
+                                                            {String.fromCharCode(65 + optIdx)}. {opt}
+                                                            {label && <span className="ml-1 opacity-80">{label}</span>}
+                                                          </div>
+                                                        )
+                                                      })}
+                                                    </div>
+                                                  </div>
+                                                )
+                                              })}
+                                            </div>
+                                          )}
                                           {sub.videoUrl && (
                                             <div className="mb-3">
                                               <a href={sub.videoUrl} target="_blank" rel="noreferrer" className="text-blue-600 text-[14px] underline mb-2 font-bold inline-block">Xem Video / Link Báo cáo</a>

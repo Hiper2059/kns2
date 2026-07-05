@@ -1039,7 +1039,7 @@ function App() {
       }
 
       try {
-        const response = await api.get(`/api/courses/${courseId}/assignments`)
+        const response = await api.get(`/api/courses/${courseId}/assignments?limit=1000`)
         setCourseAssignments(response.data.assignments || [])
       } catch {
         setCourseAssignments([])
@@ -1476,7 +1476,7 @@ function App() {
         setLessonRouteCourse(course)
         if (course?._id) {
           setSelectedCourse(course)
-          await fetchCourseLessons(course._id)
+          await loadSelectedCourseContent(course._id)
         }
       } catch (error) {
         const message = error.response?.data?.message || 'Không tải được bài học.'
@@ -1488,7 +1488,7 @@ function App() {
         setLessonRouteLoading(false)
       }
     },
-    [fetchCourseLessons]
+    [loadSelectedCourseContent]
   )
 
   useEffect(() => {
