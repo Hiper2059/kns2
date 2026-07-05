@@ -1120,7 +1120,9 @@ const LessonFullPage = ({
                                         onChange={e => onAssignmentDraftChange?.(assignment._id, { ...assignmentDrafts[assignment._id], videoUrl: e.target.value })}
                                       />
                                       <LessonVideoUploadButton 
-                                        onUploadSuccess={(url) => onAssignmentDraftChange?.(assignment._id, { ...assignmentDrafts[assignment._id], videoUrl: url })}
+                                        className={ghostButtonClass}
+                                        onUpload={onUploadLessonVideoFile}
+                                        onUploaded={(url) => onAssignmentDraftChange?.(assignment._id, { ...assignmentDrafts[assignment._id], videoUrl: url })}
                                       />
                                     </div>
                                     {assignmentDrafts[assignment._id]?.videoUrl && (
