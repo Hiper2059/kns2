@@ -986,7 +986,7 @@ const LessonFullPage = ({
                           <option value="quiz">Trắc nghiệm</option>
                           <option value="text">Tự luận</option>
                           <option value="practical">Báo cáo / Thực hành (Video)</option>
-                          <option value="final_exam">Kiểm tra cuối khóa</option>
+
                         </select>
                         <input
                           type="text"
@@ -1108,7 +1108,7 @@ const LessonFullPage = ({
                             {currentUser && !isTeacherOrAdmin && !isQuiz && (!assignment.mySubmission || assignment.mySubmission.status === 'revision_requested') && (
                               <div className="mt-4 flex flex-col gap-3 p-5 bg-blue-50 border border-blue-200 rounded-xl">
                                 <h5 className="font-bold text-blue-800 mb-2">Nộp bài của bạn</h5>
-                                {(assignment.type === 'practical' || assignment.type === 'final_exam') && (
+                                {assignment.type === 'practical' && (
                                   <div className="flex flex-col gap-2">
                                     <label className="text-[14px] font-bold text-slate-700">Video minh chứng (Bắt buộc nếu bài yêu cầu thực hành):</label>
                                     <div className="flex items-center gap-3">

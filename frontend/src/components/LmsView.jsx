@@ -784,7 +784,7 @@ const LmsView = ({
                               <option value="quiz">Trắc nghiệm</option>
                               <option value="text">Tự luận</option>
                               <option value="practical">Báo cáo / Thực hành (Video)</option>
-                              <option value="final_exam">Kiểm tra cuối khóa</option>
+
                             </select>
                           </FormField>
                           <FormField label="Tiêu đề" as="div">
