@@ -637,7 +637,7 @@ const LmsView = ({
                             </div>
                             {editLessonData?.imageFile && <div className="text-[13px] text-blue-600 font-medium">Đã chọn file: {editLessonData.imageFile.name}</div>}
                           </FormField>
-                          <FormField label="Nội dung bài học" hint="Nút video trong trình soạn thảo chỉ chèn video vào nội dung, không thay video chính phía trên.">
+                          <FormField label="Nội dung bài học" hint="Nút video trong trình soạn thảo chỉ chèn video vào nội dung, không thay video chính phía trên." as="div">
                             <div className="rounded-xl border border-slate-200 overflow-hidden">
                               <RichTextEditor toolbarId="lms-edit-lesson-editor" value={editLessonData?.content || ''} onChange={content => onEditLessonChange({ ...editLessonData, content })} onUploadVideo={onUploadEditLessonEditorVideo} />
                             </div>
@@ -685,7 +685,7 @@ const LmsView = ({
                             </div>
                             {newLessonData?.imageFile && <div className="text-[13px] text-blue-600 font-medium">Đã chọn file: {newLessonData.imageFile.name}</div>}
                           </FormField>
-                          <FormField label="Nội dung bài học" hint="Nút video trong trình soạn thảo chỉ chèn video vào nội dung, không thay video chính phía trên.">
+                          <FormField label="Nội dung bài học" hint="Nút video trong trình soạn thảo chỉ chèn video vào nội dung, không thay video chính phía trên." as="div">
                             <div className="rounded-xl border border-slate-200 overflow-hidden">
                               <RichTextEditor toolbarId="lms-new-lesson-editor" value={newLessonData?.content || ''} onChange={content => onNewLessonDataChange({ ...newLessonData, content })} onUploadVideo={onUploadLessonEditorVideo} />
                             </div>
