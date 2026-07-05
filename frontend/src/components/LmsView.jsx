@@ -762,7 +762,7 @@ const LmsView = ({
                 <div className="gsap-animate p-6 md:p-8 bg-white border border-slate-200 rounded-[24px] shadow-sm mt-8">
                   <h3 className="flex items-center gap-3 text-xl font-black text-slate-900 mb-6 pb-4 border-b border-slate-100">
                     <span className="grid place-items-center w-10 h-10 rounded-xl bg-blue-50 text-blue-600"><ClipboardList size={18} /></span>
-                    Bài kiểm tra thường xuyên
+                    Tạo bài kiểm tra
                   </h3>
 
                   {canManageLearning && (

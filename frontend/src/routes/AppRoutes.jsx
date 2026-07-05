@@ -77,7 +77,7 @@ const AppRoutes = ({
   setNewLessonData,
   handleCreateLesson,
   newAssignmentData,
-  setNewAssignmentData,
+  onNewAssignmentDataChange,
   handleCreateAssignment,
   editAssignmentId,
   editAssignmentData,
@@ -204,7 +204,7 @@ const AppRoutes = ({
               lessons={courseLessons}
               assignments={courseAssignments}
               newAssignmentData={newAssignmentData}
-              onNewAssignmentDataChange={setNewAssignmentData}
+              onNewAssignmentDataChange={onNewAssignmentDataChange}
               onCreateAssignment={handleCreateAssignment}
               editAssignmentId={editAssignmentId}
               editAssignmentData={editAssignmentData}
@@ -243,7 +243,7 @@ const AppRoutes = ({
               lessons={courseLessons}
               assignments={courseAssignments}
               newAssignmentData={newAssignmentData}
-              onNewAssignmentDataChange={setNewAssignmentData}
+              onNewAssignmentDataChange={onNewAssignmentDataChange}
               onCreateAssignment={handleCreateAssignment}
               editAssignmentId={editAssignmentId}
               editAssignmentData={editAssignmentData}
@@ -310,7 +310,7 @@ const AppRoutes = ({
                 onCreateLesson={handleCreateLesson}
                 assignments={courseAssignments}
                 newAssignmentData={newAssignmentData}
-                onNewAssignmentDataChange={setNewAssignmentData}
+                onNewAssignmentDataChange={onNewAssignmentDataChange}
                 onCreateAssignment={handleCreateAssignment}
                 editAssignmentId={editAssignmentId}
                 editAssignmentData={editAssignmentData}
