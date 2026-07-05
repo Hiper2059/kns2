@@ -1315,7 +1315,8 @@ function App() {
         description: assignmentPayload.description,
         type: assignmentPayload.type || 'quiz',
         questions: assignmentPayload.questions || [],
-        lessonId: assignmentPayload.lessonId || null
+        lessonId: assignmentPayload.lessonId || null,
+        dueAt: assignmentPayload.dueAt || null
       })
 
       const created = response.data?.assignment
@@ -1331,7 +1332,8 @@ function App() {
         type: 'quiz',
         questions: [
           { question: '', options: ['', '', '', ''], correctOptionIndex: 0 }
-        ]
+        ],
+        dueAt: ''
       })
     } catch (error) {
       showError(error.response?.data?.message || 'Không tạo được bài tập.')
@@ -1348,9 +1350,10 @@ function App() {
         ? assignment.questions.map(item => ({
             question: item.question || '',
             options: [...(item.options || []), '', '', '', ''].slice(0, 4),
-            correctOptionIndex: item.correctOptionIndex || 0
+            correctOptionIndex: Number(item.correctOptionIndex) || 0
           }))
-        : [{ question: '', options: ['', '', '', ''], correctOptionIndex: 0 }]
+        : [{ question: '', options: ['', '', '', ''], correctOptionIndex: 0 }],
+      dueAt: assignment.dueAt ? new Date(assignment.dueAt).toISOString().slice(0, 16) : ''
     })
   }
 
@@ -1374,7 +1377,8 @@ function App() {
         title: editAssignmentData.title,
         description: editAssignmentData.description,
         type: editAssignmentData.type || 'quiz',
-        questions: editAssignmentData.questions || []
+        questions: editAssignmentData.questions || [],
+        dueAt: editAssignmentData.dueAt || null
       })
 
       const updated = response.data?.assignment

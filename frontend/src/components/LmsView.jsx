@@ -69,6 +69,16 @@ const LmsView = ({
   onSelectCourse,
   lessons,
   assignments,
+  newAssignmentData,
+  onNewAssignmentDataChange,
+  onCreateAssignment,
+  editAssignmentId,
+  editAssignmentData,
+  onEditAssignmentStart,
+  onEditAssignmentChange,
+  onEditAssignmentCancel,
+  onUpdateAssignment,
+  onDeleteAssignment,
   courseLeaderboard,
   assignmentDrafts,
   onAssignmentDraftChange,
@@ -101,6 +111,7 @@ const LmsView = ({
   const [quizDrafts, setQuizDrafts] = useState({})
   const [courseSearch, setCourseSearch] = useState('')
   const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false)
+  const [isCreateAssignmentOpen, setIsCreateAssignmentOpen] = useState(false)
   const [isNewLessonVideoUploading, setIsNewLessonVideoUploading] = useState(false)
   const [isEditLessonVideoUploading, setIsEditLessonVideoUploading] = useState(false)
   const isTeacher = currentRole === 'teacher'
@@ -117,6 +128,35 @@ const LmsView = ({
 
     const created = await onCreateLesson?.()
     if (created) setIsCreateLessonOpen(false)
+  }
+
+  const getNewQuizQuestions = () => {
+    if (!Array.isArray(newAssignmentData?.questions) || newAssignmentData.questions.length === 0) {
+      return [{ question: '', options: ['', '', '', ''], correctOptionIndex: 0 }]
+    }
+    return newAssignmentData.questions
+  }
+
+  const updateNewQuizQuestion = (index, newQuestion) => {
+    const qs = getNewQuizQuestions()
+    qs[index] = newQuestion
+    onNewAssignmentDataChange?.({ ...newAssignmentData, questions: qs })
+  }
+
+  const addNewQuizQuestion = () => {
+    const qs = getNewQuizQuestions()
+    onNewAssignmentDataChange?.({ ...newAssignmentData, questions: [...qs, { question: '', options: ['', '', '', ''], correctOptionIndex: 0 }] })
+  }
+
+  const removeNewQuizQuestion = index => {
+    const qs = getNewQuizQuestions()
+    qs.splice(index, 1)
+    onNewAssignmentDataChange?.({ ...newAssignmentData, questions: qs })
+  }
+
+  const handleCreateAssignmentSubmit = async () => {
+    await onCreateAssignment?.({ lessonId: null })
+    setIsCreateAssignmentOpen(false)
   }
 
   const handleUpdateLessonSubmit = async event => {
@@ -719,11 +759,118 @@ const LmsView = ({
                   </div>
                 </div>
 
-                <div className="gsap-animate p-6 md:p-8 bg-white border border-slate-200 rounded-[24px] shadow-sm">
+                <div className="gsap-animate p-6 md:p-8 bg-white border border-slate-200 rounded-[24px] shadow-sm mt-8">
                   <h3 className="flex items-center gap-3 text-xl font-black text-slate-900 mb-6 pb-4 border-b border-slate-100">
                     <span className="grid place-items-center w-10 h-10 rounded-xl bg-blue-50 text-blue-600"><ClipboardList size={18} /></span>
-                    Bài tập thực hành
+                    Bài kiểm tra thường xuyên
                   </h3>
+
+                  {canManageLearning && (
+                    <div className="mb-8">
+                      <CreatePanel
+                        title="Thêm bài kiểm tra"
+                        eyebrow="Tạo mới"
+                        description="Tạo bài trắc nghiệm, tự luận hoặc kiểm tra cuối khóa."
+                        isOpen={isCreateAssignmentOpen}
+                        onToggle={() => setIsCreateAssignmentOpen(!isCreateAssignmentOpen)}
+                      >
+                        <div className="flex flex-col gap-4 mt-4">
+                          <FormField label="Loại bài kiểm tra" as="div">
+                            <select
+                              className={baseInputClass}
+                              value={newAssignmentData?.type || 'quiz'}
+                              onChange={e => onNewAssignmentDataChange?.({ ...newAssignmentData, type: e.target.value })}
+                            >
+                              <option value="quiz">Trắc nghiệm</option>
+                              <option value="text">Tự luận</option>
+                              <option value="practical">Báo cáo / Thực hành (Video)</option>
+                              <option value="final_exam">Kiểm tra cuối khóa</option>
+                            </select>
+                          </FormField>
+                          <FormField label="Tiêu đề" as="div">
+                            <input
+                              type="text"
+                              className={baseInputClass}
+                              placeholder="Tiêu đề bài kiểm tra"
+                              value={newAssignmentData?.title || ''}
+                              onChange={e => onNewAssignmentDataChange?.({ ...newAssignmentData, title: e.target.value })}
+                            />
+                          </FormField>
+                          <FormField label="Hạn nộp bài (Date & Time)" as="div">
+                            <input
+                              type="datetime-local"
+                              className={baseInputClass}
+                              value={newAssignmentData?.dueAt || ''}
+                              onChange={e => onNewAssignmentDataChange?.({ ...newAssignmentData, dueAt: e.target.value })}
+                            />
+                          </FormField>
+                          {(newAssignmentData?.type || 'quiz') !== 'quiz' && (
+                            <FormField label="Mô tả / Yêu cầu đề bài (Tùy chọn)" as="div">
+                              <textarea
+                                className={baseInputClass}
+                                rows={3}
+                                value={newAssignmentData?.description || ''}
+                                onChange={e => onNewAssignmentDataChange?.({ ...newAssignmentData, description: e.target.value })}
+                              />
+                            </FormField>
+                          )}
+                          {(newAssignmentData?.type || 'quiz') === 'quiz' && getNewQuizQuestions().map((question, questionIndex) => (
+                            <div key={`new-quiz-question-${questionIndex}`} className="flex flex-col gap-3 rounded-xl border border-blue-100 bg-white p-4">
+                              <div className="flex items-center justify-between gap-3">
+                                <strong className="text-[14px] font-black text-slate-800">Câu {questionIndex + 1}</strong>
+                                {getNewQuizQuestions().length > 1 && (
+                                  <button type="button" className={dangerButtonClass} onClick={() => removeNewQuizQuestion(questionIndex)}>
+                                    Xóa câu
+                                  </button>
+                                )}
+                              </div>
+                              <input
+                                type="text"
+                                className={baseInputClass}
+                                placeholder="Nội dung câu hỏi"
+                                value={question.question}
+                                onChange={e => updateNewQuizQuestion(questionIndex, { ...question, question: e.target.value })}
+                              />
+                              <div className="grid gap-3 md:grid-cols-2">
+                                {question.options.map((option, optionIndex) => (
+                                  <label key={`new-quiz-option-${questionIndex}-${optionIndex}`} className="flex items-center gap-2">
+                                    <input
+                                      type="radio"
+                                      name={`new-quiz-correct-${questionIndex}`}
+                                      checked={question.correctOptionIndex === optionIndex}
+                                      onChange={() => updateNewQuizQuestion(questionIndex, { ...question, correctOptionIndex: optionIndex })}
+                                    />
+                                    <input
+                                      type="text"
+                                      className={baseInputClass}
+                                      placeholder={`Đáp án ${String.fromCharCode(65 + optionIndex)}`}
+                                      value={option}
+                                      onChange={e => {
+                                        const options = [...question.options]
+                                        options[optionIndex] = e.target.value
+                                        updateNewQuizQuestion(questionIndex, { ...question, options })
+                                      }}
+                                    />
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                          {(newAssignmentData?.type || 'quiz') === 'quiz' && (
+                            <button type="button" className={ghostButtonClass} onClick={addNewQuizQuestion}>
+                              Thêm câu hỏi
+                            </button>
+                          )}
+                          <div className="flex justify-end mt-4 pt-6 border-t border-slate-100">
+                            <button className={baseButtonClass} onClick={handleCreateAssignmentSubmit}>
+                              Tạo bài kiểm tra
+                            </button>
+                          </div>
+                        </div>
+                      </CreatePanel>
+                    </div>
+                  )}
+
                   <div className="flex flex-col gap-6">
                     {visibleAssignments.length ? (
                       visibleAssignments.map((assignment, index) => {
@@ -732,6 +879,9 @@ const LmsView = ({
                           <div key={assignment._id || assignment.id || `${assignment.title || 'assignment'}-${index}`} className="flex flex-col gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
                             <div>
                               <h4 className="text-xl font-black text-slate-900 mb-2">{assignment.title}</h4>
+                              {assignment.dueAt && (
+                                <p className="text-[13px] font-bold text-red-600 mb-2">Hạn nộp: {new Date(assignment.dueAt).toLocaleString('vi-VN')}</p>
+                              )}
                               <p className="text-[15px] text-slate-600">{assignment.description || 'Không có mô tả.'}</p>
                               {renderAssignmentBody(assignment)}
                             </div>

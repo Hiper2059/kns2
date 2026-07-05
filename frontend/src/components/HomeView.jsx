@@ -127,51 +127,7 @@ const HomeView = ({
         </div>
       </div>
 
-      {/* Video Section */}
-      <div className="gsap-animate glass-card min-w-0 p-5 sm:p-8 bg-white/85 border border-zinc-200 rounded-3xl shadow-xl mt-4">
-        <div className="flex min-w-0 flex-wrap items-center gap-4 mb-6">
-          <div className="p-3 bg-rose-100 text-rose-600 rounded-2xl">
-             <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-             </svg>
-          </div>
-          <h3 className="text-2xl font-bold text-zinc-800">Video hướng dẫn tiêu biểu</h3>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {(categoryVideos[categories[0]] || []).slice(0, 2).map((video, index) => (
-            <div key={video._id || `${video.url}-${index}`} className="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 shadow-sm hover:shadow-lg transition-[box-shadow,border-color,transform] duration-300">
-              <div className="aspect-w-16 aspect-h-9 w-full">
-                <iframe
-                  src={getVideoEmbedUrl(video.url)}
-                  title="Video huong dan"
-                  className="w-full h-full object-cover"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                ></iframe>
-              </div>
-              {currentRole === 'admin' && (
-                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <button
-                    className="px-4 py-2 bg-red-500/90 hover:bg-red-600 text-white text-sm font-bold rounded-xl backdrop-blur-sm shadow-md"
-                    onClick={() => onDeleteVideo(video._id)}
-                    disabled={!video._id || String(video._id).startsWith('default-')}
-                  >
-                    Xóa video
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-          {!(categoryVideos[categories[0]] || []).length && (
-            <div className="col-span-full p-12 text-center text-zinc-400 border-2 border-dashed border-zinc-200 rounded-2xl">
-              Chưa có video nào trong danh mục này.
-            </div>
-          )}
-        </div>
-      </div>
+      {/* Video Section removed as requested */}
     </div>
   )
 }

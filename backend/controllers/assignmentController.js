@@ -73,6 +73,12 @@ const sanitizeAssignmentForStudent = assignment => {
   };
 };
 
+const updateEnrollmentTotalScore = async (courseId, studentId) => {
+  const submissions = await Submission.find({ course: courseId, student: studentId, score: { $ne: null } }).lean();
+  const totalScore = submissions.reduce((sum, sub) => sum + (Number(sub.score) || 0), 0);
+  await Enrollment.findOneAndUpdate({ course: courseId, student: studentId }, { totalScore });
+};
+
 const listAssignments = catchAsync(async (req, res) => {
   const { courseId } = req.params;
   const course = await ensureCourseAccess(req, res, courseId);
@@ -80,7 +86,7 @@ const listAssignments = catchAsync(async (req, res) => {
     return;
   }
 
-  const filter = { course: course._id };
+  const filter = { course: course._id, lesson: null };
   const { page, limit, skip } = getPaginationParams(req.query);
   const [assignments, totalItems] = await Promise.all([
     Assignment.find(filter)
@@ -357,6 +363,8 @@ const upsertSubmission = catchAsync(async (req, res) => {
     await User.findByIdAndUpdate(req.currentUser._id, { $inc: { points: pointsToAward } });
   }
 
+  await updateEnrollmentTotalScore(assignment.course, req.currentUser._id);
+
   res.json({ message: 'Da nop bai.', submission, pointsEarned: pointsToAward });
 });
 
@@ -425,6 +433,8 @@ const gradeSubmission = catchAsync(async (req, res) => {
   submission.gradedAt = new Date();
 
   await submission.save();
+
+  await updateEnrollmentTotalScore(submission.course, submission.student);
 
   res.json({ message: 'Da cham bai.', submission });
 });

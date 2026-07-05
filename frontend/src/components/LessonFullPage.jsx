@@ -559,12 +559,11 @@ const LessonFullPage = ({
     }
   }, [isDirectVideo, isHls, isDash, lesson?._id, playbackVideoUrl])
 
-  const videoSatisfied =
-    !requiresVideo ||
-    (videoId && videoReady && hasVideoEnded && !hasSeeked) ||
-    (isDirectVideo && videoReady && hasVideoEnded && !hasSeeked)
+  const allAssignmentsSubmitted = lessonAssignments.length > 0 
+    ? lessonAssignments.every(a => a.mySubmission)
+    : true;
 
-  const canMarkComplete = canComplete && !isCompleted && hasScrolledToEnd && videoSatisfied
+  const canMarkComplete = canComplete && !isCompleted && allAssignmentsSubmitted
   const canEditLesson = currentRole === 'teacher' || currentRole === 'admin'
 
   const [editMode, setEditMode] = useState(false)
@@ -873,7 +872,21 @@ const LessonFullPage = ({
 
               {/* Lesson Content Area */}
               <div className="px-4 md:px-8 xl:px-12 py-8 md:py-12 flex flex-col min-w-0">
-                <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-8">{lesson.title}</h1>
+                <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-6">{lesson.title}</h1>
+
+                {lesson.attachmentUrl && (
+                  <div className="mb-8 flex items-center">
+                    <a 
+                      href={lesson.attachmentUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-5 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl border border-blue-200 transition-colors w-fit"
+                    >
+                      <FileText size={20} />
+                      {lesson.attachmentName || 'Tải tài liệu đính kèm'}
+                    </a>
+                  </div>
+                )}
 
                 {/* Edit Mode Panel */}
                 {canEditLesson && editMode && (
@@ -946,13 +959,9 @@ const LessonFullPage = ({
                       <div className="mt-4 flex items-center justify-center gap-2 text-[14px] font-bold text-amber-600 bg-amber-50 px-4 py-2 rounded-lg">
                         <AlertCircle size={16} />
                         <span>
-                          {requiresVideo && (!videoId || !videoReady)
-                            ? 'Không thể tải trạng thái video, vui lòng thử lại.'
-                            : requiresVideo && hasSeeked
-                              ? 'Vui lòng xem video từ đầu đến cuối, không tua.'
-                              : requiresVideo && !hasVideoEnded
-                                ? 'Hãy xem hết video trước khi hoàn thành.'
-                                : 'Hãy đọc và cuộn hết nội dung bài học.'}
+                          {lessonAssignments.length > 0
+                            ? 'Vui lòng nộp tất cả bài tập để hoàn thành bài học.'
+                            : 'Vui lòng đọc hết nội dung bài học.'}
                         </span>
                       </div>
                     )}
