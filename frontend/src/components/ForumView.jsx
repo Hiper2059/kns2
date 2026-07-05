@@ -81,7 +81,7 @@ const ForumView = ({
       </div>
       <div>
         <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-          {forumScope === 'course' ? 'Diễn đàn lớp học' : 'Cộng đồng thảo luận'}
+          {forumScope === 'course' ? 'Diễn đàn khóa học' : 'Cộng đồng thảo luận'}
         </h2>
         <p className="text-sm font-medium text-slate-500">
           Nơi giao lưu, trao đổi kiến thức và hỗ trợ lẫn nhau.

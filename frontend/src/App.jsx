@@ -496,7 +496,7 @@ function App() {
       normalizedInput.includes('co nhung ky nang nao') ||
       normalizedInput.includes('co gi de hoc')
     ) {
-      addSuggestion({ id: 'go-lms', label: 'Xem lớp học' })
+      addSuggestion({ id: 'go-lms', label: 'Xem khóa học' })
       allCategories.forEach(category => {
         addSuggestion({ id: `open-category:${category}`, label: `Học ${category}` })
       })
@@ -507,7 +507,7 @@ function App() {
       normalizedInput.includes('khoa hoc') ||
       normalizedInput.includes('giang vien')
     ) {
-      addSuggestion({ id: 'go-lms', label: 'Mở lớp học' })
+      addSuggestion({ id: 'go-lms', label: 'Mở khóa học' })
     }
 
     Object.entries(skillKeywordMap).forEach(([category, keywords]) => {
@@ -646,13 +646,13 @@ function App() {
     const postCourseId = options.courseId || forumCourseId
 
     if (postScope === 'course' && !postCourseId) {
-      showWarning('Cậu chọn lớp trước khi đăng bài nhé!')
+      showWarning('Cậu chọn khóa học trước khi đăng bài nhé!')
       return
     }
 
     const postCategory =
       options.category ||
-      (postScope === 'course' ? forumCourse?.title || 'Lớp học' : newPost.category)
+      (postScope === 'course' ? forumCourse?.title || 'Khóa học' : newPost.category)
 
     try {
       const response = await api.post('/api/forum/posts', {
@@ -1305,7 +1305,7 @@ function App() {
     }
 
     if (!assignmentPayload.courseId || !assignmentPayload.title.trim()) {
-      showWarning('Cậu chọn lớp và nhập tiêu đề bài tập nhé.')
+      showWarning('Cậu chọn khóa học và nhập tiêu đề bài tập nhé.')
       return
     }
 
@@ -1794,12 +1794,12 @@ function App() {
 
   const handleCreateCourse = async () => {
     if (!currentUser || (currentRole !== 'teacher' && currentRole !== 'admin')) {
-      showError('Chỉ giảng viên hoặc admin mới tạo được lớp học.')
+      showError('Chỉ giảng viên hoặc admin mới tạo được khóa học.')
       return
     }
 
     if (!newCourseData.title.trim() || !newCourseData.category.trim()) {
-      showWarning('Cậu điền tên lớp và danh mục trước nhé.')
+      showWarning('Cậu điền tên khóa học và danh mục trước nhé.')
       return
     }
 
@@ -1820,21 +1820,21 @@ function App() {
         description: newCourseData.description.trim(),
         imageUrl
       })
-      showSuccess(response.data.message || 'Đã tạo lớp học.')
+      showSuccess(response.data.message || 'Đã tạo khóa học.')
       setNewCourseData({ title: '', category: allCategories[0] || categories[0], description: '', imageUrl: '', imageFile: null })
       if (currentRole === 'teacher') {
         fetchTeacherCourses()
       }
       fetchCourses()
     } catch (error) {
-      showError(error.response?.data?.message || 'Không tạo được lớp học.')
+      showError(error.response?.data?.message || 'Không tạo được khóa học.')
     }
   }
 
   const handleCreateLesson = async () => {
     const targetCourseId = selectedCourse?._id || selectedTeacherCourseId
     if (!targetCourseId) {
-      showWarning('Cậu chọn lớp trước nhé.')
+      showWarning('Cậu chọn khóa học trước nhé.')
       return false
     }
 
@@ -2066,20 +2066,20 @@ function App() {
   }
 
   const handleEnroll = async courseId => {
-    if (!ensureAuthenticated('tham gia lớp học')) {
+    if (!ensureAuthenticated('tham gia khóa học')) {
       return
     }
 
     try {
       const response = await api.post(`/api/courses/${courseId}/enroll`)
-      showSuccess(response.data.message || 'Đã tham gia lớp học.')
+      showSuccess(response.data.message || 'Đã tham gia khóa học.')
       await Promise.all([
         fetchMyEnrollments(),
         fetchCourseLessons(courseId),
         fetchCourseAssignments(courseId)
       ])
     } catch (error) {
-      showError(error.response?.data?.message || 'Không tham gia được lớp học.')
+      showError(error.response?.data?.message || 'Không tham gia được khóa học.')
     }
   }
 

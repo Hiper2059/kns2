@@ -11,17 +11,17 @@ const enrollCourse = catchAsync(async (req, res) => {
   const { courseId } = req.params;
 
   if (!isStudentRole(req.currentUser.role)) {
-    return res.status(403).json({ message: 'Chỉ học viên mới được tham gia lớp.' });
+    return res.status(403).json({ message: 'Chỉ học viên mới được tham gia khóa học.' });
   }
 
   const course = await Course.findById(courseId).lean();
   if (!course) {
-    return res.status(404).json({ message: 'Không tìm thấy lớp học.' });
+    return res.status(404).json({ message: 'Không tìm thấy khóa học.' });
   }
 
   const exists = await Enrollment.findOne({ course: courseId, student: req.currentUser._id }).lean();
   if (exists) {
-    return res.status(400).json({ message: 'Cậu đã tham gia lớp này rồi.' });
+    return res.status(400).json({ message: 'Cậu đã tham gia khóa học này rồi.' });
   }
 
   const created = await Enrollment.create({
@@ -33,7 +33,7 @@ const enrollCourse = catchAsync(async (req, res) => {
     teacherName: course.teacherName
   });
 
-  res.status(201).json({ message: 'Đã tham gia lớp học.', enrollment: created });
+  res.status(201).json({ message: 'Đã tham gia khóa học.', enrollment: created });
 });
 
 const listMyEnrollments = catchAsync(async (req, res) => {
@@ -59,11 +59,11 @@ const listCourseEnrollments = catchAsync(async (req, res) => {
   const { courseId } = req.params;
   const course = await Course.findById(courseId).lean();
   if (!course) {
-    return res.status(404).json({ message: 'Không tìm thấy lớp học.' });
+    return res.status(404).json({ message: 'Không tìm thấy khóa học.' });
   }
 
   if (req.currentUser.role === 'teacher' && String(course.teacher) !== String(req.currentUser._id)) {
-    return res.status(403).json({ message: 'Bạn không có quyền xem học viên của lớp này.' });
+    return res.status(403).json({ message: 'Bạn không có quyền xem học viên của khóa học này.' });
   }
 
   const filter = { course: courseId };
@@ -102,7 +102,7 @@ const completeLesson = catchAsync(async (req, res) => {
   });
 
   if (!enrollment) {
-    return res.status(403).json({ message: 'Cậu cần tham gia lớp trước khi học.' });
+    return res.status(403).json({ message: 'Cậu cần tham gia khóa học trước khi học.' });
   }
 
   let pointsEarned = 0;

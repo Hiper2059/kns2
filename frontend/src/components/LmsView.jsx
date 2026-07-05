@@ -365,7 +365,7 @@ const LmsView = ({
               Bộ lọc khóa học
             </div>
             <div className="mt-2 text-[30px] font-black uppercase leading-none tracking-normal text-slate-950 max-md:text-[24px]">
-              Khám phá lớp học
+              Khám phá khóa học
             </div>
           </div>
           <label className="flex h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-slate-400">
@@ -381,7 +381,7 @@ const LmsView = ({
         </div>
       </div>
 
-      <nav className="gsap-animate mt-7 flex gap-2 overflow-x-auto border-b border-slate-100 pb-2" aria-label="Mục lục lớp học">
+      <nav className="gsap-animate mt-7 flex gap-2 overflow-x-auto border-b border-slate-100 pb-2" aria-label="Mục lục khóa học">
         {categoryStats.map((category, index) => {
           const isActive = selectedCategory === category.name
           return (
@@ -403,19 +403,19 @@ const LmsView = ({
       </nav>
 
       <div className="mt-10">
-        <section aria-label="Danh sách lớp học">
+        <section aria-label="Danh sách khóa học">
           <div className="gsap-animate flex items-start justify-between gap-5">
             <div>
               <div className="flex items-center gap-2 text-[14px] font-black uppercase text-slate-500">
                 <Layers3 size={16} />
-                {selectedCategory || 'Tất cả lớp'}
+                {selectedCategory || 'Tất cả khóa học'}
               </div>
               <div className="mt-2 text-[28px] font-black uppercase leading-tight tracking-normal text-slate-950">
-                Lớp học phù hợp
+                Khóa học phù hợp
               </div>
             </div>
             <div className="rounded-full bg-orange-50 px-4 py-2 text-[13px] font-black text-orange-700">
-              {visibleCourses.length} lớp
+              {visibleCourses.length} khóa học
             </div>
           </div>
 
@@ -443,7 +443,7 @@ const LmsView = ({
                       {course.title}
                     </div>
                     <div className="mt-6 line-clamp-3 min-h-[62px] text-[14px] font-semibold leading-6 text-slate-500">
-                      {stripHtml(course.description) || 'Chưa có mô tả lớp học.'}
+                      {stripHtml(course.description) || 'Chưa có mô tả khóa học.'}
                     </div>
                   </div>
                   <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-4 text-[13px] font-black text-slate-500 w-full">
@@ -454,13 +454,13 @@ const LmsView = ({
               ))
             ) : (
               <div className="gsap-animate col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center text-[15px] font-bold text-slate-500">
-                Chưa có lớp học nào.
+                Chưa có khóa học nào.
               </div>
             )}
           </div>
         </section>
 
-        <section className="mt-12 pt-12 border-t border-slate-200" aria-label="Chi tiết lớp học">
+        <section className="mt-12 pt-12 border-t border-slate-200" aria-label="Chi tiết khóa học">
           <div className="gsap-animate rounded-[24px] overflow-hidden">
             {selectedCourse ? (
               <div className="flex flex-col gap-8">
@@ -516,7 +516,7 @@ const LmsView = ({
 
                     {canEnroll && !isEnrolled && (
                       <button className="inline-flex cursor-pointer items-center justify-center h-12 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-[0_4px_14px_0_rgb(37,99,235,0.39)]" onClick={() => onEnroll(selectedCourse._id)}>
-                        Tham gia lớp học
+                        Tham gia khóa học
                       </button>
                     )}
 
@@ -527,7 +527,7 @@ const LmsView = ({
                     )}
 
                     <button className="inline-flex cursor-pointer items-center justify-center gap-2 h-12 px-6 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold transition-all" onClick={() => onOpenCourseForum?.(selectedCourse)}>
-                      <MessageCircle size={18} /> Diễn đàn lớp
+                      <MessageCircle size={18} /> Diễn đàn khóa học
                     </button>
                   </div>
                 </div>
@@ -558,7 +558,7 @@ const LmsView = ({
                 <div className="gsap-animate p-6 md:p-8 bg-white border border-slate-200 rounded-[24px] shadow-sm">
                   <h3 className="flex items-center gap-3 text-xl font-black text-slate-900 mb-6 pb-4 border-b border-slate-100">
                     <span className="grid place-items-center w-10 h-10 rounded-xl bg-orange-50 text-orange-500"><Trophy size={18} /></span>
-                    Top 10 Lớp Học
+                    Top 10 Khóa học Học
                   </h3>
                   <div className="flex flex-col gap-3">
                     {courseLeaderboard?.length ? (
@@ -654,7 +654,7 @@ const LmsView = ({
                       <CreatePanel
                         title="Thêm bài học mới"
                         eyebrow="Tạo mới"
-                        description="Thêm bài học mới vào lớp này."
+                        description="Thêm bài học mới vào khóa học này."
                         isOpen={isCreateLessonOpen}
                         onToggle={() => setIsCreateLessonOpen(prev => !prev)}
                       >
@@ -755,7 +755,7 @@ const LmsView = ({
                       ))
                     ) : (
                       <div className="py-10 text-center text-[15px] font-medium text-slate-500 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
-                        Lớp học chưa có bài học nào.
+                        Khóa học chưa có bài học nào.
                       </div>
                     )}
                   </div>
@@ -952,8 +952,8 @@ const LmsView = ({
                 <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-sm mb-6">
                   <BookOpen size={40} className="text-slate-300" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-700 mb-2">Chưa chọn lớp học</h3>
-                <p className="text-[15px] text-slate-500">Hãy chọn một lớp học ở danh sách bên trên để xem chi tiết.</p>
+                <h3 className="text-xl font-bold text-slate-700 mb-2">Chưa chọn khóa học</h3>
+                <p className="text-[15px] text-slate-500">Hãy chọn một khóa học ở danh sách bên trên để xem chi tiết.</p>
               </div>
             )}
           </div>

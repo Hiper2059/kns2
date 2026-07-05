@@ -307,7 +307,7 @@ const ProfilePage = ({
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FactItem icon={Calendar} label="Ngày sinh" value={profileUser.profile?.student?.dob} />
-                    <FactItem icon={BookOpen} label="Lớp đang học" value={profileUser.enrolledCourses?.length ? profileUser.enrolledCourses.map(c => c.title).join(', ') : 'Chưa đăng ký lớp nào'} />
+                    <FactItem icon={BookOpen} label="Khóa học đang học" value={profileUser.enrolledCourses?.length ? profileUser.enrolledCourses.map(c => c.title).join(', ') : 'Chưa đăng ký khóa học nào'} />
                     <FactItem icon={Award} label="Sở trường" value={profileUser.profile?.student?.strengths} />
                     
                     <div className="col-span-full mt-4 flex flex-col gap-4">

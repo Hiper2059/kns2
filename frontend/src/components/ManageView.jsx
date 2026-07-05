@@ -83,7 +83,7 @@ const ManageView = ({
   const navItems = [
     { id: 'overview', label: 'Tổng quan' },
     { id: 'users', label: 'Người dùng' },
-    { id: 'lessons', label: 'Lớp & bài học' },
+    { id: 'lessons', label: 'Khóa học & bài học' },
     { id: 'comments', label: 'Bình luận' },
     { id: 'moderation', label: 'Kiểm duyệt' },
     { id: 'reports', label: 'Báo cáo' },
@@ -93,7 +93,7 @@ const ManageView = ({
   const navMeta = {
     overview: { label: 'Tổng quan', icon: LayoutDashboard },
     users: { label: 'Người dùng', icon: Users },
-    lessons: { label: 'Lớp & bài học', icon: BookOpen },
+    lessons: { label: 'Khóa học & bài học', icon: BookOpen },
     comments: { label: 'Bình luận', icon: MessageSquare },
     moderation: { label: 'Kiểm duyệt', icon: ShieldCheck },
     reports: { label: 'Báo cáo', icon: Flag },
@@ -158,7 +158,7 @@ const ManageView = ({
 
   const renderCommentScope = comment => {
     if (comment.postScope === 'course') {
-      return comment.courseTitle ? `Diễn đàn lớp: ${comment.courseTitle}` : 'Diễn đàn lớp'
+      return comment.courseTitle ? `Diễn đàn khóa học: ${comment.courseTitle}` : 'Diễn đàn khóa học'
     }
     return 'Diễn đàn chung'
   }
@@ -249,7 +249,7 @@ const ManageView = ({
                 </div>
 
                 <div className="relative p-6 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 overflow-hidden shadow-sm">
-                  <span className="block text-[12px] font-black uppercase mb-1 opacity-70 tracking-wide">Tổng lớp học</span>
+                  <span className="block text-[12px] font-black uppercase mb-1 opacity-70 tracking-wide">Tổng khóa học</span>
                   <h3 className="text-3xl lg:text-4xl font-black mb-4">{formatCount(courses.length)}</h3>
                   <BookOpen className="absolute right-4 bottom-4 w-20 h-20 opacity-10" />
                   <span className="block text-[13px] font-bold opacity-80">Admin xem tất cả</span>
@@ -376,8 +376,8 @@ const ManageView = ({
               <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col min-h-0">
                 <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
-                    <h4 className="text-xl font-black text-slate-900">Quản lý Lớp & Bài học</h4>
-                    <span className="text-[14px] text-slate-500 font-medium">{formatCount(courses.length)} lớp trên hệ thống</span>
+                    <h4 className="text-xl font-black text-slate-900">Quản lý Khóa học & Bài học</h4>
+                    <span className="text-[14px] text-slate-500 font-medium">{formatCount(courses.length)} khóa học trên hệ thống</span>
                   </div>
                   <select
                     className="w-full md:w-64 h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-[14px] font-bold text-slate-800 cursor-pointer focus:outline-none focus:border-blue-500"
@@ -387,7 +387,7 @@ const ManageView = ({
                       onSelectCourse?.(nextCourse)
                     }}
                   >
-                    <option value="">-- Chọn lớp học --</option>
+                    <option value="">-- Chọn khóa học --</option>
                     {courses.map(course => <option key={course._id} value={course._id}>{course.title}</option>)}
                   </select>
                 </div>
@@ -397,7 +397,7 @@ const ManageView = ({
                       <div className="p-5 bg-blue-50 border border-blue-200 rounded-2xl text-blue-900">
                         <strong className="block text-lg font-black mb-1">{selectedCourse.title}</strong>
                         <span className="inline-flex items-center px-2 py-0.5 rounded bg-blue-200/50 text-[11px] font-black uppercase mb-3">{selectedCourse.category}</span>
-                        <p className="text-[14px] font-medium opacity-80">{selectedCourse.description || 'Chưa có mô tả lớp học.'}</p>
+                        <p className="text-[14px] font-medium opacity-80">{selectedCourse.description || 'Chưa có mô tả khóa học.'}</p>
                       </div>
                       
                       <div className="flex flex-col gap-4 mt-2">
@@ -438,10 +438,10 @@ const ManageView = ({
                               </div>
                             )}
                           </div>
-                        )) : <div className="py-10 text-center text-slate-500 font-medium">Chưa có bài học nào trong lớp này.</div>}
+                        )) : <div className="py-10 text-center text-slate-500 font-medium">Chưa có bài học nào trong khóa học này.</div>}
                       </div>
                     </>
-                  ) : <div className="py-20 text-center text-slate-500 font-medium bg-white rounded-xl border border-dashed border-slate-300">Chọn một lớp ở trên để xem và quản lý bài học.</div>}
+                  ) : <div className="py-20 text-center text-slate-500 font-medium bg-white rounded-xl border border-dashed border-slate-300">Chọn một khóa học ở trên để xem và quản lý bài học.</div>}
                 </div>
               </div>
             )}

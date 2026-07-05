@@ -77,7 +77,7 @@ const listMyCourses = catchAsync(async (req, res) => {
 const getCourse = catchAsync(async (req, res) => {
   const course = await Course.findById(req.params.courseId).lean();
   if (!course) {
-    return res.status(404).json({ message: 'Không tìm thấy lớp học.' });
+    return res.status(404).json({ message: 'Không tìm thấy khóa học.' });
   }
 
   res.json({ course });
@@ -102,7 +102,7 @@ const createCourse = catchAsync(async (req, res) => {
   });
 
   res.status(201).json({
-    message: 'Đã tạo lớp học.',
+    message: 'Đã tạo khóa học.',
     course: created
   });
 });
@@ -112,11 +112,11 @@ const updateCourse = catchAsync(async (req, res) => {
   const course = await Course.findById(req.params.courseId);
 
   if (!course) {
-    return res.status(404).json({ message: 'Không tìm thấy lớp học.' });
+    return res.status(404).json({ message: 'Không tìm thấy khóa học.' });
   }
 
   if (req.currentUser.role === 'teacher' && String(course.teacher) !== String(req.currentUser._id)) {
-    return res.status(403).json({ message: 'Bạn không có quyền sửa lớp học này.' });
+    return res.status(403).json({ message: 'Bạn không có quyền sửa khóa học này.' });
   }
 
   if (title) course.title = title.trim();
@@ -127,7 +127,7 @@ const updateCourse = catchAsync(async (req, res) => {
 
   await course.save();
 
-  res.json({ message: 'Đã cập nhật lớp học.', course });
+  res.json({ message: 'Đã cập nhật khóa học.', course });
 });
 
 const deleteCourse = catchAsync(async (req, res) => {

@@ -36,10 +36,10 @@ const successMessages = new Map([
   ['da cap nhat ho so', 'Đã cập nhật hồ sơ.'],
   ['da them video youtube thanh cong', 'Đã thêm video YouTube.'],
   ['da xoa video thanh cong', 'Đã xóa video.'],
-  ['da tao lop hoc', 'Đã tạo lớp học.'],
-  ['da cap nhat lop hoc', 'Đã cập nhật lớp học.'],
-  ['da xoa lop hoc', 'Đã xóa lớp học.'],
-  ['da tham gia lop hoc', 'Đã tham gia lớp học.'],
+  ['da tao lop hoc', 'Đã tạo khóa học.'],
+  ['da cap nhat lop hoc', 'Đã cập nhật khóa học.'],
+  ['da xoa lop hoc', 'Đã xóa khóa học.'],
+  ['da tham gia lop hoc', 'Đã tham gia khóa học.'],
   ['da cap nhat tien do', 'Đã cập nhật tiến độ.'],
   ['da cap nhat danh gia', 'Đã cập nhật đánh giá.'],
   ['da them bai hoc', 'Đã thêm bài học.'],
@@ -133,7 +133,7 @@ const friendlyFromText = (message, status = 200) => {
   }
 
   if (normalized.includes('can tham gia lop') || normalized.includes('can tham gia khoa') || normalized.includes('cau can tham gia lop')) {
-    return 'Bạn cần tham gia lớp trước khi tiếp tục.';
+    return 'Bạn cần tham gia khóa học trước khi tiếp tục.';
   }
 
   if (normalized.includes('chi hoc vien moi') || normalized.includes('chi giang vien')) {
@@ -177,7 +177,7 @@ const friendlyFromText = (message, status = 200) => {
     return 'Dữ liệu không hợp lệ. Bạn thử tải lại trang rồi thao tác lại.';
   }
 
-  if (normalized.includes('khong tim thay lop hoc')) return 'Không tìm thấy lớp học.';
+  if (normalized.includes('khong tim thay lop hoc')) return 'Không tìm thấy khóa học.';
   if (normalized.includes('khong tim thay bai hoc')) return 'Không tìm thấy bài học.';
   if (normalized.includes('khong tim thay bai viet')) return 'Không tìm thấy bài viết.';
   if (normalized.includes('khong tim thay binh luan')) return 'Không tìm thấy bình luận.';
