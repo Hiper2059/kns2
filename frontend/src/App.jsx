@@ -2643,6 +2643,16 @@ function App() {
                     onUploadLessonVideoFile={handleUploadLessonVideoFile}
                     onUploadLessonEditorVideo={handleUploadLessonEditorVideo}
                     onUploadEditLessonEditorVideo={handleUploadEditLessonEditorVideo}
+                    newAssignmentData={newAssignmentData}
+                    onNewAssignmentDataChange={setNewAssignmentData}
+                    onCreateAssignment={handleCreateAssignment}
+                    editAssignmentId={editAssignmentId}
+                    editAssignmentData={editAssignmentData}
+                    onEditAssignmentStart={handleEditAssignmentStart}
+                    onEditAssignmentChange={setEditAssignmentData}
+                    onEditAssignmentCancel={handleEditAssignmentCancel}
+                    onUpdateAssignment={handleUpdateAssignment}
+                    onDeleteAssignment={handleDeleteAssignment}
                   />
                 } />
 
@@ -2684,6 +2694,16 @@ function App() {
                     onUploadLessonVideoFile={handleUploadLessonVideoFile}
                     onUploadLessonEditorVideo={handleUploadLessonEditorVideo}
                     onUploadEditLessonEditorVideo={handleUploadEditLessonEditorVideo}
+                    newAssignmentData={newAssignmentData}
+                    onNewAssignmentDataChange={setNewAssignmentData}
+                    onCreateAssignment={handleCreateAssignment}
+                    editAssignmentId={editAssignmentId}
+                    editAssignmentData={editAssignmentData}
+                    onEditAssignmentStart={handleEditAssignmentStart}
+                    onEditAssignmentChange={setEditAssignmentData}
+                    onEditAssignmentCancel={handleEditAssignmentCancel}
+                    onUpdateAssignment={handleUpdateAssignment}
+                    onDeleteAssignment={handleDeleteAssignment}
                   />
                 } />
 
