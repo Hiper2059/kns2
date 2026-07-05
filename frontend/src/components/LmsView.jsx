@@ -381,24 +381,20 @@ const LmsView = ({
         </div>
       </div>
 
-      <nav className="gsap-animate mt-8 flex flex-wrap gap-3" aria-label="Mục lục khóa học">
+      <nav className="gsap-animate mt-7 flex gap-2 overflow-x-auto border-b border-slate-100 pb-2" aria-label="Mục lục khóa học">
         {categoryStats.map((category, index) => {
           const isActive = selectedCategory === category.name
           return (
             <button
               key={category.name || `category-${index}`}
               type="button"
-              className={`flex h-[42px] shrink-0 cursor-pointer items-center gap-2.5 rounded-full px-5 text-[14px] font-black transition-all duration-300 ${
-                isActive 
-                  ? 'bg-blue-600 text-white shadow-[0_4px_14px_0_rgb(37,99,235,0.39)] ring-2 ring-blue-600/20' 
-                  : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 shadow-sm'
+              className={`flex h-11 shrink-0 cursor-pointer items-center gap-3 border-b-2 px-5 text-[15px] font-black transition ${
+                isActive ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-900'
               }`}
               onClick={() => onSelectCategory(category.name)}
             >
               <span>{category.name}</span>
-              <span className={`flex min-w-[22px] h-[22px] items-center justify-center rounded-full text-[11px] font-black transition-colors ${
-                isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
-              }`}>
+              <span className={`grid min-w-6 place-items-center rounded-md px-2 py-0.5 text-[12px] font-bold ${isActive ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'}`}>
                 {category.count}
               </span>
             </button>
