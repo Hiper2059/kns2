@@ -60,6 +60,7 @@ const CreatePanel = ({ title, eyebrow, description, isOpen, onToggle, children }
 const answerLabel = index => String.fromCharCode(65 + index)
 
 const LmsView = ({
+  globalAssignments,
   categories,
   selectedCategory,
   onSelectCategory,

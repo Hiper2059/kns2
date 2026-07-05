@@ -141,6 +141,7 @@ function App() {
   const [selectedCourse, setSelectedCourse] = useState(null)
   const [courseLessons, setCourseLessons] = useState([])
   const [courseAssignments, setCourseAssignments] = useState([])
+  const [globalAssignments, setGlobalAssignments] = useState([])
   const [courseLeaderboard, setCourseLeaderboard] = useState([])
   const [assignmentDrafts, setAssignmentDrafts] = useState({})
   const [myEnrollments, setMyEnrollments] = useState([])
@@ -991,6 +992,16 @@ function App() {
     }
   }
 
+  
+  const fetchGlobalAssignments = useCallback(async () => {
+    try {
+      const response = await api.get('/api/assignments')
+      setGlobalAssignments(response.data.assignments || [])
+    } catch {
+      setGlobalAssignments([])
+    }
+  }, [])
+
   const fetchCourses = useCallback(async () => {
     try {
       const response = await api.get('/api/courses')
@@ -1097,6 +1108,7 @@ function App() {
   const loadLearningSurfaceData = useCallback(async () => {
     await Promise.all([
       fetchCourses(),
+      fetchGlobalAssignments(),
       fetchMyEnrollments(),
       currentRole === 'teacher'
         ? fetchTeacherCourses()

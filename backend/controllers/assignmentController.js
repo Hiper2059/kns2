@@ -145,6 +145,62 @@ const listAssignments = catchAsync(async (req, res) => {
   });
 });
 
+
+const listGlobalAssignments = catchAsync(async (req, res) => {
+  const filter = { course: null };
+  const { page, limit, skip } = getPaginationParams(req.query);
+  const [assignments, totalItems] = await Promise.all([
+    Assignment.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    Assignment.countDocuments(filter)
+  ]);
+
+  const assignmentIds = assignments.map(item => item._id);
+  const isStudent = isStudentRole(req.currentUser.role);
+  let mySubmissions = [];
+  let submissionCounts = {};
+
+  if (isStudent && assignmentIds.length) {
+    mySubmissions = await Submission.find({ assignment: { $in: assignmentIds }, student: req.currentUser._id }).lean();
+  }
+
+  if (!isStudent && assignmentIds.length) {
+    const grouped = await Submission.aggregate([
+      { $match: { assignment: { $in: assignmentIds } } },
+      { $group: { _id: '$assignment', total: { $sum: 1 } } }
+    ]);
+    submissionCounts = grouped.reduce((acc, item) => { acc[String(item._id)] = item.total; return acc; }, {});
+  }
+
+  const submissionByAssignment = mySubmissions.reduce((acc, sub) => { acc[String(sub.assignment)] = sub; return acc; }, {});
+
+  const enriched = assignments.map(assignment => {
+    const mySubmission = submissionByAssignment[String(assignment._id)] || null;
+    const safeAssignment = isStudent ? sanitizeAssignmentForStudent(assignment) : assignment;
+    return { ...safeAssignment, submissionCount: submissionCounts[String(assignment._id)] || 0, mySubmission };
+  });
+
+  res.json({ data: enriched, assignments: enriched, pagination: buildPagination({ totalItems, page, limit }) });
+});
+
+
+const createGlobalAssignment = catchAsync(async (req, res) => {
+  const { title, description, dueAt, type, questions } = req.body || {};
+  const trimmedTitle = String(title || '').trim();
+  const assignmentType = ['quiz', 'practical', 'final_exam'].includes(type) ? type : 'text';
+  const normalizedQuestions = normalizeQuestions(questions);
+
+  if (!trimmedTitle) return res.status(400).json({ message: 'Thieu tieu de bai tap.' });
+  if (assignmentType === 'quiz' && !normalizedQuestions.length) return res.status(400).json({ message: 'Bai trac nghiem can it nhat 1 cau hoi va moi cau co toi thieu 2 dap an.' });
+
+  const created = await Assignment.create({
+    course: null, lesson: null, title: trimmedTitle, description: String(description || '').trim(),
+    type: assignmentType, questions: assignmentType === 'quiz' ? normalizedQuestions : [],
+    dueAt: dueAt ? new Date(dueAt) : null, createdBy: req.currentUser._id, createdByName: req.currentUser.username
+  });
+
+  res.status(201).json({ message: 'Da tao bai tap chung.', assignment: created });
+});
+
 const createAssignment = catchAsync(async (req, res) => {
   const { courseId } = req.params;
   const { title, description, dueAt, type, questions, lessonId } = req.body || {};
@@ -363,7 +419,9 @@ const upsertSubmission = catchAsync(async (req, res) => {
     await User.findByIdAndUpdate(req.currentUser._id, { $inc: { points: pointsToAward } });
   }
 
-  await updateEnrollmentTotalScore(assignment.course, req.currentUser._id);
+  if (assignment.course) {
+    await updateEnrollmentTotalScore(assignment.course, req.currentUser._id);
+  }
 
   res.json({ message: 'Da nop bai.', submission, pointsEarned: pointsToAward });
 });
@@ -434,7 +492,9 @@ const gradeSubmission = catchAsync(async (req, res) => {
 
   await submission.save();
 
-  await updateEnrollmentTotalScore(submission.course, submission.student);
+  if (submission.course) {
+    await updateEnrollmentTotalScore(submission.course, submission.student);
+  }
 
   res.json({ message: 'Da cham bai.', submission });
 });
