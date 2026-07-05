@@ -506,5 +506,7 @@ module.exports = {
   deleteAssignment,
   upsertSubmission,
   listSubmissions,
-  gradeSubmission
+  gradeSubmission,
+  listGlobalAssignments,
+  createGlobalAssignment
 };
