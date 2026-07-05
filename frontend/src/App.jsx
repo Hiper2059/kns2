@@ -1033,7 +1033,7 @@ function App() {
 
   const fetchCourseAssignments = useCallback(
     async courseId => {
-      if (!courseId || !currentUser) {
+      if (!courseId) {
         setCourseAssignments([])
         return
       }
@@ -1045,7 +1045,7 @@ function App() {
         setCourseAssignments([])
       }
     },
-    [currentUser]
+    []
   )
 
   const fetchMyEnrollments = useCallback(async () => {
