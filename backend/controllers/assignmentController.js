@@ -86,7 +86,7 @@ const listAssignments = catchAsync(async (req, res) => {
     return;
   }
 
-  const filter = { course: course._id, lesson: null };
+  const filter = { course: course._id };
   const { page, limit, skip } = getPaginationParams(req.query);
   const [assignments, totalItems] = await Promise.all([
     Assignment.find(filter)

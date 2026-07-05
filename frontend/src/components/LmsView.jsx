@@ -208,7 +208,9 @@ const LmsView = ({
     () => [...lessons].sort((a, b) => (a.order || 1) - (b.order || 1)),
     [lessons]
   )
-  const visibleAssignments = Array.isArray(assignments) ? assignments : []
+  const visibleAssignments = useMemo(() => {
+    return Array.isArray(assignments) ? assignments.filter(a => !a.lesson && !a.lessonId) : []
+  }, [assignments])
   const containerRef = useRef(null)
 
   const completedLessonIds = useMemo(() => {
