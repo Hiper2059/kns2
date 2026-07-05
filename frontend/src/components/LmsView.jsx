@@ -110,6 +110,7 @@ const LmsView = ({
   const { showWarning } = useUI()
   const [quizDrafts, setQuizDrafts] = useState({})
   const [courseSearch, setCourseSearch] = useState('')
+  const [selectedTeacher, setSelectedTeacher] = useState('')
   const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false)
   const [isCreateAssignmentOpen, setIsCreateAssignmentOpen] = useState(false)
   const [isNewLessonVideoUploading, setIsNewLessonVideoUploading] = useState(false)
@@ -172,19 +173,31 @@ const LmsView = ({
   function stripHtml(value) {
     return String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
   }
+  const teacherOptions = useMemo(() => {
+    const teachers = new Set(coursePool.map(c => c.teacherName).filter(Boolean))
+    return Array.from(teachers).sort()
+  }, [coursePool])
+
   const visibleCourses = useMemo(() => {
     const keyword = courseSearch.trim().toLowerCase()
-    const byCategory = selectedCategory
-      ? coursePool.filter(course => course.category === selectedCategory)
-      : coursePool
-    if (!keyword) {
-      return byCategory
+    let filtered = coursePool
+    
+    if (selectedCategory) {
+      filtered = filtered.filter(course => course.category === selectedCategory)
     }
-    return byCategory.filter(course => {
+    
+    if (selectedTeacher) {
+      filtered = filtered.filter(course => course.teacherName === selectedTeacher)
+    }
+
+    if (!keyword) {
+      return filtered
+    }
+    return filtered.filter(course => {
       const haystack = `${course.title || ''} ${course.category || ''} ${course.teacherName || ''} ${stripHtml(course.description)}`.toLowerCase()
       return haystack.includes(keyword)
     })
-  }, [coursePool, courseSearch, selectedCategory])
+  }, [coursePool, courseSearch, selectedCategory, selectedTeacher])
 
   const categoryStats = useMemo(() => {
     const counts = coursePool.reduce((acc, course) => {
@@ -358,7 +371,7 @@ const LmsView = ({
   return (
     <div ref={containerRef} className="mx-auto mt-10 w-[min(1176px,calc(100vw-48px))] rounded-[14px] border border-slate-200 bg-white px-12 py-12 shadow-[0_18px_46px_rgba(15,23,42,0.08)] max-md:mt-5 max-md:w-[calc(100vw-24px)] max-md:px-4 max-md:py-6">
       <div className="gsap-animate rounded-2xl border border-slate-200 bg-white px-6 py-6 shadow-[0_16px_32px_rgba(15,23,42,0.12)]">
-        <div className="grid items-center gap-6 md:grid-cols-[1fr_432px]">
+        <div className="grid items-center gap-6 md:grid-cols-[1fr_auto]">
           <div>
             <div className="flex items-center gap-2 text-[14px] font-black uppercase text-slate-500">
               <Layers3 size={16} />
@@ -368,16 +381,30 @@ const LmsView = ({
               Khám phá khóa học
             </div>
           </div>
-          <label className="flex h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-slate-400">
-            <Search size={17} />
-            <input
-              type="search"
-              value={courseSearch}
-              onChange={event => setCourseSearch(event.target.value)}
-              placeholder="Tìm khóa học, giáo viên, danh mục..."
-              className="h-full w-full min-w-0 border-0 bg-transparent text-[14px] font-semibold text-slate-700 outline-none placeholder:text-slate-400"
-            />
-          </label>
+          <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+            {teacherOptions.length > 0 && (
+              <select
+                value={selectedTeacher}
+                onChange={e => setSelectedTeacher(e.target.value)}
+                className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-4 text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 w-full md:w-[200px]"
+              >
+                <option value="">Tất cả giáo viên</option>
+                {teacherOptions.map(teacher => (
+                  <option key={teacher} value={teacher}>{teacher}</option>
+                ))}
+              </select>
+            )}
+            <label className="flex h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-slate-400 w-full md:w-[280px]">
+              <Search size={17} />
+              <input
+                type="search"
+                value={courseSearch}
+                onChange={event => setCourseSearch(event.target.value)}
+                placeholder="Tìm khóa học, giáo viên, danh mục..."
+                className="h-full w-full min-w-0 border-0 bg-transparent text-[14px] font-semibold text-slate-700 outline-none placeholder:text-slate-400"
+              />
+            </label>
+          </div>
         </div>
       </div>
 
