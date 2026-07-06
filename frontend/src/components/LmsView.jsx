@@ -19,10 +19,13 @@ import {
   Image as ImageIcon,
   Film,
   FileText,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
   ChevronDown
 } from 'lucide-react'
 import RichTextEditor from './RichTextEditor'
+import { paginateCourses } from '../utils/coursePagination'
 
 const baseInputClass = "h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-[14px] font-medium text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-400"
 const baseButtonClass = "inline-flex cursor-pointer items-center justify-center gap-2 h-11 px-6 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold transition-all disabled:opacity-50"
@@ -98,6 +101,7 @@ const LmsView = ({
   const [quizDrafts, setQuizDrafts] = useState({})
   const [courseSearch, setCourseSearch] = useState('')
   const [selectedTeacher, setSelectedTeacher] = useState('')
+  const [coursePagination, setCoursePagination] = useState({ page: 1, filterKey: '' })
   const [isTeacherDropdownOpen, setIsTeacherDropdownOpen] = useState(false)
   const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false)
   const isTeacher = currentRole === 'teacher'
@@ -145,6 +149,19 @@ const LmsView = ({
       return haystack.includes(keyword)
     })
   }, [coursePool, courseSearch, selectedCategory, selectedTeacher])
+
+  const courseFilterKey = JSON.stringify([courseSearch, selectedCategory, selectedTeacher])
+  const requestedCoursePage = coursePagination.filterKey === courseFilterKey
+    ? coursePagination.page
+    : 1
+  const {
+    courses: paginatedCourses,
+    currentPage: currentCoursePage,
+    totalPages: courseTotalPages
+  } = useMemo(
+    () => paginateCourses(visibleCourses, requestedCoursePage),
+    [visibleCourses, requestedCoursePage]
+  )
 
   const categoryStats = useMemo(() => {
     const counts = coursePool.reduce((acc, course) => {
@@ -446,13 +463,13 @@ const LmsView = ({
             )}
           </div>
 
-          <div className="mt-6 flex overflow-x-auto gap-6 pb-6 snap-x hide-scrollbar">
+          <div className="mt-6 grid grid-cols-1 gap-6 pb-6 sm:grid-cols-2 lg:grid-cols-3">
             {visibleCourses.length ? (
-              visibleCourses.map((course, index) => (
+              paginatedCourses.map((course, index) => (
                 <button
                   key={course._id || course.id || `${course.title || 'course'}-${index}`}
                   type="button"
-                  className={`gsap-animate shrink-0 w-[280px] snap-start flex flex-col cursor-pointer min-h-[230px] rounded-2xl border bg-white p-5 text-left shadow-[0_10px_26px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-[0_18px_38px_rgba(37,99,235,0.12)] ${
+                  className={`gsap-animate flex min-h-[230px] w-full cursor-pointer flex-col rounded-2xl border bg-white p-5 text-left shadow-[0_10px_26px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-[0_18px_38px_rgba(37,99,235,0.12)] ${
                     selectedCourse?._id === course._id ? 'border-blue-400 ring-4 ring-blue-50' : 'border-slate-200'
                   }`}
                   onClick={() => onSelectCourse(course)}
@@ -485,6 +502,35 @@ const LmsView = ({
               </div>
             )}
           </div>
+          {courseTotalPages > 1 && (
+            <nav className="mt-1 flex items-center justify-center gap-3" aria-label="Phân trang khóa học">
+              <button
+                type="button"
+                className="inline-flex h-10 cursor-pointer items-center gap-1 rounded-xl border border-slate-200 bg-white px-4 text-[14px] font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
+                onClick={() => setCoursePagination({
+                  page: Math.max(1, currentCoursePage - 1),
+                  filterKey: courseFilterKey
+                })}
+                disabled={currentCoursePage <= 1}
+              >
+                <ChevronLeft size={18} /> Trước
+              </button>
+              <span className="min-w-24 text-center text-[14px] font-bold text-slate-700">
+                Trang {currentCoursePage} / {courseTotalPages}
+              </span>
+              <button
+                type="button"
+                className="inline-flex h-10 cursor-pointer items-center gap-1 rounded-xl border border-slate-200 bg-white px-4 text-[14px] font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
+                onClick={() => setCoursePagination({
+                  page: Math.min(courseTotalPages, currentCoursePage + 1),
+                  filterKey: courseFilterKey
+                })}
+                disabled={currentCoursePage >= courseTotalPages}
+              >
+                Sau <ChevronRight size={18} />
+              </button>
+            </nav>
+          )}
         </section>
 
         <section className="mt-12 pt-12 border-t border-slate-200" aria-label="Chi tiết lớp học">
