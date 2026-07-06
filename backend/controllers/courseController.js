@@ -39,6 +39,7 @@ const listCourses = catchAsync(async (req, res) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
+      .populate('teacher', 'username profile')
       .lean(),
     Course.countDocuments(filter)
   ]);
@@ -61,6 +62,7 @@ const listMyCourses = catchAsync(async (req, res) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
+      .populate('teacher', 'username profile')
       .lean(),
     Course.countDocuments(filter)
   ]);

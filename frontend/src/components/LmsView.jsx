@@ -112,6 +112,7 @@ const LmsView = ({
   const [quizDrafts, setQuizDrafts] = useState({})
   const [courseSearch, setCourseSearch] = useState('')
   const [selectedTeacher, setSelectedTeacher] = useState('')
+  const [isTeacherDropdownOpen, setIsTeacherDropdownOpen] = useState(false)
   const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false)
   const [isCreateAssignmentOpen, setIsCreateAssignmentOpen] = useState(false)
   const [isNewLessonVideoUploading, setIsNewLessonVideoUploading] = useState(false)
@@ -175,8 +176,20 @@ const LmsView = ({
     return String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
   }
   const teacherOptions = useMemo(() => {
-    const teachers = new Set(coursePool.map(c => c.teacherName).filter(Boolean))
-    return Array.from(teachers).sort()
+    const map = new Map();
+    coursePool.forEach(course => {
+      if (course.teacherName || course.teacher) {
+        const username = course.teacher?.username || course.teacherName;
+        if (username && !map.has(username)) {
+          map.set(username, {
+            username,
+            displayName: course.teacher?.profile?.displayName || course.teacherName,
+            avatarUrl: course.teacher?.profile?.avatarUrl
+          });
+        }
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.displayName.localeCompare(b.displayName));
   }, [coursePool])
 
   const visibleCourses = useMemo(() => {
@@ -384,16 +397,72 @@ const LmsView = ({
           </div>
           <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
             {teacherOptions.length > 0 && (
-              <select
-                value={selectedTeacher}
-                onChange={e => setSelectedTeacher(e.target.value)}
-                className="h-11 rounded-lg border border-slate-200 bg-slate-50 px-4 text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 w-full md:w-[200px]"
-              >
-                <option value="">Tất cả giáo viên</option>
-                {teacherOptions.map(teacher => (
-                  <option key={teacher} value={teacher}>{teacher}</option>
-                ))}
-              </select>
+              <div className="relative w-full md:w-[220px]">
+                <button
+                  type="button"
+                  onClick={() => setIsTeacherDropdownOpen(!isTeacherDropdownOpen)}
+                  onBlur={() => setTimeout(() => setIsTeacherDropdownOpen(false), 200)}
+                  className="flex h-11 w-full items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all cursor-pointer"
+                >
+                  {selectedTeacher ? (
+                    <div className="flex items-center gap-2 truncate">
+                      {(() => {
+                        const t = teacherOptions.find(opt => opt.username === selectedTeacher);
+                        if (!t) return <span>Tất cả giáo viên</span>;
+                        return (
+                          <>
+                            <img src={t.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(t.displayName)}&background=random`} alt="" className="w-5 h-5 rounded-full object-cover shrink-0" />
+                            <span className="truncate">{t.displayName}</span>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  ) : (
+                    <span>Tất cả giáo viên</span>
+                  )}
+                  <ChevronDown size={16} className={`shrink-0 text-slate-400 transition-transform ${isTeacherDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {isTeacherDropdownOpen && (
+                  <div className="absolute top-full left-0 z-10 mt-1.5 w-full md:w-[280px] overflow-hidden rounded-xl border border-slate-100 bg-white shadow-xl">
+                    <div className="max-h-[300px] overflow-y-auto overscroll-contain py-1">
+                      <button
+                        type="button"
+                        className={`flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left transition hover:bg-slate-50 ${!selectedTeacher ? 'bg-blue-50/50' : ''}`}
+                        onMouseDown={() => {
+                          setSelectedTeacher('')
+                          setIsTeacherDropdownOpen(false)
+                        }}
+                      >
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                          <Users size={16} />
+                        </div>
+                        <span className={`text-[14px] font-bold ${!selectedTeacher ? 'text-blue-700' : 'text-slate-700'}`}>Tất cả giáo viên</span>
+                      </button>
+                      {teacherOptions.map(teacher => {
+                        const isActive = selectedTeacher === teacher.username;
+                        return (
+                          <button
+                            key={teacher.username}
+                            type="button"
+                            className={`flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left transition hover:bg-slate-50 ${isActive ? 'bg-blue-50/50' : ''}`}
+                            onMouseDown={() => {
+                              setSelectedTeacher(teacher.username)
+                              setIsTeacherDropdownOpen(false)
+                            }}
+                          >
+                            <img src={teacher.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(teacher.displayName)}&background=random`} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover ring-2 ring-white shadow-sm" />
+                            <div className="flex flex-col overflow-hidden">
+                              <span className={`truncate text-[14px] font-bold ${isActive ? 'text-blue-700' : 'text-slate-800'}`}>{teacher.displayName}</span>
+                              <span className="truncate text-[12px] font-medium text-slate-500">@{teacher.username}</span>
+                            </div>
+                            {isActive && <CheckCircle2 size={16} className="ml-auto shrink-0 text-blue-600" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
             <label className="flex h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-slate-400 w-full md:w-[280px]">
               <Search size={17} />
