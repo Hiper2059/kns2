@@ -21,11 +21,9 @@ const { login, register } = require('./controllers/authController');
 const { friendlyMessages } = require('./middleware/friendlyMessages');
 const errorHandler = require('./middleware/errorHandler');
 const validate = require('./middleware/validate');
-const { authRateLimiter } = require('./middleware/securityRateLimiters');
 const { registerSchema, loginSchema } = require('./validations/authValidation');
 
 const app = express();
-app.set('trust proxy', 1);
 
 app.use(helmet());
 app.use(cors(corsOptions));
@@ -114,8 +112,8 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 
 // Temporary backward-compatible aliases while the frontend migrates to /api/auth/*.
-app.post('/api/login', authRateLimiter, validate(loginSchema), login);
-app.post('/api/register', authRateLimiter, validate(registerSchema), register);
+app.post('/api/login', validate(loginSchema), login);
+app.post('/api/register', validate(registerSchema), register);
 
 app.use(errorHandler);
 

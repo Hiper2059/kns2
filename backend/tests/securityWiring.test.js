@@ -18,12 +18,21 @@ test('API quiz luôn ẩn đáp án và kiểm tra hạn nộp', () => {
   assert.match(assignmentController, /canSubmitAssignment\(assignment\.dueAt\)/);
 });
 
-test('chat yêu cầu đăng nhập và có rate limit thật', () => {
+test('API xác thực và chat không còn rate limiter', () => {
+  const app = read('app.js');
+  const authRoutes = read('routes/authRoutes.js');
   const chatRoutes = read('routes/chatRoutes.js');
-  const rateLimiters = read('middleware/securityRateLimiters.js');
-  assert.match(chatRoutes, /requireActiveUser, chatRateLimiter, sendChat/);
-  assert.match(rateLimiters, /rateLimit\(\{/);
-  assert.doesNotMatch(rateLimiters, /next\(\)/);
+
+  assert.match(authRoutes, /router\.post\('\/register', validate\(registerSchema\), register\)/);
+  assert.match(authRoutes, /router\.post\('\/login', validate\(loginSchema\), login\)/);
+  assert.match(chatRoutes, /router\.post\('\/', requireActiveUser, sendChat\)/);
+  assert.match(app, /app\.post\('\/api\/login', validate\(loginSchema\), login\)/);
+  assert.match(app, /app\.post\('\/api\/register', validate\(registerSchema\), register\)/);
+  assert.equal(fs.existsSync(path.join(__dirname, '..', 'middleware', 'securityRateLimiters.js')), false);
+
+  for (const source of [app, authRoutes, chatRoutes]) {
+    assert.doesNotMatch(source, /RateLimiter|securityRateLimiters/);
+  }
 });
 
 test('public profile loại thông tin liên hệ và hồ sơ riêng của học viên', () => {
