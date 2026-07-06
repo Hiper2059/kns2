@@ -177,20 +177,25 @@ const LmsView = ({
   }
   const teacherOptions = useMemo(() => {
     const map = new Map();
-    coursePool.forEach(course => {
+    const relevantCourses = selectedCategory ? coursePool.filter(c => c.category === selectedCategory) : coursePool;
+    relevantCourses.forEach(course => {
       if (course.teacherName || course.teacher) {
         const username = course.teacher?.username || course.teacherName;
         if (username && !map.has(username)) {
+          let displayName = course.teacher?.profile?.displayName || course.teacher?.profile?.stageName || course.teacherName || username;
+          if (!displayName || displayName.trim() === '') {
+            displayName = username;
+          }
           map.set(username, {
             username,
-            displayName: course.teacher?.profile?.displayName || course.teacherName,
+            displayName,
             avatarUrl: course.teacher?.profile?.avatarUrl
           });
         }
       }
     });
     return Array.from(map.values()).sort((a, b) => a.displayName.localeCompare(b.displayName));
-  }, [coursePool])
+  }, [coursePool, selectedCategory])
 
   const visibleCourses = useMemo(() => {
     const keyword = courseSearch.trim().toLowerCase()
@@ -396,19 +401,70 @@ const LmsView = ({
             </div>
           </div>
           <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+            <label className="flex h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-slate-400 w-full md:w-[280px]">
+              <Search size={17} />
+              <input
+                type="search"
+                value={courseSearch}
+                onChange={event => setCourseSearch(event.target.value)}
+                placeholder="Tìm khóa học, giáo viên, danh mục..."
+                className="h-full w-full min-w-0 border-0 bg-transparent text-[14px] font-semibold text-slate-700 outline-none placeholder:text-slate-400"
+              />
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <nav className="gsap-animate mt-7 flex gap-2 overflow-x-auto border-b border-slate-100 pb-2" aria-label="Mục lục khóa học">
+        {categoryStats.map((category, index) => {
+          const isActive = selectedCategory === category.name
+          return (
+            <button
+              key={category.name || `category-${index}`}
+              type="button"
+              className={`flex h-11 shrink-0 cursor-pointer items-center gap-3 border-b-2 px-5 text-[15px] font-black transition ${
+                isActive ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-900'
+              }`}
+              onClick={() => onSelectCategory(category.name)}
+            >
+              <span>{category.name}</span>
+              <span className={`grid min-w-6 place-items-center rounded-md px-2 py-0.5 text-[12px] font-bold ${isActive ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'}`}>
+                {category.count}
+              </span>
+            </button>
+          )
+        })}
+      </nav>
+
+      <div className="mt-10">
+        <section aria-label="Danh sách khóa học">
+          <div className="gsap-animate flex flex-col md:flex-row md:items-end justify-between gap-5 border-b border-slate-100 pb-5">
+            <div>
+              <div className="flex items-center gap-2 text-[14px] font-black uppercase text-slate-500">
+                <Layers3 size={16} />
+                {selectedCategory || 'Tất cả khóa học'}
+              </div>
+              <div className="mt-2 text-[28px] font-black uppercase leading-tight tracking-normal text-slate-950 flex items-center gap-3">
+                Khóa học phù hợp
+                <div className="rounded-full bg-orange-50 px-3 py-1 text-[13px] font-black text-orange-700 flex items-center">
+                  {visibleCourses.length} khóa học
+                </div>
+              </div>
+            </div>
+
             {teacherOptions.length > 0 && (
-              <div className="relative w-full md:w-[220px]">
+              <div className="relative w-full md:w-[260px] z-20 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsTeacherDropdownOpen(!isTeacherDropdownOpen)}
                   onBlur={() => setTimeout(() => setIsTeacherDropdownOpen(false), 200)}
-                  className="flex h-11 w-full items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all cursor-pointer"
+                  className="flex h-11 w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-4 text-[14px] font-bold text-slate-700 outline-none hover:border-blue-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all cursor-pointer shadow-sm"
                 >
                   {selectedTeacher ? (
                     <div className="flex items-center gap-2 truncate">
                       {(() => {
                         const t = teacherOptions.find(opt => opt.username === selectedTeacher);
-                        if (!t) return <span>Tất cả giáo viên</span>;
+                        if (!t) return <span>Lọc theo giáo viên</span>;
                         return (
                           <>
                             <img src={t.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(t.displayName)}&background=random`} alt="" className="w-5 h-5 rounded-full object-cover shrink-0" />
@@ -418,12 +474,12 @@ const LmsView = ({
                       })()}
                     </div>
                   ) : (
-                    <span>Tất cả giáo viên</span>
+                    <span>Lọc theo giáo viên</span>
                   )}
                   <ChevronDown size={16} className={`shrink-0 text-slate-400 transition-transform ${isTeacherDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {isTeacherDropdownOpen && (
-                  <div className="absolute top-full left-0 z-10 mt-1.5 w-full md:w-[280px] overflow-hidden rounded-xl border border-slate-100 bg-white shadow-xl">
+                  <div className="absolute top-full right-0 z-30 mt-1.5 w-full md:w-[280px] overflow-hidden rounded-xl border border-slate-100 bg-white shadow-xl">
                     <div className="max-h-[300px] overflow-y-auto overscroll-contain py-1">
                       <button
                         type="button"
@@ -464,56 +520,6 @@ const LmsView = ({
                 )}
               </div>
             )}
-            <label className="flex h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-slate-400 w-full md:w-[280px]">
-              <Search size={17} />
-              <input
-                type="search"
-                value={courseSearch}
-                onChange={event => setCourseSearch(event.target.value)}
-                placeholder="Tìm khóa học, giáo viên, danh mục..."
-                className="h-full w-full min-w-0 border-0 bg-transparent text-[14px] font-semibold text-slate-700 outline-none placeholder:text-slate-400"
-              />
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <nav className="gsap-animate mt-7 flex gap-2 overflow-x-auto border-b border-slate-100 pb-2" aria-label="Mục lục khóa học">
-        {categoryStats.map((category, index) => {
-          const isActive = selectedCategory === category.name
-          return (
-            <button
-              key={category.name || `category-${index}`}
-              type="button"
-              className={`flex h-11 shrink-0 cursor-pointer items-center gap-3 border-b-2 px-5 text-[15px] font-black transition ${
-                isActive ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-900'
-              }`}
-              onClick={() => onSelectCategory(category.name)}
-            >
-              <span>{category.name}</span>
-              <span className={`grid min-w-6 place-items-center rounded-md px-2 py-0.5 text-[12px] font-bold ${isActive ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'}`}>
-                {category.count}
-              </span>
-            </button>
-          )
-        })}
-      </nav>
-
-      <div className="mt-10">
-        <section aria-label="Danh sách khóa học">
-          <div className="gsap-animate flex items-start justify-between gap-5">
-            <div>
-              <div className="flex items-center gap-2 text-[14px] font-black uppercase text-slate-500">
-                <Layers3 size={16} />
-                {selectedCategory || 'Tất cả khóa học'}
-              </div>
-              <div className="mt-2 text-[28px] font-black uppercase leading-tight tracking-normal text-slate-950">
-                Khóa học phù hợp
-              </div>
-            </div>
-            <div className="rounded-full bg-orange-50 px-4 py-2 text-[13px] font-black text-orange-700">
-              {visibleCourses.length} khóa học
-            </div>
           </div>
 
           <div className="mt-6 flex overflow-x-auto gap-6 pb-6 snap-x hide-scrollbar">
