@@ -239,8 +239,26 @@ const deleteUser = catchAsync(async (req, res) => {
   const deletedCounts = await hardDeleteUserCascade(user);
   res.json({ message: `Da xoa tai khoan ${username}.`, deletedCounts });
 });
-const buildPublicProfile = async user => {
-  const profile = await getProfileForUser(user);
+const toPublicProfile = (profile, role) => {
+  const publicProfile = {
+    displayName: profile.displayName,
+    stageName: profile.stageName,
+    avatarUrl: profile.avatarUrl,
+    bio: profile.bio
+  };
+  if (role === 'teacher' && profile.teacher) {
+    const publicTeacherProfile = { ...profile.teacher };
+    delete publicTeacherProfile.phone;
+    delete publicTeacherProfile.email;
+    delete publicTeacherProfile.address;
+    publicProfile.teacher = publicTeacherProfile;
+  }
+  return compactObject(publicProfile) || {};
+};
+
+const buildPublicProfile = async (user, { includePrivate = false } = {}) => {
+  const fullProfile = await getProfileForUser(user);
+  const profile = includePrivate ? fullProfile : toPublicProfile(fullProfile, user.role);
   const profilePayload = {
     _id: user._id,
     username: user.username,
@@ -250,9 +268,12 @@ const buildPublicProfile = async user => {
   };
 
   if (user.role === 'teacher') {
-    const courses = await Course.find({ teacher: user._id }, { title: 1 }).lean();
+    const courseFilter = includePrivate
+      ? { teacher: user._id }
+      : { teacher: user._id, status: { $ne: 'draft' } };
+    const courses = await Course.find(courseFilter, { title: 1 }).lean();
     profilePayload.managedCourses = courses.map(course => ({ _id: course._id, title: course.title }));
-  } else if (user.role === 'student' || user.role === 'user') {
+  } else if (includePrivate && (user.role === 'student' || user.role === 'user')) {
     const enrollments = await Enrollment.find({ student: user._id }).populate('course', 'title').lean();
     profilePayload.enrolledCourses = enrollments
       .filter(e => e.course)
@@ -281,7 +302,7 @@ const getMyProfile = catchAsync(async (req, res) => {
     return res.status(404).json({ message: 'Không tìm thấy người dùng.' });
   }
 
-  const profilePayload = await buildPublicProfile(user);
+  const profilePayload = await buildPublicProfile(user, { includePrivate: true });
   res.json({ user: profilePayload });
 });
 
@@ -293,7 +314,7 @@ const updateMyProfile = catchAsync(async (req, res) => {
   }
 
   await updateProfileForUser(user, payload);
-  const profilePayload = await buildPublicProfile(user.toObject());
+  const profilePayload = await buildPublicProfile(user.toObject(), { includePrivate: true });
   res.json({ message: 'Da cap nhat ho so.', user: profilePayload });
 });
 module.exports = {

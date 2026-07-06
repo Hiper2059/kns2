@@ -1,6 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
-import { clearTokens, createApiClient, setTokens } from './api/apiClient'
+import { createApiClient } from './api/apiClient'
 import AppShell from './components/AppShell'
 import { useAuth } from './context/AuthContext'
 import { useUI } from './context/UIContext'
@@ -9,13 +9,11 @@ import Navbar from './components/Navbar'
 import PageFallback from './components/PageFallback'
 import {
   categories,
-  defaultCategoryVideos,
   defaultForumPosts,
   rankTiers
 } from './data/skills'
 import { getApiErrorMessage, getApiSuccessMessage } from './utils/apiMessages'
-import { getRankInfo, groupVideosByCategory, normalizeText } from './utils/appUtils'
-import { getPlayableCloudinaryVideoUrl } from './utils/cloudinaryVideo'
+import { getRankInfo, normalizeText } from './utils/appUtils'
 import './App.css'
 
 const ForumView = lazy(() => import('./components/ForumView'))
@@ -35,14 +33,6 @@ const api = createApiClient(API_BASE_URL)
 
 const FORUM_PAGE_SIZE = 6
 
-const normalizeClientRole = role => {
-  if (!role) {
-    return 'student'
-  }
-  return role === 'user' ? 'student' : role
-}
-
-
 const isCoursePath = pathname => pathname === '/courses' || pathname === '/lms' || pathname.startsWith('/courses/')
 
 const ProtectedRoute = ({ children }) => {
@@ -57,7 +47,7 @@ const ProtectedRoute = ({ children }) => {
 }
 
 function App() {
-  const { showToast, showError, showSuccess, showWarning, showInfo } = useUI()
+  const { showError, showSuccess, showWarning } = useUI()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -104,24 +94,12 @@ function App() {
 
   const [managedUsers, setManagedUsers] = useState([])
   const [isLoadingUsers, setIsLoadingUsers] = useState(false)
-  const [categoryVideos, setCategoryVideos] = useState(defaultCategoryVideos)
-  const [newVideoData, setNewVideoData] = useState({ category: categories[0], url: '' })
   const [moderationReports, setModerationReports] = useState([])
   const [isLoadingReports, setIsLoadingReports] = useState(false)
   const [deletedPosts, setDeletedPosts] = useState([])
   const [isLoadingDeletedPosts, setIsLoadingDeletedPosts] = useState(false)
   const [deletedComments, setDeletedComments] = useState([])
   const [isLoadingDeletedComments, setIsLoadingDeletedComments] = useState(false)
-  const [adminForumComments, setAdminForumComments] = useState([])
-  const [isLoadingForumComments, setIsLoadingForumComments] = useState(false)
-  const [adminAnalytics, setAdminAnalytics] = useState({
-    totalLessonViews: 0,
-    uniqueLessonViewers: 0,
-    topLessons: [],
-    totalLast30Days: 0,
-    viewsLast30Days: []
-  })
-  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false)
   const [deletedReasonFilter, setDeletedReasonFilter] = useState('all')
   const [lmsCategory, setLmsCategory] = useState(categories[0])
   const [courses, setCourses] = useState([])
@@ -141,8 +119,8 @@ function App() {
   const [selectedCourse, setSelectedCourse] = useState(null)
   const [courseLessons, setCourseLessons] = useState([])
   const [courseAssignments, setCourseAssignments] = useState([])
-  const [globalAssignments, setGlobalAssignments] = useState([])
   const [courseLeaderboard, setCourseLeaderboard] = useState([])
+  const [rankLeaderboard, setRankLeaderboard] = useState([])
   const [assignmentDrafts, setAssignmentDrafts] = useState({})
   const [myEnrollments, setMyEnrollments] = useState([])
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -206,8 +184,6 @@ function App() {
     displayName: '',
     role: 'student'
   })
-  const [adminUploadUrl, setAdminUploadUrl] = useState('')
-  const [isAdminUploadLoading, setIsAdminUploadLoading] = useState(false)
   const [profileMode, setProfileMode] = useState('view')
   const [profileLoading, setProfileLoading] = useState(false)
   const [profileUser, setProfileUser] = useState(null)
@@ -395,7 +371,7 @@ function App() {
     }
 
     try {
-      const params = {}
+      const params = { limit: 100 }
       if (forumScope) {
         params.scope = forumScope
       }
@@ -497,7 +473,7 @@ function App() {
       normalizedInput.includes('co nhung ky nang nao') ||
       normalizedInput.includes('co gi de hoc')
     ) {
-      addSuggestion({ id: 'go-lms', label: 'Xem khóa học' })
+      addSuggestion({ id: 'go-lms', label: 'Xem lớp học' })
       allCategories.forEach(category => {
         addSuggestion({ id: `open-category:${category}`, label: `Học ${category}` })
       })
@@ -508,7 +484,7 @@ function App() {
       normalizedInput.includes('khoa hoc') ||
       normalizedInput.includes('giang vien')
     ) {
-      addSuggestion({ id: 'go-lms', label: 'Mở khóa học' })
+      addSuggestion({ id: 'go-lms', label: 'Mở lớp học' })
     }
 
     Object.entries(skillKeywordMap).forEach(([category, keywords]) => {
@@ -647,13 +623,13 @@ function App() {
     const postCourseId = options.courseId || forumCourseId
 
     if (postScope === 'course' && !postCourseId) {
-      showWarning('Cậu chọn khóa học trước khi đăng bài nhé!')
+      showWarning('Cậu chọn lớp trước khi đăng bài nhé!')
       return
     }
 
     const postCategory =
       options.category ||
-      (postScope === 'course' ? forumCourse?.title || 'Khóa học' : newPost.category)
+      (postScope === 'course' ? forumCourse?.title || 'Lớp học' : newPost.category)
 
     try {
       const response = await api.post('/api/forum/posts', {
@@ -755,23 +731,14 @@ function App() {
 
     setIsLoadingUsers(true)
     try {
-      const response = await api.get('/api/users')
+      const response = await api.get('/api/users', { params: { limit: 100 } })
       setManagedUsers(response.data.users || [])
     } catch (error) {
       showError(error.response?.data?.message || 'Không tải được danh sách user.')
     } finally {
       setIsLoadingUsers(false)
     }
-  }, [currentRole, currentUser])
-
-  const fetchVideos = useCallback(async () => {
-    try {
-      const response = await api.get('/api/videos')
-      setCategoryVideos(groupVideosByCategory(response.data.videos || []))
-    } catch {
-      setCategoryVideos(defaultCategoryVideos)
-    }
-  }, [])
+  }, [currentRole, currentUser, showError])
 
   const fetchModerationReports = useCallback(async () => {
     if (!currentUser || currentRole !== 'admin') {
@@ -787,7 +754,7 @@ function App() {
     } finally {
       setIsLoadingReports(false)
     }
-  }, [currentRole, currentUser])
+  }, [currentRole, currentUser, showError])
 
   const fetchDeletedPosts = useCallback(async () => {
     if (!currentUser || currentRole !== 'admin') {
@@ -798,7 +765,8 @@ function App() {
     try {
       const response = await api.get('/api/forum/deleted/posts', {
         params: {
-          reason: deletedReasonFilter
+          reason: deletedReasonFilter,
+          limit: 100
         }
       })
       setDeletedPosts(response.data.posts || [])
@@ -807,7 +775,7 @@ function App() {
     } finally {
       setIsLoadingDeletedPosts(false)
     }
-  }, [currentRole, currentUser, deletedReasonFilter])
+  }, [currentRole, currentUser, deletedReasonFilter, showError])
 
   const fetchDeletedComments = useCallback(async () => {
     if (!currentUser || currentRole !== 'admin') {
@@ -818,7 +786,8 @@ function App() {
     try {
       const response = await api.get('/api/forum/deleted/comments', {
         params: {
-          reason: deletedReasonFilter
+          reason: deletedReasonFilter,
+          limit: 100
         }
       })
       setDeletedComments(response.data.comments || [])
@@ -827,46 +796,7 @@ function App() {
     } finally {
       setIsLoadingDeletedComments(false)
     }
-  }, [currentRole, currentUser, deletedReasonFilter])
-
-  const fetchAdminForumComments = useCallback(async () => {
-    if (!currentUser || currentRole !== 'admin') {
-      return
-    }
-
-    setIsLoadingForumComments(true)
-    try {
-      const response = await api.get('/api/forum/admin/comments')
-      setAdminForumComments(response.data.comments || [])
-    } catch (error) {
-      showError(error.response?.data?.message || 'Không tải được bình luận diễn đàn.')
-    } finally {
-      setIsLoadingForumComments(false)
-    }
-  }, [currentRole, currentUser])
-
-  const fetchAdminAnalytics = useCallback(async () => {
-    if (!currentUser || currentRole !== 'admin') {
-      return
-    }
-
-    setIsLoadingAnalytics(true)
-    try {
-      const response = await api.get('/api/analytics/lessons/overview')
-      setAdminAnalytics(response.data || {})
-    } catch (error) {
-      showError(error.response?.data?.message || 'Không tải được thống kê bài học.')
-      setAdminAnalytics({
-        totalLessonViews: 0,
-        uniqueLessonViewers: 0,
-        topLessons: [],
-        totalLast30Days: 0,
-        viewsLast30Days: []
-      })
-    } finally {
-      setIsLoadingAnalytics(false)
-    }
-  }, [currentRole, currentUser])
+  }, [currentRole, currentUser, deletedReasonFilter, showError])
 
   const handleRoleChange = async (username, role) => {
     if (!currentUser || currentRole !== 'admin') {
@@ -926,47 +856,6 @@ function App() {
     }
   }
 
-  const handleAddVideo = async () => {
-    if (!currentUser || currentRole !== 'admin') {
-      return
-    }
-
-    if (!newVideoData.url.trim()) {
-      showWarning('Cậu nhập link YouTube trước nhé.')
-      return
-    }
-
-    try {
-      const response = await api.post('/api/videos', {
-        category: newVideoData.category,
-        url: newVideoData.url.trim()
-      })
-      showSuccess(getApiSuccessMessage(response))
-      setNewVideoData({ category: newVideoData.category, url: '' })
-      fetchVideos()
-    } catch (error) {
-      showError(error.response?.data?.message || 'Không thêm được video.')
-    }
-  }
-
-  const handleDeleteVideo = async videoId => {
-    if (!currentUser || currentRole !== 'admin') {
-      return
-    }
-
-    if (!window.confirm('Cậu có chắc muốn xóa video này?')) {
-      return
-    }
-
-    try {
-      const response = await api.delete(`/api/videos/${videoId}`)
-      showSuccess(getApiSuccessMessage(response))
-      fetchVideos()
-    } catch (error) {
-      showError(error.response?.data?.message || 'Không xóa được video.')
-    }
-  }
-
   const handleCreateUser = async () => {
     if (!currentUser || currentRole !== 'admin') {
       return
@@ -992,19 +881,9 @@ function App() {
     }
   }
 
-  
-  const fetchGlobalAssignments = useCallback(async () => {
-    try {
-      const response = await api.get('/api/assignments')
-      setGlobalAssignments(response.data.assignments || [])
-    } catch {
-      setGlobalAssignments([])
-    }
-  }, [])
-
   const fetchCourses = useCallback(async () => {
     try {
-      const response = await api.get('/api/courses')
+      const response = await api.get('/api/courses', { params: { limit: 100 } })
       setCourses(response.data.courses || [])
     } catch {
       setCourses([])
@@ -1018,7 +897,7 @@ function App() {
     }
 
     try {
-      const response = await api.get(`/api/courses/${courseId}/lessons`)
+      const response = await api.get(`/api/courses/${courseId}/lessons`, { params: { limit: 100 } })
       setCourseLessons(response.data.lessons || [])
     } catch {
       setCourseLessons([])
@@ -1042,21 +921,30 @@ function App() {
     []
   )
 
+  const fetchGlobalLeaderboard = useCallback(async () => {
+    try {
+      const response = await api.get('/api/leaderboard')
+      setRankLeaderboard(response.data.leaderboard || [])
+    } catch {
+      setRankLeaderboard([])
+    }
+  }, [])
+
   const fetchCourseAssignments = useCallback(
     async courseId => {
-      if (!courseId) {
+      if (!courseId || !currentUser) {
         setCourseAssignments([])
         return
       }
 
       try {
-        const response = await api.get(`/api/courses/${courseId}/assignments?limit=1000`)
+        const response = await api.get(`/api/courses/${courseId}/assignments`, { params: { limit: 100 } })
         setCourseAssignments(response.data.assignments || [])
       } catch {
         setCourseAssignments([])
       }
     },
-    []
+    [currentUser]
   )
 
   const fetchMyEnrollments = useCallback(async () => {
@@ -1066,7 +954,7 @@ function App() {
     }
 
     try {
-      const response = await api.get('/api/enrollments/me')
+      const response = await api.get('/api/enrollments/me', { params: { limit: 100 } })
       setMyEnrollments(response.data.enrollments || [])
     } catch {
       setMyEnrollments([])
@@ -1080,7 +968,7 @@ function App() {
     }
 
     try {
-      const response = await api.get('/api/courses/mine')
+      const response = await api.get('/api/courses/mine', { params: { limit: 100 } })
       setTeacherCourses(response.data.courses || [])
     } catch {
       setTeacherCourses([])
@@ -1095,20 +983,19 @@ function App() {
       }
 
       try {
-        const response = await api.get(`/api/courses/${courseId}/enrollments`)
+        const response = await api.get(`/api/courses/${courseId}/enrollments`, { params: { limit: 100 } })
         setTeacherEnrollments(response.data.enrollments || [])
       } catch (error) {
         setTeacherEnrollments([])
         showError(error.response?.data?.message || 'Không tải được danh sách học viên.')
       }
     },
-    []
+    [showError]
   )
 
   const loadLearningSurfaceData = useCallback(async () => {
     await Promise.all([
       fetchCourses(),
-      fetchGlobalAssignments(),
       fetchMyEnrollments(),
       currentRole === 'teacher'
         ? fetchTeacherCourses()
@@ -1139,9 +1026,7 @@ function App() {
       fetchManagedUsers(),
       fetchModerationReports(),
       fetchDeletedPosts(),
-      fetchDeletedComments(),
-      fetchAdminForumComments(),
-      fetchAdminAnalytics()
+      fetchDeletedComments()
     ])
   }, [
     currentRole,
@@ -1149,9 +1034,7 @@ function App() {
     fetchManagedUsers,
     fetchModerationReports,
     fetchDeletedPosts,
-    fetchDeletedComments,
-    fetchAdminForumComments,
-    fetchAdminAnalytics
+    fetchDeletedComments
   ])
 
   const handleSelectCourse = course => {
@@ -1199,7 +1082,6 @@ function App() {
       setCustomCategories(prev => [...prev, normalized])
       setLmsCategory(normalized)
       setNewCourseData(prev => ({ ...prev, category: normalized }))
-      setNewVideoData(prev => ({ ...prev, category: normalized }))
     } catch (error) {
       showError(error.response?.data?.message || 'Khong them duoc danh muc.')
     }
@@ -1225,10 +1107,6 @@ function App() {
         ...prev,
         category: prev.category === category ? categories[0] : prev.category
       }))
-      setNewVideoData(prev => ({
-        ...prev,
-        category: prev.category === category ? categories[0] : prev.category
-      }))
       fetchCategories()
     } catch (error) {
       showError(error.response?.data?.message || 'Khong xoa duoc danh muc.')
@@ -1244,22 +1122,19 @@ function App() {
     setAssignmentDrafts(prev => ({ ...prev, [assignmentId]: value }))
   }
 
-  const handleSubmitAssignment = async (assignmentId, draftData = null) => {
+  const handleSubmitAssignment = async assignmentId => {
     if (!ensureAuthenticated('nộp bài')) {
       return
     }
 
-    const draft = draftData || assignmentDrafts[assignmentId] || {}
-    const content = typeof draft === 'string' ? draft.trim() : String(draft.content || '').trim()
-    const videoUrl = typeof draft === 'string' ? '' : String(draft.videoUrl || '').trim()
-
-    if (!content && !videoUrl) {
-      showWarning('Vui lòng nhập nội dung hoặc đính kèm video!')
+    const content = (assignmentDrafts[assignmentId] || '').trim()
+    if (!content) {
+      showWarning('Cậu nhập nội dung bài nộp trước nhé!')
       return
     }
 
     try {
-      const response = await api.post(`/api/assignments/${assignmentId}/submissions`, { content, videoUrl })
+      const response = await api.post(`/api/assignments/${assignmentId}/submissions`, { content })
       const submission = response.data?.submission
 
       setCourseAssignments(prev =>
@@ -1297,6 +1172,7 @@ function App() {
         showSuccess(`Tuyệt vời! Cậu đạt 100% và nhận được ${pointsEarned} điểm.`)
         if (currentUser) {
           fetchMyProfile()
+          fetchGlobalLeaderboard()
         }
       }
       return true
@@ -1317,7 +1193,7 @@ function App() {
     }
 
     if (!assignmentPayload.courseId || !assignmentPayload.title.trim()) {
-      showWarning('Cậu chọn khóa học và nhập tiêu đề bài tập nhé.')
+      showWarning('Cậu chọn lớp và nhập tiêu đề bài tập nhé.')
       return
     }
 
@@ -1327,8 +1203,7 @@ function App() {
         description: assignmentPayload.description,
         type: assignmentPayload.type || 'quiz',
         questions: assignmentPayload.questions || [],
-        lessonId: assignmentPayload.lessonId || null,
-        dueAt: assignmentPayload.dueAt || null
+        lessonId: assignmentPayload.lessonId || null
       })
 
       const created = response.data?.assignment
@@ -1344,8 +1219,7 @@ function App() {
         type: 'quiz',
         questions: [
           { question: '', options: ['', '', '', ''], correctOptionIndex: 0 }
-        ],
-        dueAt: ''
+        ]
       })
     } catch (error) {
       showError(error.response?.data?.message || 'Không tạo được bài tập.')
@@ -1362,10 +1236,9 @@ function App() {
         ? assignment.questions.map(item => ({
             question: item.question || '',
             options: [...(item.options || []), '', '', '', ''].slice(0, 4),
-            correctOptionIndex: Number(item.correctOptionIndex) || 0
+            correctOptionIndex: item.correctOptionIndex || 0
           }))
-        : [{ question: '', options: ['', '', '', ''], correctOptionIndex: 0 }],
-      dueAt: assignment.dueAt ? new Date(assignment.dueAt).toISOString().slice(0, 16) : ''
+        : [{ question: '', options: ['', '', '', ''], correctOptionIndex: 0 }]
     })
   }
 
@@ -1389,8 +1262,7 @@ function App() {
         title: editAssignmentData.title,
         description: editAssignmentData.description,
         type: editAssignmentData.type || 'quiz',
-        questions: editAssignmentData.questions || [],
-        dueAt: editAssignmentData.dueAt || null
+        questions: editAssignmentData.questions || []
       })
 
       const updated = response.data?.assignment
@@ -1431,7 +1303,7 @@ function App() {
     }
 
     try {
-      const response = await api.get(`/api/assignments/${assignmentId}/submissions`)
+      const response = await api.get(`/api/assignments/${assignmentId}/submissions`, { params: { limit: 100 } })
       setAssignmentSubmissions(prev => ({
         ...prev,
         [assignmentId]: response.data?.submissions || []
@@ -1488,7 +1360,7 @@ function App() {
         setLessonRouteCourse(course)
         if (course?._id) {
           setSelectedCourse(course)
-          await loadSelectedCourseContent(course._id)
+          await fetchCourseLessons(course._id)
         }
       } catch (error) {
         const message = error.response?.data?.message || 'Không tải được bài học.'
@@ -1500,7 +1372,7 @@ function App() {
         setLessonRouteLoading(false)
       }
     },
-    [loadSelectedCourseContent]
+    [fetchCourseLessons, navigate, showError]
   )
 
   useEffect(() => {
@@ -1620,7 +1492,7 @@ function App() {
     } finally {
       setProfileLoading(false)
     }
-  }, [])
+  }, [showError])
 
   useEffect(() => {
     if (!location.pathname.startsWith('/profile/')) {
@@ -1645,7 +1517,7 @@ function App() {
     } finally {
       setMyProfileLoading(false)
     }
-  }, [])
+  }, [showError])
 
   const handleOpenProfile = userId => {
     if (!userId) {
@@ -1754,47 +1626,6 @@ function App() {
     return response.data?.url || ''
   }
 
-  const handleUploadLessonVideoFile = async file => {
-    const videoError = validateVideoFile(file)
-    if (videoError) {
-      showError(videoError)
-      return ''
-    }
-
-    try {
-      const url = await uploadVideoFile(file)
-      if (!url) {
-        showError('Cloudinary không trả về link video.')
-        return ''
-      }
-      showSuccess('Đã tải video lên Cloudinary.')
-      return url
-    } catch (error) {
-      showError(error.response?.data?.message || 'Không upload được video.')
-      return ''
-    }
-  }
-
-  const handleAdminUploadVideo = async file => {
-    if (!file) {
-      return
-    }
-    const videoError = validateVideoFile(file)
-    if (videoError) {
-      showError(videoError)
-      return
-    }
-    setIsAdminUploadLoading(true)
-    try {
-      const url = await uploadVideoFile(file)
-      setAdminUploadUrl(url || '')
-    } catch {
-      showError('Không upload được video.')
-    } finally {
-      setIsAdminUploadLoading(false)
-    }
-  }
-
   const uploadImageFile = async file => {
     const formData = new FormData()
     formData.append('image', file)
@@ -1806,12 +1637,12 @@ function App() {
 
   const handleCreateCourse = async () => {
     if (!currentUser || (currentRole !== 'teacher' && currentRole !== 'admin')) {
-      showError('Chỉ giảng viên hoặc admin mới tạo được khóa học.')
+      showError('Chỉ giảng viên hoặc admin mới tạo được lớp học.')
       return
     }
 
     if (!newCourseData.title.trim() || !newCourseData.category.trim()) {
-      showWarning('Cậu điền tên khóa học và danh mục trước nhé.')
+      showWarning('Cậu điền tên lớp và danh mục trước nhé.')
       return
     }
 
@@ -1832,27 +1663,27 @@ function App() {
         description: newCourseData.description.trim(),
         imageUrl
       })
-      showSuccess(response.data.message || 'Đã tạo khóa học.')
+      showSuccess(response.data.message || 'Đã tạo lớp học.')
       setNewCourseData({ title: '', category: allCategories[0] || categories[0], description: '', imageUrl: '', imageFile: null })
       if (currentRole === 'teacher') {
         fetchTeacherCourses()
       }
       fetchCourses()
     } catch (error) {
-      showError(error.response?.data?.message || 'Không tạo được khóa học.')
+      showError(error.response?.data?.message || 'Không tạo được lớp học.')
     }
   }
 
   const handleCreateLesson = async () => {
     const targetCourseId = selectedCourse?._id || selectedTeacherCourseId
     if (!targetCourseId) {
-      showWarning('Cậu chọn khóa học trước nhé.')
-      return false
+      showWarning('Cậu chọn lớp trước nhé.')
+      return
     }
 
     if (!newLessonData.title.trim()) {
       showWarning('Cậu điền tiêu đề bài học trước nhé.')
-      return false
+      return
     }
 
     try {
@@ -1861,7 +1692,7 @@ function App() {
         const errorMessage = validateImageFile(newLessonData.imageFile)
         if (errorMessage) {
           showError(errorMessage)
-          return false
+          return
         }
         imageUrl = await uploadImageFile(newLessonData.imageFile)
       }
@@ -1871,7 +1702,7 @@ function App() {
         const videoError = validateVideoFile(newLessonData.videoFile)
         if (videoError) {
           showError(videoError)
-          return false
+          return
         }
         videoUrl = await uploadVideoFile(newLessonData.videoFile)
       }
@@ -1894,10 +1725,8 @@ function App() {
         imageFile: null
       })
       fetchCourseLessons(targetCourseId)
-      return true
     } catch (error) {
       showError(error.response?.data?.message || 'Không thêm được bài học.')
-      return false
     }
   }
 
@@ -2034,7 +1863,7 @@ function App() {
       const url = await uploadVideoFile(file)
       setNewCourseData(prev => ({
         ...prev,
-        description: `${prev.description || ''}<p><video controls src="${getPlayableCloudinaryVideoUrl(url)}" style="max-width:100%"></video></p>`
+        description: `${prev.description || ''}<p><video controls src="${url}" style="max-width:100%"></video></p>`
       }))
     } catch {
       showError('Không upload được video.')
@@ -2052,7 +1881,7 @@ function App() {
       const url = await uploadVideoFile(file)
       setNewLessonData(prev => ({
         ...prev,
-        content: `${prev.content || ''}<p><video controls src="${getPlayableCloudinaryVideoUrl(url)}" style="max-width:100%"></video></p>`
+        content: `${prev.content || ''}<p><video controls src="${url}" style="max-width:100%"></video></p>`
       }))
     } catch {
       showError('Không upload được video.')
@@ -2070,7 +1899,7 @@ function App() {
       const url = await uploadVideoFile(file)
       setEditLessonData(prev => ({
         ...prev,
-        content: `${prev.content || ''}<p><video controls src="${getPlayableCloudinaryVideoUrl(url)}" style="max-width:100%"></video></p>`
+        content: `${prev.content || ''}<p><video controls src="${url}" style="max-width:100%"></video></p>`
       }))
     } catch {
       showError('Không upload được video.')
@@ -2078,20 +1907,20 @@ function App() {
   }
 
   const handleEnroll = async courseId => {
-    if (!ensureAuthenticated('tham gia khóa học')) {
+    if (!ensureAuthenticated('tham gia lớp học')) {
       return
     }
 
     try {
       const response = await api.post(`/api/courses/${courseId}/enroll`)
-      showSuccess(response.data.message || 'Đã tham gia khóa học.')
+      showSuccess(response.data.message || 'Đã tham gia lớp học.')
       await Promise.all([
         fetchMyEnrollments(),
         fetchCourseLessons(courseId),
         fetchCourseAssignments(courseId)
       ])
     } catch (error) {
-      showError(error.response?.data?.message || 'Không tham gia được khóa học.')
+      showError(error.response?.data?.message || 'Không tham gia được lớp học.')
     }
   }
 
@@ -2106,6 +1935,7 @@ function App() {
       fetchMyEnrollments()
       if (currentUser) {
         fetchMyProfile()
+        fetchGlobalLeaderboard()
       }
     } catch (error) {
       showError(error.response?.data?.message || 'Không cập nhật được tiến độ.')
@@ -2196,7 +2026,6 @@ function App() {
         reason: 'manual_admin_review'
       })
       showSuccess(response.data?.message || 'Đã xử lý bình luận.')
-      setAdminForumComments(prev => prev.filter(item => String(item._id) !== String(comment._id)))
       fetchDeletedComments()
       fetchManagedUsers()
       fetchForumData()
@@ -2413,10 +2242,6 @@ function App() {
   }, [fetchCategories])
 
   useEffect(() => {
-    fetchVideos()
-  }, [fetchVideos])
-
-  useEffect(() => {
     fetchForumData()
   }, [fetchForumData])
 
@@ -2491,6 +2316,10 @@ function App() {
   }, [currentUser, fetchMyProfile, myProfile, myProfileLoading])
 
   useEffect(() => {
+    fetchGlobalLeaderboard()
+  }, [fetchGlobalLeaderboard])
+
+  useEffect(() => {
     if (lessonRouteSlug) {
       setLessonRouteLessons(courseLessons)
       return
@@ -2522,10 +2351,6 @@ function App() {
     () => getRankInfo(currentUserPoints, rankTiers),
     [currentUserPoints]
   )
-
-  const rankLeaderboard = useMemo(() => {
-    return []
-  }, [])
 
   const canCompleteLesson = Boolean(currentUser) && (currentRole === 'student' || currentRole === 'user')
   const isLessonCompleted = lessonRouteLesson
@@ -2604,16 +2429,12 @@ function App() {
               <Routes>
                 <Route path='/' element={
                   <HomeView
-                    categories={allCategories}
                     currentUser={currentUser}
                     currentRank={currentRank}
                     currentUserPoints={currentUserPoints}
                     nextRank={nextRank}
                     pointsToNext={pointsToNext}
                     rankLeaderboard={rankLeaderboard}
-                    categoryVideos={categoryVideos}
-                    currentRole={currentRole}
-                    onDeleteVideo={handleDeleteVideo}
                   />
                 } />
 
@@ -2652,19 +2473,8 @@ function App() {
                     onEditLessonChange={setEditLessonData}
                     onEditLessonCancel={handleCancelEditLesson}
                     onUpdateLesson={handleUpdateLesson}
-                    onUploadLessonVideoFile={handleUploadLessonVideoFile}
                     onUploadLessonEditorVideo={handleUploadLessonEditorVideo}
                     onUploadEditLessonEditorVideo={handleUploadEditLessonEditorVideo}
-                    newAssignmentData={newAssignmentData}
-                    onNewAssignmentDataChange={setNewAssignmentData}
-                    onCreateAssignment={handleCreateAssignment}
-                    editAssignmentId={editAssignmentId}
-                    editAssignmentData={editAssignmentData}
-                    onEditAssignmentStart={handleEditAssignmentStart}
-                    onEditAssignmentChange={setEditAssignmentData}
-                    onEditAssignmentCancel={handleEditAssignmentCancel}
-                    onUpdateAssignment={handleUpdateAssignment}
-                    onDeleteAssignment={handleDeleteAssignment}
                   />
                 } />
 
@@ -2703,19 +2513,8 @@ function App() {
                     onEditLessonChange={setEditLessonData}
                     onEditLessonCancel={handleCancelEditLesson}
                     onUpdateLesson={handleUpdateLesson}
-                    onUploadLessonVideoFile={handleUploadLessonVideoFile}
                     onUploadLessonEditorVideo={handleUploadLessonEditorVideo}
                     onUploadEditLessonEditorVideo={handleUploadEditLessonEditorVideo}
-                    newAssignmentData={newAssignmentData}
-                    onNewAssignmentDataChange={setNewAssignmentData}
-                    onCreateAssignment={handleCreateAssignment}
-                    editAssignmentId={editAssignmentId}
-                    editAssignmentData={editAssignmentData}
-                    onEditAssignmentStart={handleEditAssignmentStart}
-                    onEditAssignmentChange={setEditAssignmentData}
-                    onEditAssignmentCancel={handleEditAssignmentCancel}
-                    onUpdateAssignment={handleUpdateAssignment}
-                    onDeleteAssignment={handleDeleteAssignment}
                   />
                 } />
 
@@ -2774,7 +2573,6 @@ function App() {
                       isLoadingReports={isLoadingReports}
                       isLoadingDeletedPosts={isLoadingDeletedPosts}
                       isLoadingDeletedComments={isLoadingDeletedComments}
-                      isLoadingAnalytics={isLoadingAnalytics}
                       courses={courses}
                       selectedCourse={selectedCourse}
                       onSelectCourse={handleSelectCourse}
@@ -2785,16 +2583,11 @@ function App() {
                       onFetchReports={fetchModerationReports}
                       onFetchDeletedPosts={fetchDeletedPosts}
                       onFetchDeletedComments={fetchDeletedComments}
-                      onFetchForumComments={fetchAdminForumComments}
-                      isLoadingForumComments={isLoadingForumComments}
                       deletedReasonFilter={deletedReasonFilter}
                       onReasonChange={setDeletedReasonFilter}
                       newUserData={newUserData}
                       onNewUserDataChange={setNewUserData}
                       onCreateUser={handleCreateUser}
-                      newVideoData={newVideoData}
-                      onVideoDataChange={setNewVideoData}
-                      onAddVideo={handleAddVideo}
                       categories={allCategories}
                       customCategories={customCategories}
                       onAddCategory={handleAddCategory}
@@ -2808,21 +2601,12 @@ function App() {
                       moderationReports={moderationReports}
                       onDeleteModerationReport={handleDeleteModerationReport}
                       onClearModerationReports={handleClearModerationReports}
-                      forumPosts={forumPosts}
-                      forumComments={adminForumComments}
-                      onAdminDeletePost={handleAdminDeletePost}
-                      onPunishForumComment={handlePunishForumComment}
                       deletedPosts={deletedPosts}
                       onRestorePost={handleRestorePost}
                       onPermanentDeletePost={handlePermanentDeletePost}
                       deletedComments={deletedComments}
                       onRestoreComment={handleRestoreComment}
                       onPermanentDeleteComment={handlePermanentDeleteComment}
-                      analytics={adminAnalytics}
-                      adminUploadUrl={adminUploadUrl}
-                      isAdminUploadLoading={isAdminUploadLoading}
-                      onAdminUploadVideo={handleAdminUploadVideo}
-                      onClearAdminUploadUrl={() => setAdminUploadUrl('')}
                       onOpenProfile={handleOpenProfile}
                       api={api}
                     />
@@ -2889,7 +2673,6 @@ function App() {
                     canComplete={canCompleteLesson}
                     isCompleted={isLessonCompleted}
                     onLessonUpdated={handleLessonUpdated}
-                    onUploadLessonVideoFile={handleUploadLessonVideoFile}
                     api={api}
                     currentUser={currentUser}
                     onOpenProfile={handleOpenProfile}

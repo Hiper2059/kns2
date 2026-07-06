@@ -1,17 +1,3 @@
-import { defaultCategoryVideos } from '../data/skills'
-
-export const groupVideosByCategory = videos => {
-  const grouped = { ...defaultCategoryVideos }
-  ;(videos || []).forEach(video => {
-    const category = video.category || Object.keys(grouped)[0]
-    if (!grouped[category]) {
-      grouped[category] = []
-    }
-    grouped[category].push(video)
-  })
-  return grouped
-}
-
 export const getRankInfo = (points, rankTiers) => {
   const safePoints = Number(points) || 0
   let currentRank = rankTiers[0]

@@ -24,14 +24,6 @@ const lessonSchema = new mongoose.Schema(
             type: String,
             default: ''
         },
-        attachmentUrl: {
-            type: String,
-            default: ''
-        },
-        attachmentName: {
-            type: String,
-            default: ''
-        },
         slug: {
             type: String,
             default: ''

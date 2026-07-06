@@ -2,11 +2,6 @@ const fs = require('fs');
 const config = require('../config/env');
 const { cloudinary } = require('../utils/cloudinary');
 const catchAsync = require('../utils/catchAsync');
-const {
-  buildVideoUploadOptions,
-  getUploadedVideoUrl,
-  uploadLargeVideo
-} = require('../services/cloudinaryUploadService');
 
 const isCloudinaryConfigured = () =>
   Boolean(config.cloudinary.cloudName && config.cloudinary.apiKey && config.cloudinary.apiSecret);
@@ -25,15 +20,14 @@ const cleanupTempFile = filePath => {
   }
 };
 
-const uploadToCloudinary = (filePath, resourceType, file) => {
-  let uploadOptions = {
+const uploadToCloudinary = (filePath, resourceType) => {
+  const uploadOptions = {
     folder: config.cloudinary.folder,
     resource_type: resourceType
   };
 
   if (resourceType === 'video' && typeof cloudinary.uploader.upload_large === 'function') {
-    uploadOptions = buildVideoUploadOptions(file, uploadOptions);
-    return uploadLargeVideo(cloudinary.uploader, filePath, uploadOptions);
+    return cloudinary.uploader.upload_large(filePath, uploadOptions);
   }
 
   return cloudinary.uploader.upload(filePath, uploadOptions);
@@ -74,17 +68,10 @@ const uploadVideo = catchAsync(async (req, res) => {
       return res.status(400).json({ message: 'Chua co file video.' });
     }
 
-    const result = await uploadToCloudinary(filePath, 'video', req.file);
-    const videoUrl = getUploadedVideoUrl(result, req.file);
-
-    console.info('Cloudinary video uploaded:', {
-      publicId: result.public_id,
-      bytes: result.bytes,
-      deliveryFormat: videoUrl.toLowerCase().includes('.mp4') ? 'mp4' : result.format
-    });
+    const result = await uploadToCloudinary(filePath, 'video');
 
     res.json({
-      url: videoUrl,
+      url: result.secure_url,
       publicId: result.public_id
     });
   } finally {

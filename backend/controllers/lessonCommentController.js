@@ -74,7 +74,7 @@ const createComment = catchAsync(async (req, res) => {
   if (isStudentRole(req.currentUser.role)) {
     const enrolled = await Enrollment.findOne({ course: lesson.course, student: req.currentUser._id }).lean();
     if (!enrolled) {
-      return res.status(403).json({ message: 'Cần tham gia khóa học để bình luận bài học.' });
+      return res.status(403).json({ message: 'Cần tham gia lớp để bình luận bài học.' });
     }
   }
 

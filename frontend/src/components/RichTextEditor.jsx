@@ -3,15 +3,8 @@ import ReactQuill, { Quill } from 'react-quill'
 import axios from 'axios'
 import 'react-quill/dist/quill.snow.css'
 import { getApiErrorMessage } from '../utils/apiMessages'
-import { getPlayableCloudinaryVideoUrl } from '../utils/cloudinaryVideo'
 import { useUI } from '../context/UIContext'
-import {
-  DIRECT_VIDEO_FORMAT,
-  registerDirectVideoBlot
-} from './editor/directVideoBlot'
 import './RichTextEditor.css'
-
-registerDirectVideoBlot(Quill)
 
 const quillFormats = [
   'bold',
@@ -19,8 +12,7 @@ const quillFormats = [
   'underline',
   'link',
   'image',
-  'video',
-  DIRECT_VIDEO_FORMAT
+  'video'
 ]
 
 const latexTextReplacements = [
@@ -59,7 +51,7 @@ const buildModules = handlers => ({
   }
 })
 
-const RichTextEditor = ({ value, onChange, placeholder, toolbarId }) => {
+const RichTextEditor = ({ value, onChange, placeholder }) => {
   const { showError } = useUI()
   const imageInputRef = useRef(null)
   const videoInputRef = useRef(null)
@@ -151,6 +143,8 @@ const RichTextEditor = ({ value, onChange, placeholder, toolbarId }) => {
     pendingSelectionRef.current = quillInstance.getSelection() || range
   }, [])
 
+  // Handler chỉ đọc ref khi Quill gọi sau render.
+  /* eslint-disable react-hooks/refs */
   const modules = useMemo(
     () => buildModules({
       bold: () => applyInlineFormat('bold'),
@@ -161,6 +155,7 @@ const RichTextEditor = ({ value, onChange, placeholder, toolbarId }) => {
     }),
     [applyInlineFormat]
   )
+  /* eslint-enable react-hooks/refs */
 
   const handleEditorChange = useCallback((content, delta, source, editor) => {
     const quillInstance = quillRef.current?.getEditor?.()
@@ -296,8 +291,7 @@ const RichTextEditor = ({ value, onChange, placeholder, toolbarId }) => {
           const quillInstance = quillRef.current?.getEditor?.()
           const range = quillInstance?.getSelection?.() || { index: quillInstance?.getLength?.() || 0 }
           if (url && quillInstance) {
-            quillInstance.insertEmbed(range.index, DIRECT_VIDEO_FORMAT, getPlayableCloudinaryVideoUrl(url), 'user')
-            quillInstance.setSelection(range.index + 1, 0, 'silent')
+            quillInstance.clipboard.dangerouslyPasteHTML(range.index, `<p><video controls src="${url}" style="max-width:100%"></video></p>`, 'user')
           }
           e.target.value = ''
         }}

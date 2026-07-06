@@ -1,16 +1,12 @@
 import { useEffect, useRef } from 'react'
 import gsap from 'gsap'
 const HomeView = ({
-  categories,
   currentUser,
   currentRank,
   currentUserPoints,
   nextRank,
   pointsToNext,
-  rankLeaderboard,
-  categoryVideos,
-  currentRole,
-  onDeleteVideo
+  rankLeaderboard
 }) => {
   const containerRef = useRef(null)
 
@@ -43,20 +39,6 @@ const HomeView = ({
       ctx.revert()
     }
   }, [])
-
-  const getVideoEmbedUrl = url => {
-    if (!url) return ''
-    if (url.includes('embed/')) return url
-    if (url.includes('watch?v=')) {
-      const id = url.split('watch?v=')[1]?.split('&')[0]
-      return id ? `https://www.youtube.com/embed/${id}` : url
-    }
-    if (url.includes('youtu.be/')) {
-      const id = url.split('youtu.be/')[1]?.split('?')[0]
-      return id ? `https://www.youtube.com/embed/${id}` : url
-    }
-    return url
-  }
 
   return (
     <div ref={containerRef} className="flex min-w-0 flex-col gap-6 w-full mx-auto pb-10">
@@ -107,15 +89,15 @@ const HomeView = ({
 
           <div className="space-y-3 flex-1">
             {rankLeaderboard.length ? (
-              rankLeaderboard.map(([username, points], idx) => (
-                <div key={username} className="flex min-w-0 flex-col gap-3 p-4 rounded-2xl bg-zinc-50/50 border border-zinc-100 hover:bg-zinc-100/80 transition-colors duration-200 sm:flex-row sm:items-center sm:justify-between">
+              rankLeaderboard.map((entry, idx) => (
+                <div key={entry.studentId || entry.username} className="flex min-w-0 flex-col gap-3 p-4 rounded-2xl bg-zinc-50/50 border border-zinc-100 hover:bg-zinc-100/80 transition-colors duration-200 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex min-w-0 items-center gap-3">
                     <span className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${idx === 0 ? 'bg-yellow-400 text-yellow-900' : idx === 1 ? 'bg-zinc-300 text-zinc-700' : idx === 2 ? 'bg-amber-600 text-amber-100' : 'bg-zinc-200 text-zinc-600'}`}>
                       {idx + 1}
                     </span>
-                    <span className="font-semibold text-zinc-700 break-words">{username}</span>
+                    <span className="font-semibold text-zinc-700 break-words">{entry.displayName || entry.username}</span>
                   </div>
-                  <strong className="text-teal-700 font-bold bg-teal-50 px-3 py-1 rounded-full text-sm">{points} điểm</strong>
+                  <strong className="text-teal-700 font-bold bg-teal-50 px-3 py-1 rounded-full text-sm">{entry.points} điểm</strong>
                 </div>
               ))
             ) : (
@@ -127,7 +109,6 @@ const HomeView = ({
         </div>
       </div>
 
-      {/* Video Section removed as requested */}
     </div>
   )
 }

@@ -2,11 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const corsOptions = require('./config/cors');
-const healthRoutes = require('./routes/healthRoutes');
 const authRoutes = require('./routes/authRoutes');
 const forumRoutes = require('./routes/forumRoutes');
 const userRoutes = require('./routes/userRoutes');
-const videoRoutes = require('./routes/videoRoutes');
 const moderationRoutes = require('./routes/moderationRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const courseRoutes = require('./routes/courseRoutes');
@@ -15,18 +13,19 @@ const enrollmentRoutes = require('./routes/enrollmentRoutes');
 const assignmentRoutes = require('./routes/assignmentRoutes');
 const submissionRoutes = require('./routes/submissionRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
-const analyticsRoutes = require('./routes/analyticsRoutes');
 const lessonCommentsRoutes = require('./routes/lessonCommentsRoutes');
 const commentRoutes = require('./routes/commentRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
+const leaderboardRoutes = require('./routes/leaderboardRoutes');
 const { login, register } = require('./controllers/authController');
 const { friendlyMessages } = require('./middleware/friendlyMessages');
 const errorHandler = require('./middleware/errorHandler');
 const validate = require('./middleware/validate');
-const { authRateLimiter } = require('./middleware/rateLimiter');
+const { authRateLimiter } = require('./middleware/securityRateLimiters');
 const { registerSchema, loginSchema } = require('./validations/authValidation');
 
 const app = express();
+app.set('trust proxy', 1);
 
 app.use(helmet());
 app.use(cors(corsOptions));
@@ -89,8 +88,6 @@ app.get('/', (req, res) => {
     <h1>Z-Mate API</h1>
     <p>Backend đang chạy. Trang này chỉ là màn kiểm tra nhanh, frontend chạy ở Vite.</p>
     <div class="status"><span class="dot"></span> OK</div>
-    <br />
-    <a href="/api/health">Kiểm tra /api/health</a>
   </main>
 </body>
 </html>`);
@@ -100,7 +97,6 @@ app.get('/favicon.ico', (req, res) => {
   res.status(204).end();
 });
 
-app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/courses', courseRoutes);
@@ -111,12 +107,11 @@ app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/submissions', submissionRoutes);
 app.use('/api/forum', forumRoutes);
-app.use('/api/videos', videoRoutes);
 app.use('/api/moderation', moderationRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/uploads', uploadRoutes);
-app.use('/api/analytics', analyticsRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/leaderboard', leaderboardRoutes);
 
 // Temporary backward-compatible aliases while the frontend migrates to /api/auth/*.
 app.post('/api/login', authRateLimiter, validate(loginSchema), login);

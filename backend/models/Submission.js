@@ -11,7 +11,7 @@ const submissionSchema = new mongoose.Schema(
     course: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Course',
-      required: false,
+      required: true,
       index: true
     },
     student: {
@@ -32,10 +32,6 @@ const submissionSchema = new mongoose.Schema(
       type: String,
       default: ''
     },
-    videoUrl: {
-      type: String,
-      default: ''
-    },
     answers: {
       type: [Number],
       default: []
@@ -46,7 +42,7 @@ const submissionSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['submitted', 'graded', 'revision_requested'],
+      enum: ['submitted', 'graded'],
       default: 'submitted'
     },
     score: {

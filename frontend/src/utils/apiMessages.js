@@ -82,7 +82,7 @@ const friendlyFromText = (message, status) => {
   }
 
   if (normalized.includes('can tham gia lop') || normalized.includes('cau can tham gia lop')) {
-    return 'Bạn cần tham gia khóa học trước khi tiếp tục.'
+    return 'Bạn cần tham gia lớp trước khi tiếp tục.'
   }
 
   if (normalized.includes('cloudinary')) {
@@ -114,7 +114,7 @@ const friendlyFromText = (message, status) => {
     return 'Dữ liệu không hợp lệ. Bạn thử tải lại trang rồi thao tác lại.'
   }
 
-  if (normalized.includes('khong tim thay lop hoc')) return 'Không tìm thấy khóa học.'
+  if (normalized.includes('khong tim thay lop hoc')) return 'Không tìm thấy lớp học.'
   if (normalized.includes('khong tim thay bai hoc')) return 'Không tìm thấy bài học.'
   if (normalized.includes('khong tim thay bai viet')) return 'Không tìm thấy bài viết.'
   if (normalized.includes('khong tim thay binh luan')) return 'Không tìm thấy bình luận.'
@@ -154,9 +154,9 @@ const successMessages = new Map([
   ['da them bai hoc', 'Đã thêm bài học.'],
   ['da cap nhat bai hoc', 'Đã cập nhật bài học.'],
   ['da xoa bai hoc', 'Đã xóa bài học.'],
-  ['da tao lop hoc', 'Đã tạo khóa học.'],
-  ['da cap nhat lop hoc', 'Đã cập nhật khóa học.'],
-  ['da xoa lop hoc', 'Đã xóa khóa học.'],
+  ['da tao lop hoc', 'Đã tạo lớp học.'],
+  ['da cap nhat lop hoc', 'Đã cập nhật lớp học.'],
+  ['da xoa lop hoc', 'Đã xóa lớp học.'],
   ['da xoa bai viet thanh cong', 'Đã xóa bài viết.'],
   ['da xoa binh luan thanh cong', 'Đã xóa bình luận.'],
   ['da xoa vinh vien bai viet va binh luan lien quan', 'Đã xóa vĩnh viễn bài viết.'],
@@ -164,7 +164,7 @@ const successMessages = new Map([
   ['da khoi phuc bai viet', 'Đã khôi phục bài viết.'],
   ['da khoi phuc binh luan', 'Đã khôi phục bình luận.'],
   ['da cap nhat ho so', 'Đã cập nhật hồ sơ.'],
-  ['da tham gia lop hoc', 'Đã tham gia khóa học.'],
+  ['da tham gia lop hoc', 'Đã tham gia lớp học.'],
   ['da cap nhat tien do', 'Đã cập nhật tiến độ.'],
   ['da xoa report kiem duyet', 'Đã xóa report kiểm duyệt.'],
   ['da xoa toan bo lich su kiem duyet', 'Đã xóa toàn bộ lịch sử kiểm duyệt.']

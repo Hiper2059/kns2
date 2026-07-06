@@ -11,17 +11,20 @@ const enrollCourse = catchAsync(async (req, res) => {
   const { courseId } = req.params;
 
   if (!isStudentRole(req.currentUser.role)) {
-    return res.status(403).json({ message: 'Chỉ học viên mới được tham gia khóa học.' });
+    return res.status(403).json({ message: 'Chỉ học viên mới được tham gia lớp.' });
   }
 
   const course = await Course.findById(courseId).lean();
   if (!course) {
-    return res.status(404).json({ message: 'Không tìm thấy khóa học.' });
+    return res.status(404).json({ message: 'Không tìm thấy lớp học.' });
+  }
+  if (course.status === 'draft') {
+    return res.status(403).json({ message: 'Lớp học chưa được xuất bản.' });
   }
 
   const exists = await Enrollment.findOne({ course: courseId, student: req.currentUser._id }).lean();
   if (exists) {
-    return res.status(400).json({ message: 'Cậu đã tham gia khóa học này rồi.' });
+    return res.status(400).json({ message: 'Cậu đã tham gia lớp này rồi.' });
   }
 
   const created = await Enrollment.create({
@@ -33,7 +36,7 @@ const enrollCourse = catchAsync(async (req, res) => {
     teacherName: course.teacherName
   });
 
-  res.status(201).json({ message: 'Đã tham gia khóa học.', enrollment: created });
+  res.status(201).json({ message: 'Đã tham gia lớp học.', enrollment: created });
 });
 
 const listMyEnrollments = catchAsync(async (req, res) => {
@@ -59,11 +62,11 @@ const listCourseEnrollments = catchAsync(async (req, res) => {
   const { courseId } = req.params;
   const course = await Course.findById(courseId).lean();
   if (!course) {
-    return res.status(404).json({ message: 'Không tìm thấy khóa học.' });
+    return res.status(404).json({ message: 'Không tìm thấy lớp học.' });
   }
 
   if (req.currentUser.role === 'teacher' && String(course.teacher) !== String(req.currentUser._id)) {
-    return res.status(403).json({ message: 'Bạn không có quyền xem học viên của khóa học này.' });
+    return res.status(403).json({ message: 'Bạn không có quyền xem học viên của lớp này.' });
   }
 
   const filter = { course: courseId };
@@ -102,7 +105,7 @@ const completeLesson = catchAsync(async (req, res) => {
   });
 
   if (!enrollment) {
-    return res.status(403).json({ message: 'Cậu cần tham gia khóa học trước khi học.' });
+    return res.status(403).json({ message: 'Cậu cần tham gia lớp trước khi học.' });
   }
 
   let pointsEarned = 0;
@@ -145,14 +148,22 @@ const evaluateEnrollment = catchAsync(async (req, res) => {
     return res.status(403).json({ message: 'Bạn không có quyền đánh giá học viên này.' });
   }
 
-  if (score !== undefined && score !== null && !Number.isNaN(Number(score))) {
-    enrollment.evaluation.score = Number(score);
+  if (score !== undefined && score !== null) {
+    const normalizedScore = Number(score);
+    if (!Number.isFinite(normalizedScore) || normalizedScore < 0 || normalizedScore > 100) {
+      return res.status(400).json({ message: 'Diem phai nam trong khoang 0 den 100.' });
+    }
+    enrollment.evaluation.score = normalizedScore;
   }
   if (note !== undefined) {
     enrollment.evaluation.note = String(note).trim();
   }
-  if (progressPercent !== undefined && !Number.isNaN(Number(progressPercent))) {
-    enrollment.progressPercent = Math.min(100, Math.max(0, Number(progressPercent)));
+  if (progressPercent !== undefined) {
+    const normalizedProgress = Number(progressPercent);
+    if (!Number.isFinite(normalizedProgress)) {
+      return res.status(400).json({ message: 'Tien do khong hop le.' });
+    }
+    enrollment.progressPercent = Math.min(100, Math.max(0, normalizedProgress));
   }
   enrollment.evaluation.updatedAt = new Date();
 

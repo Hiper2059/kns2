@@ -16,9 +16,9 @@ const { createCourseSchema, updateCourseSchema } = require('../validations/cours
 
 const router = express.Router();
 
-router.get('/', listCourses);
+router.get('/', optionalAuth, listCourses);
 router.get('/mine', requireTeacherOrAdmin, listMyCourses);
-router.get('/:courseId', getCourse);
+router.get('/:courseId', optionalAuth, getCourse);
 router.post('/', requireTeacherOrAdmin, validate(createCourseSchema), createCourse);
 router.patch('/:courseId', requireTeacherOrAdmin, validate(updateCourseSchema), updateCourse);
 router.delete('/:courseId', requireTeacherOrAdmin, deleteCourse);

@@ -91,8 +91,8 @@ const Navbar = ({
         {[
           { to: '/', icon: Home, label: 'Trang chủ', onClick: closeMobileSidebar },
           { to: '/forum', icon: MessageCircle, label: 'Diễn đàn', onClick: runAndClose(onOpenForum) },
-          { to: '/courses', icon: BookOpen, label: 'Khóa học', onClick: closeMobileSidebar },
-          ...(currentRole === 'teacher' ? [{ to: '/teacher', icon: UsersRound, label: 'Tạo khóa học', onClick: closeMobileSidebar }] : []),
+          { to: '/courses', icon: BookOpen, label: 'Lớp học', onClick: closeMobileSidebar },
+          ...(currentRole === 'teacher' ? [{ to: '/teacher', icon: UsersRound, label: 'Giảng viên', onClick: closeMobileSidebar }] : []),
           ...(currentRole === 'admin' ? [{ to: '/admin', icon: Settings, label: 'Quản lý', onClick: closeMobileSidebar }] : [])
         ].map((item, idx) => (
           <NavLink key={idx} to={item.to} onClick={item.onClick} className={({ isActive }) => `relative inline-flex items-center gap-2 min-h-[38px] px-3.5 rounded-full text-[13px] font-bold transition-all duration-200 ${sidebarOpen ? 'min-h-[44px] justify-start rounded-xl' : ''} ${isActive ? 'bg-blue-50 text-blue-600' : 'text-slate-500 hover:bg-slate-50 hover:text-blue-600'}`}>
