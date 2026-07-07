@@ -621,6 +621,17 @@ const LessonFullPage = ({
     setComments(prev => prev.filter(item => String(item._id) !== targetId && String(item.parentComment || '') !== targetId))
   }
 
+  const autoCompletedLessonRef = useRef(null)
+
+  useEffect(() => {
+    if (lessonAssignments.length > 0 && allAssignmentsSubmitted && canComplete && !isCompleted) {
+      if (autoCompletedLessonRef.current !== lesson?._id) {
+        autoCompletedLessonRef.current = lesson?._id
+        onCompleteLesson?.(lesson?._id)
+      }
+    }
+  }, [lessonAssignments.length, allAssignmentsSubmitted, canComplete, isCompleted, lesson?._id, onCompleteLesson])
+
   useEffect(() => {
     let cancelled = false
     const load = async () => {
@@ -826,7 +837,7 @@ const LessonFullPage = ({
           {!isLoading && lesson && (
             <div className="w-full max-w-5xl mx-auto pb-20">
               {/* Video Player Section */}
-              {lesson.videoUrl ? (
+              {lesson.videoUrl && (
                 <div className="w-full bg-slate-900 aspect-video relative group">
                   {videoId ? (
                     <div className="absolute inset-0 w-full h-full" ref={setYoutubeContainerEl}></div>
@@ -863,10 +874,6 @@ const LessonFullPage = ({
                       )}
                     </>
                   )}
-                </div>
-              ) : (
-                <div className="w-full bg-slate-100 aspect-[21/9] flex items-center justify-center text-slate-400 border-b border-slate-200">
-                  <span className="text-[14px] font-bold">Chưa có video cho bài học này.</span>
                 </div>
               )}
 
