@@ -6,17 +6,20 @@ const baseTextAreaClass = "w-full min-h-[100px] p-4 bg-slate-50 border border-sl
 const baseButtonClass = "inline-flex items-center justify-center h-11 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-[0_4px_14px_0_rgb(37,99,235,0.39)] cursor-pointer"
 const ghostButtonClass = "inline-flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-all cursor-pointer text-[13px]"
 
-const FactItem = ({ icon: Icon, label, value }) => (
+const FactItem = ({ icon, label, value }) => {
+  const IconComponent = icon
+  return (
   <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
     <div className="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center flex-shrink-0 text-blue-600">
-      <Icon size={18} />
+      <IconComponent size={18} />
     </div>
     <div className="flex flex-col min-w-0">
       <span className="text-[12px] font-bold text-slate-500 uppercase tracking-wide mb-1">{label}</span>
       <strong className="text-[14px] font-black text-slate-900 break-words">{value || 'Chưa cập nhật'}</strong>
     </div>
   </div>
-)
+  )
+}
 
 const ProfilePage = ({
   profileUser,
@@ -307,7 +310,7 @@ const ProfilePage = ({
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FactItem icon={Calendar} label="Ngày sinh" value={profileUser.profile?.student?.dob} />
-                    <FactItem icon={BookOpen} label="Khóa học đang học" value={profileUser.enrolledCourses?.length ? profileUser.enrolledCourses.map(c => c.title).join(', ') : 'Chưa đăng ký khóa học nào'} />
+                    <FactItem icon={BookOpen} label="Lớp đang học" value={profileUser.enrolledCourses?.length ? profileUser.enrolledCourses.map(c => c.title).join(', ') : 'Chưa đăng ký lớp nào'} />
                     <FactItem icon={Award} label="Sở trường" value={profileUser.profile?.student?.strengths} />
                     
                     <div className="col-span-full mt-4 flex flex-col gap-4">

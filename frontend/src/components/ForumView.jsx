@@ -1,6 +1,6 @@
 import React from 'react'
 import RichTextEditor from './RichTextEditor'
-import { transformHtmlVideoUrls } from '../utils/cloudinaryVideo'
+import SafeRichHtml from './ui/SafeRichHtml'
 import { MessageSquare, Heart, AlertTriangle, Send, ChevronLeft, ChevronRight, PenSquare, Hash, UserCircle2, Trash2 } from 'lucide-react'
 
 const ComposeField = ({ label, hint, children, className = '', as = 'label' }) => {
@@ -81,7 +81,7 @@ const ForumView = ({
       </div>
       <div>
         <h2 className="text-2xl font-black text-slate-900 tracking-tight">
-          {forumScope === 'course' ? 'Diễn đàn khóa học' : 'Cộng đồng thảo luận'}
+          {forumScope === 'course' ? 'Diễn đàn lớp học' : 'Cộng đồng thảo luận'}
         </h2>
         <p className="text-sm font-medium text-slate-500">
           Nơi giao lưu, trao đổi kiến thức và hỗ trợ lẫn nhau.
@@ -305,7 +305,7 @@ const ForumView = ({
                   ) : (
                     <>
                       <h4 className="text-xl font-black text-slate-900 mb-3">{post.title}</h4>
-                      <div className="prose prose-slate max-w-none text-[15px] prose-p:leading-relaxed" dangerouslySetInnerHTML={{ __html: transformHtmlVideoUrls(post.content) }}></div>
+                      <SafeRichHtml className="prose prose-slate max-w-none text-[15px] prose-p:leading-relaxed" html={post.content} />
                     </>
                   )}
                 </div>

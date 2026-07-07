@@ -6,6 +6,7 @@ const { createAuthTokens, createAuthTokensForPayload } = require('../utils/token
 const { comparePassword, hashPassword } = require('../utils/password');
 const { getEffectiveStatus, getEffectiveViolationCount } = require('../utils/userUtils');
 const { ensureUserProfile } = require('../services/userProfileService');
+const { shouldUseConfiguredAdminAuthentication } = require('../domain/adminAuthentication');
 
 const register = async (req, res) => {
   try {
@@ -46,7 +47,7 @@ const login = async (req, res) => {
       return res.status(400).json({ message: 'Thiếu tên đăng nhập hoặc mật khẩu.' });
     }
 
-    if (loginAs === 'admin') {
+    if (shouldUseConfiguredAdminAuthentication(username, config.adminUsername, loginAs)) {
       const adminUsername = config.adminUsername;
       const adminPassword = config.adminPassword;
 

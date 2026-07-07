@@ -1,15 +1,13 @@
 const { connectDatabase } = require('../../config/database');
 const {
   ensureAdminUser,
-  seedDefaultForumPosts,
-  seedDefaultVideoLinks
+  seedDefaultForumPosts
 } = require('../services/seedService');
 
 const runSeed = async () => {
   try {
     await connectDatabase();
     await ensureAdminUser();
-    await seedDefaultVideoLinks();
     await seedDefaultForumPosts();
     console.log('Seed data thanh cong.');
     process.exit(0);

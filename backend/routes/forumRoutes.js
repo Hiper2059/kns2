@@ -7,7 +7,6 @@ const {
   createComment,
   deletePost,
   deleteComment,
-  listAllCommentsForAdmin,
   punishCommentAuthor,
   togglePostReaction,
   getDeletedPosts,
@@ -30,7 +29,6 @@ router.patch('/posts/:id/reaction', requireActiveUser, togglePostReaction);
 router.get('/comments', optionalAuth, getComments);
 router.post('/comments', requireActiveUser, createComment);
 router.delete('/comments/:id', requireActiveUser, deleteComment);
-router.get('/admin/comments', requireAdmin, listAllCommentsForAdmin);
 router.patch('/comments/:id/punish', requireAdmin, punishCommentAuthor);
 
 router.get('/deleted/posts', requireAdmin, getDeletedPosts);

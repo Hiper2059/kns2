@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { AlertTriangle, ArrowRight, Eye, EyeOff, UserPlus, ShieldCheck } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { createApiClient } from '../api/apiClient'
@@ -29,7 +29,7 @@ const AuthPage = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
-  const handleAuthSuccess = (role) => {
+  const handleAuthSuccess = useCallback((role) => {
     let dest = location.state?.from?.pathname || '/'
     const fallbackDest = role === 'admin' ? '/admin' : role === 'teacher' ? '/teacher' : '/'
 
@@ -41,14 +41,14 @@ const AuthPage = () => {
       dest = fallbackDest
     }
     navigate(dest, { replace: true })
-  }
+  }, [location.state?.from?.pathname, navigate])
 
   useEffect(() => {
     if (currentUser) {
       const role = localStorage.getItem('zmate_current_role') || 'student'
       handleAuthSuccess(role)
     }
-  }, [currentUser, location, navigate])
+  }, [currentUser, handleAuthSuccess])
 
   const handleChange = event => {
     setFormData(prev => ({ ...prev, [event.target.name]: event.target.value }))

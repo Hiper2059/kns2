@@ -1,17 +1,11 @@
 import React, { useState, Fragment } from 'react'
-import { transformHtmlVideoUrls } from '../utils/cloudinaryVideo'
 import {
-  BarChart3,
   BookOpen,
-  FileText,
   Flag,
   LayoutDashboard,
-  MessageSquare,
-  Search,
   ShieldCheck,
   UserRound,
-  Users,
-  Settings
+  Users
 } from 'lucide-react'
 import { getApiErrorMessage } from '../utils/apiMessages'
 import { useUI } from '../context/UIContext'
@@ -26,8 +20,6 @@ const ManageView = ({
   isLoadingReports,
   isLoadingDeletedPosts,
   isLoadingDeletedComments,
-  isLoadingAnalytics,
-  isLoadingForumComments,
   courses,
   selectedCourse,
   onSelectCourse,
@@ -38,7 +30,6 @@ const ManageView = ({
   onFetchReports,
   onFetchDeletedPosts,
   onFetchDeletedComments,
-  onFetchForumComments,
   deletedReasonFilter,
   onReasonChange,
   newUserData,
@@ -53,51 +44,37 @@ const ManageView = ({
   moderationReports,
   onDeleteModerationReport,
   onClearModerationReports,
-  forumPosts,
-  forumComments = [],
-  onAdminDeletePost,
-  onPunishForumComment,
   deletedPosts,
   onRestorePost,
   onPermanentDeletePost,
   deletedComments,
   onRestoreComment,
   onPermanentDeleteComment,
-  analytics,
-  adminUploadUrl,
-  isAdminUploadLoading,
-  onAdminUploadVideo,
-  onClearAdminUploadUrl,
   onOpenProfile,
   api
 }) => {
-  const { showToast, showError, showSuccess } = useUI()
+  const { showError } = useUI()
   const [activeSection, setActiveSection] = useState('overview')
   const [lessonCommentsById, setLessonCommentsById] = useState({})
   const [expandedLessonId, setExpandedLessonId] = useState('')
   const [loadingLessonCommentsId, setLoadingLessonCommentsId] = useState('')
   const [editingUser, setEditingUser] = useState(null)
   const formatCount = value => new Intl.NumberFormat('vi-VN').format(value || 0)
-  const analyticsData = analytics || {}
 
   const navItems = [
     { id: 'overview', label: 'Tổng quan' },
     { id: 'users', label: 'Người dùng' },
-    { id: 'lessons', label: 'Khóa học & bài học' },
-    { id: 'comments', label: 'Bình luận' },
+    { id: 'lessons', label: 'Lớp & bài học' },
     { id: 'moderation', label: 'Kiểm duyệt' },
-    { id: 'reports', label: 'Báo cáo' },
-    { id: 'content', label: 'Nội dung' }
+    { id: 'reports', label: 'Báo cáo' }
   ]
 
   const navMeta = {
     overview: { label: 'Tổng quan', icon: LayoutDashboard },
     users: { label: 'Người dùng', icon: Users },
-    lessons: { label: 'Khóa học & bài học', icon: BookOpen },
-    comments: { label: 'Bình luận', icon: MessageSquare },
+    lessons: { label: 'Lớp & bài học', icon: BookOpen },
     moderation: { label: 'Kiểm duyệt', icon: ShieldCheck },
-    reports: { label: 'Báo cáo', icon: Flag },
-    content: { label: 'Nội dung', icon: FileText }
+    reports: { label: 'Báo cáo', icon: Flag }
   }
 
   const getReportTargetLabel = targetType => {
@@ -105,16 +82,6 @@ const ManageView = ({
     if (targetType === 'comment') return 'Bình luận diễn đàn'
     if (targetType === 'lesson_comment') return 'Bình luận bài học'
     return targetType || 'Không rõ'
-  }
-
-  const handleCopyUploadUrl = async () => {
-    if (!adminUploadUrl) return
-    try {
-      await navigator.clipboard.writeText(adminUploadUrl)
-      showSuccess('Đã sao chép link video.')
-    } catch {
-      showError('Không sao chép được link video.')
-    }
   }
 
   const handleOpenLessonComments = async lessonId => {
@@ -156,13 +123,6 @@ const ManageView = ({
     }
   }
 
-  const renderCommentScope = comment => {
-    if (comment.postScope === 'course') {
-      return comment.courseTitle ? `Diễn đàn khóa học: ${comment.courseTitle}` : 'Diễn đàn khóa học'
-    }
-    return 'Diễn đàn chung'
-  }
-
   return (
     <div className="w-full min-h-[calc(100vh-64px)] lg:h-[calc(100vh-64px)] min-w-0 flex flex-col lg:flex-row bg-white overflow-visible lg:overflow-hidden">
         
@@ -201,19 +161,6 @@ const ManageView = ({
             })}
           </nav>
 
-          <div className="hidden lg:block p-6 border-t border-slate-800 bg-slate-950/50">
-            <p className="text-[12px] font-bold uppercase text-slate-500 mb-2 tracking-wide">Đánh giá nhanh</p>
-            <div className="text-[13px] font-medium leading-relaxed text-slate-400">
-              {isLoadingAnalytics ? (
-                <span className="animate-pulse">Đang tải thống kê...</span>
-              ) : (
-                <div className="flex flex-col gap-1">
-                  <div className="flex justify-between"><span>Lượt xem bài:</span> <strong className="text-white">{formatCount(analyticsData.totalLessonViews)}</strong></div>
-                  <div className="flex justify-between"><span>Người xem:</span> <strong className="text-white">{formatCount(analyticsData.uniqueLessonViewers)}</strong></div>
-                </div>
-              )}
-            </div>
-          </div>
         </aside>
 
         {/* Main Content */}
@@ -222,10 +169,6 @@ const ManageView = ({
             <h2 className="text-xl font-black text-slate-900 hidden md:block">
               {navMeta[activeSection]?.label || 'Tổng quan'}
             </h2>
-            <div className="flex items-center gap-3 h-11 px-4 bg-slate-100 rounded-xl max-w-md w-full border border-slate-200/50 focus-within:bg-white focus-within:border-blue-300 focus-within:ring-4 focus-within:ring-blue-500/10 transition-all">
-              <Search size={18} className="text-slate-400" />
-              <input type="text" placeholder="Tìm nhanh người dùng hoặc nội dung..." className="bg-transparent border-none text-[14px] font-semibold text-slate-800 w-full focus:outline-none placeholder-slate-400" />
-            </div>
             <div className="hidden lg:flex items-center h-10 px-4 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-[13px] font-bold">
               {`Tổng tài khoản: ${formatCount(managedUsers.length)}`}
             </div>
@@ -241,26 +184,13 @@ const ManageView = ({
                   <span className="block text-[13px] font-bold opacity-80">Theo danh sách hiện tại</span>
                 </div>
                 
-                <div className="relative p-6 rounded-2xl bg-orange-50 border border-orange-200 text-orange-900 overflow-hidden shadow-sm">
-                  <span className="block text-[12px] font-black uppercase mb-1 opacity-70 tracking-wide">Lượt xem bài học</span>
-                  <h3 className="text-3xl lg:text-4xl font-black mb-4">{formatCount(analyticsData.totalLessonViews)}</h3>
-                  <BarChart3 className="absolute right-4 bottom-4 w-20 h-20 opacity-10" />
-                  <span className="block text-[13px] font-bold opacity-80">Người xem: {formatCount(analyticsData.uniqueLessonViewers)}</span>
-                </div>
-
                 <div className="relative p-6 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 overflow-hidden shadow-sm">
-                  <span className="block text-[12px] font-black uppercase mb-1 opacity-70 tracking-wide">Tổng khóa học</span>
+                  <span className="block text-[12px] font-black uppercase mb-1 opacity-70 tracking-wide">Tổng lớp học</span>
                   <h3 className="text-3xl lg:text-4xl font-black mb-4">{formatCount(courses.length)}</h3>
                   <BookOpen className="absolute right-4 bottom-4 w-20 h-20 opacity-10" />
                   <span className="block text-[13px] font-bold opacity-80">Admin xem tất cả</span>
                 </div>
 
-                <div className="relative p-6 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 overflow-hidden shadow-sm">
-                  <span className="block text-[12px] font-black uppercase mb-1 opacity-70 tracking-wide">Bình luận diễn đàn</span>
-                  <h3 className="text-3xl lg:text-4xl font-black mb-4">{formatCount(forumComments.length)}</h3>
-                  <MessageSquare className="absolute right-4 bottom-4 w-20 h-20 opacity-10" />
-                  <span className="block text-[13px] font-bold opacity-80">Đang theo dõi toàn hệ thống</span>
-                </div>
               </div>
             )}
 
@@ -376,8 +306,8 @@ const ManageView = ({
               <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col min-h-0">
                 <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
-                    <h4 className="text-xl font-black text-slate-900">Quản lý Khóa học & Bài học</h4>
-                    <span className="text-[14px] text-slate-500 font-medium">{formatCount(courses.length)} khóa học trên hệ thống</span>
+                    <h4 className="text-xl font-black text-slate-900">Quản lý Lớp & Bài học</h4>
+                    <span className="text-[14px] text-slate-500 font-medium">{formatCount(courses.length)} lớp trên hệ thống</span>
                   </div>
                   <select
                     className="w-full md:w-64 h-11 px-4 bg-slate-50 border border-slate-200 rounded-xl text-[14px] font-bold text-slate-800 cursor-pointer focus:outline-none focus:border-blue-500"
@@ -387,7 +317,7 @@ const ManageView = ({
                       onSelectCourse?.(nextCourse)
                     }}
                   >
-                    <option value="">-- Chọn khóa học --</option>
+                    <option value="">-- Chọn lớp học --</option>
                     {courses.map(course => <option key={course._id} value={course._id}>{course.title}</option>)}
                   </select>
                 </div>
@@ -397,7 +327,7 @@ const ManageView = ({
                       <div className="p-5 bg-blue-50 border border-blue-200 rounded-2xl text-blue-900">
                         <strong className="block text-lg font-black mb-1">{selectedCourse.title}</strong>
                         <span className="inline-flex items-center px-2 py-0.5 rounded bg-blue-200/50 text-[11px] font-black uppercase mb-3">{selectedCourse.category}</span>
-                        <p className="text-[14px] font-medium opacity-80">{selectedCourse.description || 'Chưa có mô tả khóa học.'}</p>
+                        <p className="text-[14px] font-medium opacity-80">{selectedCourse.description || 'Chưa có mô tả lớp học.'}</p>
                       </div>
                       
                       <div className="flex flex-col gap-4 mt-2">
@@ -438,47 +368,10 @@ const ManageView = ({
                               </div>
                             )}
                           </div>
-                        )) : <div className="py-10 text-center text-slate-500 font-medium">Chưa có bài học nào trong khóa học này.</div>}
+                        )) : <div className="py-10 text-center text-slate-500 font-medium">Chưa có bài học nào trong lớp này.</div>}
                       </div>
                     </>
-                  ) : <div className="py-20 text-center text-slate-500 font-medium bg-white rounded-xl border border-dashed border-slate-300">Chọn một khóa học ở trên để xem và quản lý bài học.</div>}
-                </div>
-              </div>
-            )}
-
-            {activeSection === 'comments' && (
-              <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col">
-                <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
-                    <h4 className="text-xl font-black text-slate-900">Quản lý bình luận diễn đàn</h4>
-                    <span className="text-[14px] text-slate-500 font-medium">{formatCount(forumComments.length)} bình luận</span>
-                  </div>
-                  <button className={ghostButtonClass} onClick={onFetchForumComments}>
-                    {isLoadingForumComments ? 'Đang tải...' : 'Tải bình luận mới nhất'}
-                  </button>
-                </div>
-                <div className="flex flex-col gap-4 p-6 bg-slate-50">
-                  {forumComments.length ? forumComments.map(comment => (
-                    <div key={comment._id} className="p-5 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-blue-200 transition-colors">
-                      <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-3">
-                        <div>
-                          <p className="text-[13px] font-bold text-slate-800 mb-1">
-                            <button type="button" className="text-blue-600 hover:underline cursor-pointer" onClick={() => onOpenProfile?.(comment.author)}>
-                              {comment.author}
-                            </button>
-                            <span className="text-slate-400 font-medium ml-2">· {renderCommentScope(comment)} · {comment.createdAt ? new Date(comment.createdAt).toLocaleString('vi-VN') : ''}</span>
-                          </p>
-                          <p className="text-[12px] font-bold text-slate-500 mb-2 bg-slate-50 inline-block px-2 py-1 rounded">Bài viết: {comment.postTitle || String(comment.postId)}</p>
-                        </div>
-                        <div className="flex flex-wrap gap-2 flex-shrink-0">
-                          <button className={dangerButtonClass} onClick={() => onPunishForumComment?.(comment, 'warn')}>Xóa + Cảnh cáo</button>
-                          <button className={dangerButtonClass} onClick={() => onPunishForumComment?.(comment, 'suspend')}>Xóa + Khóa 3 ngày</button>
-                          <button className={dangerButtonClass} onClick={() => onPunishForumComment?.(comment, 'ban')}>Xóa + Ban vĩnh viễn</button>
-                        </div>
-                      </div>
-                      <p className="text-[15px] text-slate-700 p-4 bg-slate-50 rounded-lg border border-slate-100">{comment.text}</p>
-                    </div>
-                  )) : <div className="py-10 text-center text-slate-500 font-medium">Chưa có bình luận diễn đàn nào.</div>}
+                  ) : <div className="py-20 text-center text-slate-500 font-medium bg-white rounded-xl border border-dashed border-slate-300">Chọn một lớp ở trên để xem và quản lý bài học.</div>}
                 </div>
               </div>
             )}
@@ -582,62 +475,6 @@ const ManageView = ({
               </div>
             )}
 
-            {activeSection === 'content' && (
-              <div className="flex flex-col gap-6">
-                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
-                  <div className="mb-6 pb-4 border-b border-slate-100">
-                    <h4 className="text-xl font-black text-slate-900">Tiện ích Upload Video</h4>
-                    <p className="text-[14px] text-slate-500 font-medium">Tải video trực tiếp lên Cloudinary để lấy link nhúng vào bài viết/bài giảng.</p>
-                  </div>
-                  <div className="flex flex-col sm:flex-row items-center gap-4 max-w-2xl bg-slate-50 p-6 rounded-xl border border-slate-200">
-                    <input
-                      type="file"
-                      accept="video/*"
-                      className="block w-full text-[13px] text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-[13px] file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 transition-all cursor-pointer bg-white border border-slate-200 rounded-xl"
-                      onChange={event => {
-                        const file = event.target.files?.[0]
-                        if (file) onAdminUploadVideo?.(file)
-                        event.target.value = ''
-                      }}
-                    />
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                      <button className={`${baseButtonClass} whitespace-nowrap`} onClick={handleCopyUploadUrl} disabled={!adminUploadUrl}>
-                        {adminUploadUrl ? 'Copy Link' : 'Chưa có link'}
-                      </button>
-                      {adminUploadUrl && <button className={ghostButtonClass} onClick={onClearAdminUploadUrl}>Xóa</button>}
-                    </div>
-                  </div>
-                  {isAdminUploadLoading && <p className="mt-4 text-[13px] font-bold text-blue-600 animate-pulse">Đang upload video lên mây...</p>}
-                  {adminUploadUrl && (
-                    <div className="mt-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
-                      <span className="block text-[12px] font-bold text-emerald-800 mb-1 uppercase">Upload thành công!</span>
-                      <a className="text-[14px] font-medium text-emerald-600 hover:text-emerald-800 break-all" href={adminUploadUrl} target="_blank" rel="noreferrer">{adminUploadUrl}</a>
-                    </div>
-                  )}
-                </div>
-
-                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col">
-                  <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                    <div>
-                      <h4 className="text-xl font-black text-slate-900">Bài viết Diễn đàn chung</h4>
-                      <span className="text-[14px] text-slate-500 font-medium">Quản lý toàn bộ các chủ đề.</span>
-                    </div>
-                    <span className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-[13px] font-bold">{formatCount(forumPosts.length)} bài</span>
-                  </div>
-                  <div className="flex flex-col gap-4 p-6 bg-slate-50">
-                    {forumPosts.length ? forumPosts.map(post => (
-                      <div key={post.id} className="p-5 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-slate-300 transition-colors flex flex-col md:flex-row justify-between items-start gap-6">
-                        <div className="flex-1">
-                          <p className="text-[14px] font-bold text-slate-800 mb-2"><strong className="text-lg text-slate-900 block mb-1">{post.title}</strong> Đăng bởi <span className="text-blue-600">{post.author}</span> · Chuyên mục: <span className="bg-slate-100 px-2 py-0.5 rounded text-slate-600">{post.category}</span></p>
-                          <div className="text-[14px] text-slate-600 bg-slate-50 p-4 rounded-lg border border-slate-100 line-clamp-3 prose prose-slate max-w-none" dangerouslySetInnerHTML={{ __html: transformHtmlVideoUrls(post.content) }}></div>
-                        </div>
-                        <button className={`${dangerButtonClass} flex-shrink-0 mt-2`} onClick={() => onAdminDeletePost(post)}>Xóa bài viết này</button>
-                      </div>
-                    )) : <div className="py-10 text-center text-slate-500 font-medium">Không có bài viết diễn đàn nào.</div>}
-                  </div>
-                </div>
-              </div>
-            )}
           </section>
         </div>
     </div>

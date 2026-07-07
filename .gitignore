@@ -1,5 +1,10 @@
 node_modules/
 frontend/node_modules/
+frontend/dist/
+.vscode/
+slide/
+backend/package-lock.json
+frontend/backend/
 .env
 frontend/.env
 npm-debug.log*
@@ -17,6 +22,11 @@ skill.lock
 backend-dev.err.log
 backend-dev.out.log
 *.log
+
+# One-off local data generation artifacts
+backend/seeders/demoDataFixtures.js
+backend/seeders/populateDemoViaApi.js
+backend/tests/demoDataFixtures.test.js
 
 # Scratch scripts
 frontend/fix_mojibake.cjs
@@ -41,4 +51,3 @@ guide_text.txt
 report.txt
 backend-run.err.log
 backend-run.out.log
-

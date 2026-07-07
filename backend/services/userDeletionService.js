@@ -6,12 +6,10 @@ const ForumComment = require('../models/ForumComment');
 const ForumPost = require('../models/ForumPost');
 const Lesson = require('../models/Lesson');
 const LessonComment = require('../models/LessonComment');
-const LessonView = require('../models/LessonView');
 const ModerationReport = require('../models/ModerationReport');
 const Submission = require('../models/Submission');
 const User = require('../models/User');
 const UserProfile = require('../models/UserProfile');
-const VideoLink = require('../models/VideoLink');
 
 const deleteManyAndCount = async (Model, filter) => {
   const result = await Model.deleteMany(filter);
@@ -78,13 +76,6 @@ const hardDeleteUserCascade = async user => {
     ]
   });
 
-  counts.lessonViews = await deleteManyAndCount(LessonView, {
-    $or: [
-      { user: userId },
-      { course: { $in: ownedCourseIds } }
-    ]
-  });
-
   counts.submissions = await deleteManyAndCount(Submission, {
     $or: [
       { student: userId },
@@ -124,7 +115,6 @@ const hardDeleteUserCascade = async user => {
   });
 
   counts.categories = await deleteManyAndCount(Category, { createdBy: username });
-  counts.videoLinks = await deleteManyAndCount(VideoLink, { addedBy: username });
   counts.userProfiles = await deleteManyAndCount(UserProfile, { user: userId });
   counts.users = await deleteManyAndCount(User, { _id: userId });
 

@@ -3,10 +3,14 @@ const Course = require('../models/Course');
 const Lesson = require('../models/Lesson');
 const Enrollment = require('../models/Enrollment');
 const LessonComment = require('../models/LessonComment');
-const LessonView = require('../models/LessonView');
 const { isStudentRole } = require('../utils/userUtils');
 const { getPaginationParams, buildPagination } = require('../utils/pagination');
 const catchAsync = require('../utils/catchAsync');
+const {
+  canPublishCourseToUser,
+  canReadLesson,
+  getEnrollmentStateAfterLessonRemoval
+} = require('../domain/learningRules');
 
 const slugify = value =>
   String(value || '')
@@ -35,6 +39,14 @@ const ensureCourseAccess = async (req, res, course, actionLabel = 'truy cap lop 
   if (!course) {
     res.status(404).json({ message: 'Khong tim thay lop hoc.' });
     return false;
+  }
+  if (!canPublishCourseToUser({
+    status: course.status,
+    role: req.currentUser?.role,
+    userId: req.currentUser?._id,
+    teacherId: course.teacher
+  })) {
+    return res.status(404).json({ message: 'Khong tim thay lop hoc.' });
   }
 
   if (req.currentUser.role === 'admin') {
@@ -73,6 +85,14 @@ const listLessons = catchAsync(async (req, res) => {
   const course = await Course.findById(courseId).lean();
 
   if (!course) {
+    return res.status(404).json({ message: 'Khong tim thay lop hoc.' });
+  }
+  if (!canPublishCourseToUser({
+    status: course.status,
+    role: req.currentUser?.role,
+    userId: req.currentUser?._id,
+    teacherId: course.teacher
+  })) {
     return res.status(404).json({ message: 'Khong tim thay lop hoc.' });
   }
 
@@ -122,6 +142,14 @@ const createLesson = catchAsync(async (req, res) => {
 
   const course = await Course.findById(courseId).lean();
   if (!course) {
+    return res.status(404).json({ message: 'Khong tim thay lop hoc.' });
+  }
+  if (!canPublishCourseToUser({
+    status: course.status,
+    role: req.currentUser?.role,
+    userId: req.currentUser?._id,
+    teacherId: course.teacher
+  })) {
     return res.status(404).json({ message: 'Khong tim thay lop hoc.' });
   }
 
@@ -209,8 +237,7 @@ const deleteLesson = catchAsync(async (req, res) => {
 
   await Promise.all([
     lesson.deleteOne(),
-    LessonComment.deleteMany({ lesson: lesson._id }),
-    LessonView.deleteMany({ lesson: lesson._id })
+    LessonComment.deleteMany({ lesson: lesson._id })
   ]);
 
   const totalLessons = await Lesson.countDocuments({ course: course._id });
@@ -245,7 +272,7 @@ const deleteLesson = catchAsync(async (req, res) => {
               update: {
                 $pull: { completedLessons: lesson._id },
                 $set: {
-                  progressPercent: Math.round((completedCount / totalLessons) * 100)
+                  ...getEnrollmentStateAfterLessonRemoval(completedCount, totalLessons)
                 }
               }
             }
@@ -272,31 +299,31 @@ const getLessonBySlug = catchAsync(async (req, res) => {
   if (!course) {
     return res.status(404).json({ message: 'Khong tim thay lop hoc.' });
   }
-
-  if (isStudentRole(req.currentUser.role)) {
-    const enrolled = await Enrollment.findOne({
-      course: lesson.course,
-      student: req.currentUser._id
-    }).lean();
-
-    if (!enrolled) {
-      return res.status(403).json({ message: 'Cau can tham gia lop truoc khi xem bai hoc.' });
-    }
+  if (!canPublishCourseToUser({
+    status: course.status,
+    role: req.currentUser?.role,
+    userId: req.currentUser?._id,
+    teacherId: course.teacher
+  })) {
+    return res.status(404).json({ message: 'Khong tim thay lop hoc.' });
   }
 
-  try {
-    const userId = mongoose.Types.ObjectId.isValid(req.currentUser?._id)
-      ? req.currentUser._id
-      : null;
-    await LessonView.create({
-      lesson: lesson._id,
+  let isEnrolled = false;
+  if (isStudentRole(req.currentUser.role)) {
+    const enrolled = await Enrollment.exists({
       course: lesson.course,
-      user: userId,
-      userRole: req.currentUser?.role || ''
+      student: req.currentUser._id
     });
-    } catch {
-      // View tracking should not block lesson reads.
-    }
+    isEnrolled = Boolean(enrolled);
+  }
+  if (!canReadLesson({
+    role: req.currentUser.role,
+    userId: req.currentUser._id,
+    teacherId: course.teacher,
+    isEnrolled
+  })) {
+    return res.status(403).json({ message: 'Ban khong co quyen xem bai hoc nay.' });
+  }
 
   const userKey = req.currentUser?._id ? String(req.currentUser._id) : '';
   const heartUserIds = lesson.heartUserIds || [];

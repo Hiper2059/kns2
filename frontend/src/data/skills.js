@@ -17,20 +17,6 @@ export const defaultForumPosts = [
   }
 ]
 
-export const defaultCategoryVideos = {
-  'Võ thuật': [
-    { _id: 'default-vt-1', url: 'https://www.youtube.com/embed/5_9Q52gE1yI', addedBy: 'system' },
-    { _id: 'default-vt-2', url: 'https://www.youtube.com/embed/2X0p7k1G_L8', addedBy: 'system' }
-  ],
-  'Giao tiếp': [
-    { _id: 'default-gt-1', url: 'https://www.youtube.com/embed/HAnw168huqA', addedBy: 'system' },
-    { _id: 'default-gt-2', url: 'https://www.youtube.com/embed/t6zicFwR8jU', addedBy: 'system' }
-  ],
-  'Quản lý thời gian': [{ _id: 'default-qltg-1', url: 'https://www.youtube.com/embed/iONDebHX9qk', addedBy: 'system' }],
-  'Tài chính': [{ _id: 'default-tc-1', url: 'https://www.youtube.com/embed/4j2emwRkeEE', addedBy: 'system' }],
-  'Tư duy': [{ _id: 'default-td-1', url: 'https://www.youtube.com/embed/fD1512_XJEw', addedBy: 'system' }]
-}
-
 export const quizBank = {
   'Võ thuật': {
     id: 'vo-thuat-1',

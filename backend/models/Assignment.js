@@ -5,7 +5,7 @@ const assignmentSchema = new mongoose.Schema(
     course: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Course',
-      required: false,
+      required: true,
       index: true
     },
     lesson: {
@@ -25,12 +25,8 @@ const assignmentSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['text', 'quiz', 'practical', 'final_exam'],
+      enum: ['text', 'quiz'],
       default: 'text'
-    },
-    isFinal: {
-      type: Boolean,
-      default: false
     },
     questions: {
       type: [

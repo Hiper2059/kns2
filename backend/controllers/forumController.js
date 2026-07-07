@@ -398,55 +398,6 @@ const deleteComment = catchAsync(async (req, res) => {
   res.json({ message: 'Da xoa binh luan thanh cong.' });
 });
 
-const listAllCommentsForAdmin = catchAsync(async (req, res) => {
-  const filter = { isDeleted: false };
-  const { page, limit, skip } = getPaginationParams(req.query);
-  const [comments, totalItems] = await Promise.all([
-    ForumComment.find(filter)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean(),
-    ForumComment.countDocuments(filter)
-  ]);
-
-  const postIds = [...new Set(comments.map(comment => String(comment.postId)).filter(Boolean))];
-  const posts = postIds.length
-    ? await ForumPost.find({ _id: { $in: postIds } }, { title: 1, scope: 1, course: 1, category: 1 }).lean()
-    : [];
-  const postById = posts.reduce((acc, post) => {
-    acc[String(post._id)] = post;
-    return acc;
-  }, {});
-
-  const courseIds = [...new Set(posts.map(post => String(post.course || '')).filter(Boolean))];
-  const courses = courseIds.length
-    ? await Course.find({ _id: { $in: courseIds } }, { title: 1 }).lean()
-    : [];
-  const courseById = courses.reduce((acc, course) => {
-    acc[String(course._id)] = course;
-    return acc;
-  }, {});
-
-  const enrichedComments = comments.map(comment => {
-      const post = postById[String(comment.postId)] || null;
-      const course = post?.course ? courseById[String(post.course)] || null : null;
-      return {
-        ...comment,
-        postTitle: post?.title || '',
-        postScope: post?.scope || 'general',
-        postCategory: post?.category || '',
-        courseTitle: course?.title || ''
-      };
-    });
-
-  res.json({
-    data: enrichedComments,
-    comments: enrichedComments,
-    pagination: buildPagination({ totalItems, page, limit })
-  });
-});
-
 const punishCommentAuthor = catchAsync(async (req, res) => {
   const { id } = req.params;
   const { penalty = 'warn', reason = '' } = req.body || {};
@@ -643,7 +594,6 @@ module.exports = {
   createComment,
   deletePost,
   deleteComment,
-  listAllCommentsForAdmin,
   punishCommentAuthor,
   togglePostReaction,
   getDeletedPosts,

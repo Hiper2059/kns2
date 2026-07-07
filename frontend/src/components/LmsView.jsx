@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { useUI } from '../context/UIContext'
-import { transformHtmlVideoUrls } from '../utils/cloudinaryVideo'
+import SafeRichHtml from './ui/SafeRichHtml'
 import {
   BookOpen,
   CheckCircle2,
@@ -17,18 +17,19 @@ import {
   Pencil,
   Trash2,
   Image as ImageIcon,
+  Film,
   FileText,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
   ChevronDown
 } from 'lucide-react'
 import RichTextEditor from './RichTextEditor'
-import LessonVideoUploadButton from './LessonVideoUploadButton'
+import { paginateCourses } from '../utils/coursePagination'
 
 const baseInputClass = "h-11 px-4 rounded-xl border border-slate-200 bg-slate-50 text-[14px] font-medium text-slate-800 focus:outline-none focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10 transition-all placeholder:text-slate-400"
-const baseFileInputClass = "block w-full text-[14px] text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-[14px] file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors file:cursor-pointer"
 const baseButtonClass = "inline-flex cursor-pointer items-center justify-center gap-2 h-11 px-6 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold transition-all disabled:opacity-50"
 const ghostButtonClass = "inline-flex cursor-pointer items-center justify-center gap-2 h-11 px-6 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-all"
-const dangerButtonClass = "inline-flex cursor-pointer items-center justify-center gap-2 h-11 px-6 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-bold transition-all"
 
 const FormField = ({ label, hint, children, className = '', as = 'label' }) => {
   const FieldTag = as
@@ -60,7 +61,6 @@ const CreatePanel = ({ title, eyebrow, description, isOpen, onToggle, children }
 const answerLabel = index => String.fromCharCode(65 + index)
 
 const LmsView = ({
-  globalAssignments,
   categories,
   selectedCategory,
   onSelectCategory,
@@ -70,16 +70,6 @@ const LmsView = ({
   onSelectCourse,
   lessons,
   assignments,
-  newAssignmentData,
-  onNewAssignmentDataChange,
-  onCreateAssignment,
-  editAssignmentId,
-  editAssignmentData,
-  onEditAssignmentStart,
-  onEditAssignmentChange,
-  onEditAssignmentCancel,
-  onUpdateAssignment,
-  onDeleteAssignment,
   courseLeaderboard,
   assignmentDrafts,
   onAssignmentDraftChange,
@@ -104,7 +94,6 @@ const LmsView = ({
   onEditLessonChange,
   onEditLessonCancel,
   onUpdateLesson,
-  onUploadLessonVideoFile,
   onUploadLessonEditorVideo,
   onUploadEditLessonEditorVideo
 }) => {
@@ -112,66 +101,13 @@ const LmsView = ({
   const [quizDrafts, setQuizDrafts] = useState({})
   const [courseSearch, setCourseSearch] = useState('')
   const [selectedTeacher, setSelectedTeacher] = useState('')
+  const [coursePagination, setCoursePagination] = useState({ page: 1, filterKey: '' })
   const [isTeacherDropdownOpen, setIsTeacherDropdownOpen] = useState(false)
   const [isCreateLessonOpen, setIsCreateLessonOpen] = useState(false)
-  const [isCreateAssignmentOpen, setIsCreateAssignmentOpen] = useState(false)
-  const [isNewLessonVideoUploading, setIsNewLessonVideoUploading] = useState(false)
-  const [isEditLessonVideoUploading, setIsEditLessonVideoUploading] = useState(false)
   const isTeacher = currentRole === 'teacher'
   const isAdmin = currentRole === 'admin'
   const canManageLearning = isTeacher || isAdmin
   const coursePool = isTeacher ? teacherCourses : courses
-
-  const handleCreateLessonSubmit = async event => {
-    event.preventDefault()
-    if (isNewLessonVideoUploading) {
-      showWarning('Video đang được tải lên, cậu chờ hoàn tất nhé.')
-      return
-    }
-
-    const created = await onCreateLesson?.()
-    if (created) setIsCreateLessonOpen(false)
-  }
-
-  const getNewQuizQuestions = () => {
-    if (!Array.isArray(newAssignmentData?.questions) || newAssignmentData.questions.length === 0) {
-      return [{ question: '', options: ['', '', '', ''], correctOptionIndex: 0 }]
-    }
-    return newAssignmentData.questions
-  }
-
-  const updateNewQuizQuestion = (index, newQuestion) => {
-    const qs = getNewQuizQuestions()
-    qs[index] = newQuestion
-    onNewAssignmentDataChange?.({ ...newAssignmentData, questions: qs })
-  }
-
-  const addNewQuizQuestion = () => {
-    const qs = getNewQuizQuestions()
-    onNewAssignmentDataChange?.({ ...newAssignmentData, questions: [...qs, { question: '', options: ['', '', '', ''], correctOptionIndex: 0 }] })
-  }
-
-  const removeNewQuizQuestion = index => {
-    const qs = getNewQuizQuestions()
-    qs.splice(index, 1)
-    onNewAssignmentDataChange?.({ ...newAssignmentData, questions: qs })
-  }
-
-  const handleCreateAssignmentSubmit = async () => {
-    await onCreateAssignment?.({ lessonId: null })
-    setIsCreateAssignmentOpen(false)
-  }
-
-  const handleUpdateLessonSubmit = async event => {
-    event.preventDefault()
-    if (isEditLessonVideoUploading) {
-      showWarning('Video đang được tải lên, cậu chờ hoàn tất nhé.')
-      return
-    }
-
-    await onUpdateLesson?.(editLessonId)
-  }
-
   function stripHtml(value) {
     return String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
   }
@@ -199,24 +135,33 @@ const LmsView = ({
 
   const visibleCourses = useMemo(() => {
     const keyword = courseSearch.trim().toLowerCase()
-    let filtered = coursePool
-    
-    if (selectedCategory) {
-      filtered = filtered.filter(course => course.category === selectedCategory)
-    }
-    
-    if (selectedTeacher) {
-      filtered = filtered.filter(course => course.teacherName === selectedTeacher)
-    }
-
+    const byCategory = selectedCategory
+      ? coursePool.filter(course => course.category === selectedCategory)
+      : coursePool
+    const byTeacher = selectedTeacher
+      ? byCategory.filter(course => (course.teacher?.username || course.teacherName) === selectedTeacher)
+      : byCategory
     if (!keyword) {
-      return filtered
+      return byTeacher
     }
-    return filtered.filter(course => {
+    return byTeacher.filter(course => {
       const haystack = `${course.title || ''} ${course.category || ''} ${course.teacherName || ''} ${stripHtml(course.description)}`.toLowerCase()
       return haystack.includes(keyword)
     })
   }, [coursePool, courseSearch, selectedCategory, selectedTeacher])
+
+  const courseFilterKey = JSON.stringify([courseSearch, selectedCategory, selectedTeacher])
+  const requestedCoursePage = coursePagination.filterKey === courseFilterKey
+    ? coursePagination.page
+    : 1
+  const {
+    courses: paginatedCourses,
+    currentPage: currentCoursePage,
+    totalPages: courseTotalPages
+  } = useMemo(
+    () => paginateCourses(visibleCourses, requestedCoursePage),
+    [visibleCourses, requestedCoursePage]
+  )
 
   const categoryStats = useMemo(() => {
     const counts = coursePool.reduce((acc, course) => {
@@ -234,15 +179,11 @@ const LmsView = ({
   const enrollment = selectedCourse ? enrollmentByCourse[selectedCourse._id] : null
   const canEnroll = currentUser && (currentRole === 'student' || currentRole === 'user')
   const isEnrolled = Boolean(enrollment)
-  const needsEnrollmentToViewLessons = selectedCourse && !canManageLearning && currentUser && !isEnrolled
-  const needsLoginToViewLessons = selectedCourse && !canManageLearning && !currentUser
   const sortedLessons = useMemo(
     () => [...lessons].sort((a, b) => (a.order || 1) - (b.order || 1)),
     [lessons]
   )
-  const visibleAssignments = useMemo(() => {
-    return Array.isArray(assignments) ? assignments.filter(a => !a.lesson && !a.lessonId) : []
-  }, [assignments])
+  const visibleAssignments = Array.isArray(assignments) ? assignments : []
   const containerRef = useRef(null)
 
   const completedLessonIds = useMemo(() => {
@@ -390,14 +331,14 @@ const LmsView = ({
   return (
     <div ref={containerRef} className="mx-auto mt-10 w-[min(1176px,calc(100vw-48px))] rounded-[14px] border border-slate-200 bg-white px-12 py-12 shadow-[0_18px_46px_rgba(15,23,42,0.08)] max-md:mt-5 max-md:w-[calc(100vw-24px)] max-md:px-4 max-md:py-6">
       <div className="gsap-animate rounded-2xl border border-slate-200 bg-white px-6 py-6 shadow-[0_16px_32px_rgba(15,23,42,0.12)]">
-        <div className="grid items-center gap-6 md:grid-cols-[1fr_auto]">
+        <div className="grid items-center gap-6 md:grid-cols-[1fr_432px]">
           <div>
             <div className="flex items-center gap-2 text-[14px] font-black uppercase text-slate-500">
               <Layers3 size={16} />
               Bộ lọc khóa học
             </div>
             <div className="mt-2 text-[30px] font-black uppercase leading-none tracking-normal text-slate-950 max-md:text-[24px]">
-              Khám phá khóa học
+              Khám phá lớp học
             </div>
           </div>
           <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
@@ -415,7 +356,7 @@ const LmsView = ({
         </div>
       </div>
 
-      <nav className="gsap-animate mt-7 flex gap-2 overflow-x-auto border-b border-slate-100 pb-2" aria-label="Mục lục khóa học">
+      <nav className="gsap-animate mt-7 flex gap-2 overflow-x-auto border-b border-slate-100 pb-2" aria-label="Mục lục lớp học">
         {categoryStats.map((category, index) => {
           const isActive = selectedCategory === category.name
           return (
@@ -442,7 +383,7 @@ const LmsView = ({
             <div>
               <div className="flex items-center gap-2 text-[14px] font-black uppercase text-slate-500">
                 <Layers3 size={16} />
-                {selectedCategory || 'Tất cả khóa học'}
+                {selectedCategory || 'Tất cả lớp'}
               </div>
               <div className="mt-2 text-[28px] font-black uppercase leading-tight tracking-normal text-slate-950 flex items-center gap-3">
                 Khóa học phù hợp
@@ -522,13 +463,13 @@ const LmsView = ({
             )}
           </div>
 
-          <div className="mt-6 flex overflow-x-auto gap-6 pb-6 snap-x hide-scrollbar">
+          <div className="mt-6 grid grid-cols-1 gap-6 pb-6 sm:grid-cols-2 lg:grid-cols-3">
             {visibleCourses.length ? (
-              visibleCourses.map((course, index) => (
+              paginatedCourses.map((course, index) => (
                 <button
                   key={course._id || course.id || `${course.title || 'course'}-${index}`}
                   type="button"
-                  className={`gsap-animate shrink-0 w-[280px] snap-start flex flex-col cursor-pointer min-h-[230px] rounded-2xl border bg-white p-5 text-left shadow-[0_10px_26px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-[0_18px_38px_rgba(37,99,235,0.12)] ${
+                  className={`gsap-animate flex min-h-[230px] w-full cursor-pointer flex-col rounded-2xl border bg-white p-5 text-left shadow-[0_10px_26px_rgba(15,23,42,0.08)] transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-[0_18px_38px_rgba(37,99,235,0.12)] ${
                     selectedCourse?._id === course._id ? 'border-blue-400 ring-4 ring-blue-50' : 'border-slate-200'
                   }`}
                   onClick={() => onSelectCourse(course)}
@@ -546,7 +487,7 @@ const LmsView = ({
                       {course.title}
                     </div>
                     <div className="mt-6 line-clamp-3 min-h-[62px] text-[14px] font-semibold leading-6 text-slate-500">
-                      {stripHtml(course.description) || 'Chưa có mô tả khóa học.'}
+                      {stripHtml(course.description) || 'Chưa có mô tả lớp học.'}
                     </div>
                   </div>
                   <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-4 text-[13px] font-black text-slate-500 w-full">
@@ -557,13 +498,42 @@ const LmsView = ({
               ))
             ) : (
               <div className="gsap-animate col-span-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center text-[15px] font-bold text-slate-500">
-                Chưa có khóa học nào.
+                Chưa có lớp học nào.
               </div>
             )}
           </div>
+          {courseTotalPages > 1 && (
+            <nav className="mt-1 flex items-center justify-center gap-3" aria-label="Phân trang khóa học">
+              <button
+                type="button"
+                className="inline-flex h-10 cursor-pointer items-center gap-1 rounded-xl border border-slate-200 bg-white px-4 text-[14px] font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
+                onClick={() => setCoursePagination({
+                  page: Math.max(1, currentCoursePage - 1),
+                  filterKey: courseFilterKey
+                })}
+                disabled={currentCoursePage <= 1}
+              >
+                <ChevronLeft size={18} /> Trước
+              </button>
+              <span className="min-w-24 text-center text-[14px] font-bold text-slate-700">
+                Trang {currentCoursePage} / {courseTotalPages}
+              </span>
+              <button
+                type="button"
+                className="inline-flex h-10 cursor-pointer items-center gap-1 rounded-xl border border-slate-200 bg-white px-4 text-[14px] font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
+                onClick={() => setCoursePagination({
+                  page: Math.min(courseTotalPages, currentCoursePage + 1),
+                  filterKey: courseFilterKey
+                })}
+                disabled={currentCoursePage >= courseTotalPages}
+              >
+                Sau <ChevronRight size={18} />
+              </button>
+            </nav>
+          )}
         </section>
 
-        <section className="mt-12 pt-12 border-t border-slate-200" aria-label="Chi tiết khóa học">
+        <section className="mt-12 pt-12 border-t border-slate-200" aria-label="Chi tiết lớp học">
           <div className="gsap-animate rounded-[24px] overflow-hidden">
             {selectedCourse ? (
               <div className="flex flex-col gap-8">
@@ -578,9 +548,9 @@ const LmsView = ({
                       <Sparkles size={14} /> {selectedCourse.category}
                     </span>
                     <h1 className="text-3xl md:text-4xl font-black text-slate-900 leading-tight">{selectedCourse.title}</h1>
-                    <div
+                    <SafeRichHtml
                       className="prose prose-slate max-w-none text-[15px] leading-relaxed text-slate-600 mt-2"
-                      dangerouslySetInnerHTML={{ __html: transformHtmlVideoUrls(selectedCourse.description) || 'Chưa có mô tả chi tiết.' }}
+                      html={selectedCourse.description || 'Chưa có mô tả chi tiết.'}
                     />
                     <div className="flex flex-wrap items-center gap-4 mt-4 text-[14px] font-bold text-slate-500">
                       <button className="inline-flex cursor-pointer items-center px-3 py-1.5 rounded-lg bg-slate-200 text-slate-800 hover:bg-slate-300 transition-colors" onClick={() => onOpenProfile?.(selectedCourse.teacher)}>
@@ -619,7 +589,7 @@ const LmsView = ({
 
                     {canEnroll && !isEnrolled && (
                       <button className="inline-flex cursor-pointer items-center justify-center h-12 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-[0_4px_14px_0_rgb(37,99,235,0.39)]" onClick={() => onEnroll(selectedCourse._id)}>
-                        Tham gia khóa học
+                        Tham gia lớp học
                       </button>
                     )}
 
@@ -630,7 +600,7 @@ const LmsView = ({
                     )}
 
                     <button className="inline-flex cursor-pointer items-center justify-center gap-2 h-12 px-6 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold transition-all" onClick={() => onOpenCourseForum?.(selectedCourse)}>
-                      <MessageCircle size={18} /> Diễn đàn khóa học
+                      <MessageCircle size={18} /> Diễn đàn lớp
                     </button>
                   </div>
                 </div>
@@ -661,7 +631,7 @@ const LmsView = ({
                 <div className="gsap-animate p-6 md:p-8 bg-white border border-slate-200 rounded-[24px] shadow-sm">
                   <h3 className="flex items-center gap-3 text-xl font-black text-slate-900 mb-6 pb-4 border-b border-slate-100">
                     <span className="grid place-items-center w-10 h-10 rounded-xl bg-orange-50 text-orange-500"><Trophy size={18} /></span>
-                    Top 10 Khóa học Học
+                    Top 10 Lớp Học
                   </h3>
                   <div className="flex flex-col gap-3">
                     {courseLeaderboard?.length ? (
@@ -713,25 +683,25 @@ const LmsView = ({
                         isOpen={true}
                         onToggle={onEditLessonCancel}
                       >
-                        <form className="flex flex-col gap-6" onSubmit={handleUpdateLessonSubmit}>
+                        <form className="flex flex-col gap-6" onSubmit={event => { event.preventDefault(); onUpdateLesson(editLessonId); }}>
                           <FormField label="Tiêu đề bài học" hint="Ví dụ: Bài 1: Giới thiệu">
                             <input required type="text" className={baseInputClass} value={editLessonData?.title || ''} onChange={event => onEditLessonChange({ ...editLessonData, title: event.target.value })} />
                           </FormField>
                           <FormField label="Số thứ tự (Order)" hint="Thứ tự hiển thị của bài học">
                             <input required type="number" min="1" className={baseInputClass} value={editLessonData?.order || 1} onChange={event => onEditLessonChange({ ...editLessonData, order: Number(event.target.value) })} />
                           </FormField>
-                          <FormField label="Video chính (Tùy chọn)" hint="Dán link hoặc tải file lên Cloudinary; video này hiển thị trong khung lớn phía trên." as="div">
+                          <FormField label="URL Video (Tùy chọn)" hint="Link video YouTube hoặc Vimeo">
                             <div className="flex gap-2">
                               <input type="url" className={`${baseInputClass} flex-1`} value={editLessonData?.videoUrl || ''} onChange={event => onEditLessonChange({ ...editLessonData, videoUrl: event.target.value })} />
-                              <LessonVideoUploadButton
-                                className={ghostButtonClass}
-                                onUpload={onUploadLessonVideoFile}
-                                onUploaded={videoUrl => onEditLessonChange(prev => ({ ...prev, videoUrl, videoFile: null }))}
-                                onUploadingChange={setIsEditLessonVideoUploading}
-                              />
+                              <label className={ghostButtonClass}>
+                                <Film size={18} />
+                                <span>Tải video lên</span>
+                                <input type="file" className="hidden" accept="video/mp4,video/webm" onChange={event => { const file = event.target.files?.[0]; if (file) onEditLessonChange({ ...editLessonData, videoFile: file }); }} />
+                              </label>
                             </div>
+                            {editLessonData?.videoFile && <div className="text-[13px] text-blue-600 font-medium">Đã chọn file: {editLessonData.videoFile.name}</div>}
                           </FormField>
-                          <FormField as="div" label="URL Ảnh nền (Tùy chọn)" hint="Link ảnh bìa của bài học">
+                          <FormField label="URL Ảnh nền (Tùy chọn)" hint="Link ảnh bìa của bài học">
                             <div className="flex gap-2">
                               <input type="url" className={`${baseInputClass} flex-1`} value={editLessonData?.imageUrl || ''} onChange={event => onEditLessonChange({ ...editLessonData, imageUrl: event.target.value })} />
                               <label className={ghostButtonClass}>
@@ -742,14 +712,14 @@ const LmsView = ({
                             </div>
                             {editLessonData?.imageFile && <div className="text-[13px] text-blue-600 font-medium">Đã chọn file: {editLessonData.imageFile.name}</div>}
                           </FormField>
-                          <FormField label="Nội dung bài học" hint="Nút video trong trình soạn thảo chỉ chèn video vào nội dung, không thay video chính phía trên." as="div">
+                          <FormField label="Nội dung bài học">
                             <div className="rounded-xl border border-slate-200 overflow-hidden">
                               <RichTextEditor toolbarId="lms-edit-lesson-editor" value={editLessonData?.content || ''} onChange={content => onEditLessonChange({ ...editLessonData, content })} onUploadVideo={onUploadEditLessonEditorVideo} />
                             </div>
                           </FormField>
                           <div className="flex items-center gap-3 justify-end mt-4 pt-6 border-t border-slate-100">
                             <button type="button" className={ghostButtonClass} onClick={onEditLessonCancel}>Hủy</button>
-                            <button type="submit" className={baseButtonClass} disabled={isEditLessonVideoUploading}><CheckCircle2 size={18} /> Cập nhật</button>
+                            <button type="submit" className={baseButtonClass}><CheckCircle2 size={18} /> Cập nhật</button>
                           </div>
                         </form>
                       </CreatePanel>
@@ -757,29 +727,29 @@ const LmsView = ({
                       <CreatePanel
                         title="Thêm bài học mới"
                         eyebrow="Tạo mới"
-                        description="Thêm bài học mới vào khóa học này."
+                        description="Thêm bài học mới vào lớp này."
                         isOpen={isCreateLessonOpen}
                         onToggle={() => setIsCreateLessonOpen(prev => !prev)}
                       >
-                        <form className="flex flex-col gap-6" onSubmit={handleCreateLessonSubmit}>
+                        <form className="flex flex-col gap-6" onSubmit={event => { event.preventDefault(); onCreateLesson(); setIsCreateLessonOpen(false); }}>
                           <FormField label="Tiêu đề bài học" hint="Ví dụ: Bài 1: Giới thiệu">
                             <input required type="text" className={baseInputClass} value={newLessonData?.title || ''} onChange={event => onNewLessonDataChange({ ...newLessonData, title: event.target.value })} />
                           </FormField>
                           <FormField label="Số thứ tự (Order)" hint="Thứ tự hiển thị của bài học">
                             <input required type="number" min="1" className={baseInputClass} value={newLessonData?.order || 1} onChange={event => onNewLessonDataChange({ ...newLessonData, order: Number(event.target.value) })} />
                           </FormField>
-                          <FormField label="Video chính (Tùy chọn)" hint="Dán link hoặc tải file lên Cloudinary; video này hiển thị trong khung lớn phía trên." as="div">
+                          <FormField label="URL Video (Tùy chọn)" hint="Link video YouTube hoặc Vimeo">
                             <div className="flex gap-2">
                               <input type="url" className={`${baseInputClass} flex-1`} value={newLessonData?.videoUrl || ''} onChange={event => onNewLessonDataChange({ ...newLessonData, videoUrl: event.target.value })} />
-                              <LessonVideoUploadButton
-                                className={ghostButtonClass}
-                                onUpload={onUploadLessonVideoFile}
-                                onUploaded={videoUrl => onNewLessonDataChange(prev => ({ ...prev, videoUrl, videoFile: null }))}
-                                onUploadingChange={setIsNewLessonVideoUploading}
-                              />
+                              <label className={ghostButtonClass}>
+                                <Film size={18} />
+                                <span>Tải video lên</span>
+                                <input type="file" className="hidden" accept="video/mp4,video/webm" onChange={event => { const file = event.target.files?.[0]; if (file) onNewLessonDataChange({ ...newLessonData, videoFile: file }); }} />
+                              </label>
                             </div>
+                            {newLessonData?.videoFile && <div className="text-[13px] text-blue-600 font-medium">Đã chọn file: {newLessonData.videoFile.name}</div>}
                           </FormField>
-                          <FormField as="div" label="URL Ảnh nền (Tùy chọn)" hint="Link ảnh bìa của bài học">
+                          <FormField label="URL Ảnh nền (Tùy chọn)" hint="Link ảnh bìa của bài học">
                             <div className="flex gap-2">
                               <input type="url" className={`${baseInputClass} flex-1`} value={newLessonData?.imageUrl || ''} onChange={event => onNewLessonDataChange({ ...newLessonData, imageUrl: event.target.value })} />
                               <label className={ghostButtonClass}>
@@ -790,13 +760,13 @@ const LmsView = ({
                             </div>
                             {newLessonData?.imageFile && <div className="text-[13px] text-blue-600 font-medium">Đã chọn file: {newLessonData.imageFile.name}</div>}
                           </FormField>
-                          <FormField label="Nội dung bài học" hint="Nút video trong trình soạn thảo chỉ chèn video vào nội dung, không thay video chính phía trên." as="div">
+                          <FormField label="Nội dung bài học">
                             <div className="rounded-xl border border-slate-200 overflow-hidden">
                               <RichTextEditor toolbarId="lms-new-lesson-editor" value={newLessonData?.content || ''} onChange={content => onNewLessonDataChange({ ...newLessonData, content })} onUploadVideo={onUploadLessonEditorVideo} />
                             </div>
                           </FormField>
                           <div className="flex justify-end mt-4 pt-6 border-t border-slate-100">
-                            <button type="submit" className={baseButtonClass} disabled={isNewLessonVideoUploading}><PlusCircle size={18} /> Tạo bài học</button>
+                            <button type="submit" className={baseButtonClass}><PlusCircle size={18} /> Tạo bài học</button>
                           </div>
                         </form>
                       </CreatePanel>
@@ -858,124 +828,17 @@ const LmsView = ({
                       ))
                     ) : (
                       <div className="py-10 text-center text-[15px] font-medium text-slate-500 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
-                        Khóa học chưa có bài học nào.
+                        Lớp học chưa có bài học nào.
                       </div>
                     )}
                   </div>
                 </div>
 
-                <div className="gsap-animate p-6 md:p-8 bg-white border border-slate-200 rounded-[24px] shadow-sm mt-8">
+                <div className="gsap-animate p-6 md:p-8 bg-white border border-slate-200 rounded-[24px] shadow-sm">
                   <h3 className="flex items-center gap-3 text-xl font-black text-slate-900 mb-6 pb-4 border-b border-slate-100">
                     <span className="grid place-items-center w-10 h-10 rounded-xl bg-blue-50 text-blue-600"><ClipboardList size={18} /></span>
-                    Tạo bài kiểm tra
+                    Bài tập thực hành
                   </h3>
-
-                  {canManageLearning && (
-                    <div className="mb-8">
-                      <CreatePanel
-                        title="Thêm bài kiểm tra"
-                        eyebrow="Tạo mới"
-                        description="Tạo bài trắc nghiệm, tự luận hoặc kiểm tra cuối khóa."
-                        isOpen={isCreateAssignmentOpen}
-                        onToggle={() => setIsCreateAssignmentOpen(!isCreateAssignmentOpen)}
-                      >
-                        <div className="flex flex-col gap-4 mt-4">
-                          <FormField label="Loại bài kiểm tra" as="div">
-                            <select
-                              className={baseInputClass}
-                              value={newAssignmentData?.type || 'quiz'}
-                              onChange={e => onNewAssignmentDataChange?.({ ...newAssignmentData, type: e.target.value })}
-                            >
-                              <option value="quiz">Trắc nghiệm</option>
-                              <option value="text">Tự luận</option>
-                              <option value="practical">Báo cáo / Thực hành (Video)</option>
-
-                            </select>
-                          </FormField>
-                          <FormField label="Tiêu đề" as="div">
-                            <input
-                              type="text"
-                              className={baseInputClass}
-                              placeholder="Tiêu đề bài kiểm tra"
-                              value={newAssignmentData?.title || ''}
-                              onChange={e => onNewAssignmentDataChange?.({ ...newAssignmentData, title: e.target.value })}
-                            />
-                          </FormField>
-                          <FormField label="Hạn nộp bài (Date & Time)" as="div">
-                            <input
-                              type="datetime-local"
-                              className={baseInputClass}
-                              value={newAssignmentData?.dueAt || ''}
-                              onChange={e => onNewAssignmentDataChange?.({ ...newAssignmentData, dueAt: e.target.value })}
-                            />
-                          </FormField>
-                          {(newAssignmentData?.type || 'quiz') !== 'quiz' && (
-                            <FormField label="Mô tả / Yêu cầu đề bài (Tùy chọn)" as="div">
-                              <textarea
-                                className={baseInputClass}
-                                rows={3}
-                                value={newAssignmentData?.description || ''}
-                                onChange={e => onNewAssignmentDataChange?.({ ...newAssignmentData, description: e.target.value })}
-                              />
-                            </FormField>
-                          )}
-                          {(newAssignmentData?.type || 'quiz') === 'quiz' && getNewQuizQuestions().map((question, questionIndex) => (
-                            <div key={`new-quiz-question-${questionIndex}`} className="flex flex-col gap-3 rounded-xl border border-blue-100 bg-white p-4">
-                              <div className="flex items-center justify-between gap-3">
-                                <strong className="text-[14px] font-black text-slate-800">Câu {questionIndex + 1}</strong>
-                                {getNewQuizQuestions().length > 1 && (
-                                  <button type="button" className={dangerButtonClass} onClick={() => removeNewQuizQuestion(questionIndex)}>
-                                    Xóa câu
-                                  </button>
-                                )}
-                              </div>
-                              <input
-                                type="text"
-                                className={baseInputClass}
-                                placeholder="Nội dung câu hỏi"
-                                value={question.question}
-                                onChange={e => updateNewQuizQuestion(questionIndex, { ...question, question: e.target.value })}
-                              />
-                              <div className="grid gap-3 md:grid-cols-2">
-                                {question.options.map((option, optionIndex) => (
-                                  <label key={`new-quiz-option-${questionIndex}-${optionIndex}`} className="flex items-center gap-2">
-                                    <input
-                                      type="radio"
-                                      name={`new-quiz-correct-${questionIndex}`}
-                                      checked={question.correctOptionIndex === optionIndex}
-                                      onChange={() => updateNewQuizQuestion(questionIndex, { ...question, correctOptionIndex: optionIndex })}
-                                    />
-                                    <input
-                                      type="text"
-                                      className={baseInputClass}
-                                      placeholder={`Đáp án ${String.fromCharCode(65 + optionIndex)}`}
-                                      value={option}
-                                      onChange={e => {
-                                        const options = [...question.options]
-                                        options[optionIndex] = e.target.value
-                                        updateNewQuizQuestion(questionIndex, { ...question, options })
-                                      }}
-                                    />
-                                  </label>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                          {(newAssignmentData?.type || 'quiz') === 'quiz' && (
-                            <button type="button" className={ghostButtonClass} onClick={addNewQuizQuestion}>
-                              Thêm câu hỏi
-                            </button>
-                          )}
-                          <div className="flex justify-end mt-4 pt-6 border-t border-slate-100">
-                            <button className={baseButtonClass} onClick={handleCreateAssignmentSubmit}>
-                              Tạo bài kiểm tra
-                            </button>
-                          </div>
-                        </div>
-                      </CreatePanel>
-                    </div>
-                  )}
-
                   <div className="flex flex-col gap-6">
                     {visibleAssignments.length ? (
                       visibleAssignments.map((assignment, index) => {
@@ -984,9 +847,6 @@ const LmsView = ({
                           <div key={assignment._id || assignment.id || `${assignment.title || 'assignment'}-${index}`} className="flex flex-col gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
                             <div>
                               <h4 className="text-xl font-black text-slate-900 mb-2">{assignment.title}</h4>
-                              {assignment.dueAt && (
-                                <p className="text-[13px] font-bold text-red-600 mb-2">Hạn nộp: {new Date(assignment.dueAt).toLocaleString('vi-VN')}</p>
-                              )}
                               <p className="text-[15px] text-slate-600">{assignment.description || 'Không có mô tả.'}</p>
                               {renderAssignmentBody(assignment)}
                             </div>
@@ -1055,8 +915,8 @@ const LmsView = ({
                 <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-sm mb-6">
                   <BookOpen size={40} className="text-slate-300" />
                 </div>
-                <h3 className="text-xl font-bold text-slate-700 mb-2">Chưa chọn khóa học</h3>
-                <p className="text-[15px] text-slate-500">Hãy chọn một khóa học ở danh sách bên trên để xem chi tiết.</p>
+                <h3 className="text-xl font-bold text-slate-700 mb-2">Chưa chọn lớp học</h3>
+                <p className="text-[15px] text-slate-500">Hãy chọn một lớp học ở danh sách bên trên để xem chi tiết.</p>
               </div>
             )}
           </div>

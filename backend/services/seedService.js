@@ -2,21 +2,6 @@ const bcrypt = require('bcryptjs');
 const config = require('../config/env');
 const User = require('../models/User');
 const ForumPost = require('../models/ForumPost');
-const VideoLink = require('../models/VideoLink');
-
-const defaultCategoryVideos = {
-  'Võ thuật': [
-    'https://www.youtube.com/embed/5_9Q52gE1yI',
-    'https://www.youtube.com/embed/2X0p7k1G_L8'
-  ],
-  'Giao tiếp': [
-    'https://www.youtube.com/embed/HAnw168huqA',
-    'https://www.youtube.com/embed/t6zicFwR8jU'
-  ],
-  'Quản lý thời gian': ['https://www.youtube.com/embed/iONDebHX9qk'],
-  'Tài chính': ['https://www.youtube.com/embed/4j2emwRkeEE'],
-  'Tư duy': ['https://www.youtube.com/embed/fD1512_XJEw']
-};
 
 const defaultForumPosts = [
   {
@@ -32,28 +17,6 @@ const defaultForumPosts = [
     content: 'Mỗi lần lên bục là tim mình đập loạn nhịp...'
   }
 ];
-
-const seedDefaultVideoLinks = async () => {
-  const hasAny = await VideoLink.exists({});
-  if (hasAny) {
-    return;
-  }
-
-  const seedPayload = [];
-  for (const [category, urls] of Object.entries(defaultCategoryVideos)) {
-    for (const url of urls) {
-      seedPayload.push({
-        category,
-        url,
-        addedBy: config.adminUsername
-      });
-    }
-  }
-
-  if (seedPayload.length) {
-    await VideoLink.insertMany(seedPayload);
-  }
-};
 
 const seedDefaultForumPosts = async () => {
   const hasAny = await ForumPost.exists({});
@@ -113,6 +76,5 @@ const ensureAdminUser = async () => {
 
 module.exports = {
   ensureAdminUser,
-  seedDefaultForumPosts,
-  seedDefaultVideoLinks
+  seedDefaultForumPosts
 };
