@@ -383,6 +383,22 @@ const LessonFullPage = ({
       return `https://www.youtube.com/embed/${url}`
     }
     
+    // Cloudinary Video Player embed
+    if (url.includes('cloudinary.com') && url.includes('/upload/')) {
+      const match = url.match(/res\.cloudinary\.com\/([^/]+)\/(?:image|video)\/upload\/(?:v\d+\/)?(.+?)(?:\.[^.]+)?$/);
+      if (match) {
+        const cloudName = match[1];
+        let publicId = match[2];
+        // Strip out transformation folders like f_auto,q_auto if they accidentally got in the publicId
+        if (publicId.includes('/')) {
+            const parts = publicId.split('/');
+            // public id usually doesn't have f_auto in it, we just want the real path
+            publicId = parts.filter(p => !p.includes('auto')).join('/');
+        }
+        return `https://player.cloudinary.com/embed/?public_id=${publicId}&cloud_name=${cloudName}&player[fluid]=true&player[controls]=true`;
+      }
+    }
+
     return ''
   }
 
@@ -391,7 +407,8 @@ const LessonFullPage = ({
   const isDirectVideo = useMemo(() => {
     const url = lesson?.videoUrl || ''
     if (!url) return false
-    if (url.includes('cloudinary.com')) return true
+    // Send Cloudinary URLs to the embed player (iframe) instead of the raw <video> tag
+    if (url.includes('cloudinary.com')) return false
     return /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url)
   }, [lesson?.videoUrl])
 
