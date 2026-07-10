@@ -1134,6 +1134,7 @@ function App() {
     }
 
     const content = (assignmentDrafts[assignmentId] || '').trim()
+    console.log('[handleSubmitAssignment] assignmentId:', assignmentId, 'fileUrl:', fileUrl, 'content:', content)
     if (!content && !fileUrl) {
       showWarning('Cậu nhập nội dung bài làm hoặc tải lên video thực hành trước nhé!')
       return
@@ -1142,6 +1143,7 @@ function App() {
     try {
       const response = await api.post(`/api/assignments/${assignmentId}/submissions`, { content, fileUrl })
       const submission = response.data?.submission
+      console.log('[handleSubmitAssignment] saved submission:', submission)
 
       setCourseAssignments(prev =>
         prev.map(item =>
@@ -1668,6 +1670,7 @@ function App() {
 
   const handleUploadSubmissionVideo = async file => {
     if (!file) return ''
+    console.log('[handleUploadSubmissionVideo] uploading file:', file.name, file.size, file.type)
     const validationError = validateVideoFile(file)
     if (validationError) {
       showWarning(validationError)
@@ -1675,8 +1678,13 @@ function App() {
     }
     try {
       const url = await uploadVideoFile(file)
+      console.log('[handleUploadSubmissionVideo] upload result URL:', url)
+      if (url) {
+        showSuccess('Tải lên video thành công!')
+      }
       return url
     } catch (error) {
+      console.error('[handleUploadSubmissionVideo] upload error:', error)
       showError(error.response?.data?.message || 'Tải video lên thất bại.')
       return ''
     }
