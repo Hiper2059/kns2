@@ -1650,8 +1650,8 @@ function App() {
     if (!allowed.includes(file.type) && !allowedExts.includes(ext)) {
       return 'Chỉ hỗ trợ video MP4, WebM, OGG, MOV.'
     }
-    const maxSize = 100 * 1024 * 1024
-    if (file.size > maxSize) return 'Video vượt quá 100MB (giới hạn Cloudinary free).'
+    const maxSize = 200 * 1024 * 1024
+    if (file.size > maxSize) return 'Video vượt quá 200MB.'
     return ''
   }
 
@@ -1696,16 +1696,7 @@ function App() {
       throw new Error(cloudinaryMsg || err.message || 'Upload video lên Cloudinary thất bại.');
     }
 
-    let url = cloudinaryResponse.data?.secure_url || ''
-    if (url && url.includes('cloudinary.com')) {
-      const match = url.match(/\.[a-zA-Z0-9]+$/)
-      if (match) {
-        url = url.replace(/\.[a-zA-Z0-9]+$/, '.mp4')
-      } else {
-        url = url + '.mp4'
-      }
-    }
-    return url
+    return cloudinaryResponse.data?.secure_url || ''
   }
 
   const uploadImageFile = async file => {
