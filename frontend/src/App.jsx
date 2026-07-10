@@ -1665,6 +1665,22 @@ function App() {
     return response.data?.url || ''
   }
 
+  const handleUploadSubmissionVideo = async file => {
+    if (!file) return ''
+    const validationError = validateVideoFile(file)
+    if (validationError) {
+      showWarning(validationError)
+      return ''
+    }
+    try {
+      const url = await uploadVideoFile(file)
+      return url
+    } catch (error) {
+      showError(error.response?.data?.message || 'Tải video lên thất bại.')
+      return ''
+    }
+  }
+
   const handleCreateCourse = async () => {
     if (!currentUser || (currentRole !== 'teacher' && currentRole !== 'admin')) {
       showError('Chỉ giảng viên hoặc admin mới tạo được lớp học.')
@@ -2515,6 +2531,7 @@ function App() {
                     onEditAssignmentCancel={handleEditAssignmentCancel}
                     onUpdateAssignment={handleUpdateAssignment}
                     onDeleteAssignment={handleDeleteAssignment}
+                    onUploadSubmissionVideo={handleUploadSubmissionVideo}
                   />
                 } />
 
@@ -2565,6 +2582,7 @@ function App() {
                     onEditAssignmentCancel={handleEditAssignmentCancel}
                     onUpdateAssignment={handleUpdateAssignment}
                     onDeleteAssignment={handleDeleteAssignment}
+                    onUploadSubmissionVideo={handleUploadSubmissionVideo}
                   />
                 } />
 
@@ -2746,6 +2764,7 @@ function App() {
                     onAssignmentDraftChange={handleAssignmentDraftChange}
                     onSubmitAssignment={handleSubmitAssignment}
                     onSubmitQuizAssignment={handleSubmitQuizAssignment}
+                    onUploadSubmissionVideo={handleUploadSubmissionVideo}
                   />
                 } />
               </Routes>

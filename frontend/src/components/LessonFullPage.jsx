@@ -115,7 +115,8 @@ const LessonFullPage = ({
   onSubmitAssignment,
   assignmentSubmissions,
   onLoadAssignmentSubmissions,
-  onGradeSubmission
+  onGradeSubmission,
+  onUploadSubmissionVideo
 }) => {
   const { showWarning, showError, showSuccess } = useUI()
   const [quizDrafts, setQuizDrafts] = useState({})
@@ -215,33 +216,15 @@ const LessonFullPage = ({
 
   const handleVideoUpload = async (assignmentId, file) => {
     if (!file) return
-    const allowed = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime']
-    if (!allowed.includes(file.type)) {
-      showWarning('Chỉ hỗ trợ video MP4, WebM, OGG, MOV.')
-      return
-    }
-    const maxSize = 200 * 1024 * 1024
-    if (file.size > maxSize) {
-      showWarning('Video vượt quá 200MB.')
-      return
-    }
 
     setUploadingVideos(prev => ({ ...prev, [assignmentId]: true }))
     try {
-      const formData = new FormData()
-      formData.append('video', file)
-      const response = await api.post('/api/uploads/video', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      })
-      const videoUrl = response.data?.url || ''
+      const videoUrl = await onUploadSubmissionVideo?.(file)
       if (videoUrl) {
         setUploadedVideoUrls(prev => ({ ...prev, [assignmentId]: videoUrl }))
-        showSuccess('Tải lên video thành công!')
-      } else {
-        showError('Không lấy được URL video tải lên.')
       }
     } catch (error) {
-      showError(error.response?.data?.message || 'Tải video lên thất bại.')
+      // errors handled in parent
     } finally {
       setUploadingVideos(prev => ({ ...prev, [assignmentId]: false }))
     }
