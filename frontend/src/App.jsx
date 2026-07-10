@@ -1685,7 +1685,16 @@ function App() {
       }
     )
 
-    return cloudinaryResponse.data?.secure_url || ''
+    let url = cloudinaryResponse.data?.secure_url || ''
+    if (url && url.includes('cloudinary.com')) {
+      const match = url.match(/\.[a-zA-Z0-9]+$/)
+      if (match) {
+        url = url.replace(/\.[a-zA-Z0-9]+$/, '.mp4')
+      } else {
+        url = url + '.mp4'
+      }
+    }
+    return url
   }
 
   const uploadImageFile = async file => {
