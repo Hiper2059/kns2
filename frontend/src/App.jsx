@@ -1661,42 +1661,19 @@ function App() {
       throw new Error(errorMsg)
     }
 
-    // Step 1: Get signed params from backend (lightweight, no file transfer)
-    const signResponse = await api.get('/api/uploads/sign-video')
-    const { signature, timestamp, folder, cloudName, apiKey } = signResponse.data || {}
-    if (!cloudName || !apiKey || !signature) {
-      throw new Error('Không lấy được thông tin upload từ server.')
-    }
-
-    // Step 2: Upload file directly to Cloudinary using Axios to track progress
     const formData = new FormData()
-    formData.append('file', file)
-    formData.append('api_key', apiKey)
-    formData.append('timestamp', timestamp)
-    formData.append('signature', signature)
-    formData.append('folder', folder)
+    formData.append('video', file)
 
-    let cloudinaryResponse;
-    try {
-      cloudinaryResponse = await axios.post(
-        `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`,
-        formData,
-        {
-          headers: { 'Content-Type': 'multipart/form-data' },
-          onUploadProgress: (progressEvent) => {
-            if (onProgress && progressEvent.total) {
-              const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-              onProgress(percent);
-            }
-          }
+    const response = await api.post('/api/uploads/video', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (progressEvent) => {
+        if (onProgress && progressEvent.total) {
+          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          onProgress(percent);
         }
-      )
-    } catch (err) {
-      const cloudinaryMsg = err.response?.data?.error?.message;
-      throw new Error(cloudinaryMsg || err.message || 'Upload video lên Cloudinary thất bại.');
-    }
-
-    return cloudinaryResponse.data?.secure_url || ''
+      }
+    })
+    return response.data?.url || ''
   }
 
   const uploadImageFile = async file => {
