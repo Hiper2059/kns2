@@ -261,6 +261,7 @@ const deleteAssignment = catchAsync(async (req, res) => {
 const upsertSubmission = catchAsync(async (req, res) => {
   const { assignmentId } = req.params;
   const { content, fileUrl, answers } = req.body || {};
+  console.log('[upsertSubmission] req.body:', JSON.stringify(req.body));
   const trimmedContent = String(content || '').trim();
 
   if (!mongoose.Types.ObjectId.isValid(assignmentId)) {

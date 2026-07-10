@@ -220,6 +220,7 @@ const LessonFullPage = ({
     setUploadingVideos(prev => ({ ...prev, [assignmentId]: true }))
     try {
       const videoUrl = await onUploadSubmissionVideo?.(file)
+      console.log('[LessonFullPage handleVideoUpload] assignmentId:', assignmentId, 'returned videoUrl:', videoUrl)
       if (videoUrl) {
         setUploadedVideoUrls(prev => ({ ...prev, [assignmentId]: videoUrl }))
       }
@@ -232,6 +233,7 @@ const LessonFullPage = ({
 
   const handleTextSubmit = async (assignmentId) => {
     const videoUrl = uploadedVideoUrls[assignmentId] || ''
+    console.log('[LessonFullPage handleTextSubmit] assignmentId:', assignmentId, 'uploadedVideoUrls:', JSON.stringify(uploadedVideoUrls), 'videoUrl to send:', videoUrl)
     await onSubmitAssignment?.(assignmentId, videoUrl)
     localStorage.removeItem(`test_start_${assignmentId}`)
     setActiveTestTimes(prev => {
