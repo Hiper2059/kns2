@@ -5,7 +5,7 @@ import RichTextEditor from './RichTextEditor'
 import SafeRichHtml from './ui/SafeRichHtml'
 import { getApiErrorMessage } from '../utils/apiMessages'
 import { useUI } from '../context/UIContext'
-import { ArrowLeft, Heart, Edit3, CheckCircle2, AlertCircle, MessageSquare, Reply, Flag, Trash2, ListVideo } from 'lucide-react'
+import { ArrowLeft, Heart, Edit3, CheckCircle2, AlertCircle, MessageSquare, Reply, Flag, Trash2, ListVideo, ClipboardList, ChevronUp, ChevronDown } from 'lucide-react'
 
 const loadYouTubeApi = (() => {
   let promise = null
@@ -55,6 +55,33 @@ const ghostButtonClass = "inline-flex items-center justify-center gap-2 h-10 px-
 const dangerButtonClass = "inline-flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-bold transition-all cursor-pointer text-[13px]"
 const createEmptyQuizQuestion = () => ({ question: '', options: ['', '', '', ''], correctOptionIndex: 0 })
 
+const FormField = ({ label, hint, children, className = '', as = 'label' }) => {
+  const FieldTag = as
+  return (
+    <FieldTag className={`flex flex-col gap-1.5 ${className}`}>
+      <span className="text-[14px] font-bold text-slate-700">{label}</span>
+      {hint && <span className="text-[12px] font-medium text-slate-500">{hint}</span>}
+      {children}
+    </FieldTag>
+  )
+}
+
+const CreatePanel = ({ title, eyebrow, description, isOpen, onToggle, children }) => (
+  <section className={`bg-white border border-slate-200 rounded-[24px] shadow-sm mb-6 overflow-hidden transition-all duration-300 ${isOpen ? 'ring-2 ring-blue-100' : ''}`}>
+    <button type="button" className="w-full flex items-center justify-between p-6 md:p-8 text-left bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer" onClick={onToggle} aria-expanded={isOpen}>
+      <div>
+        <span className="block text-[13px] font-black uppercase text-blue-600 mb-2 tracking-wide">{eyebrow}</span>
+        <strong className="block text-xl md:text-2xl font-black text-slate-900 mb-1">{title}</strong>
+        <small className="block text-[14px] text-slate-500 font-medium">{description}</small>
+      </div>
+      <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-700">
+        {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+      </span>
+    </button>
+    {isOpen && <div className="p-6 md:p-8 border-t border-slate-200 bg-white">{children}</div>}
+  </section>
+)
+
 const LessonFullPage = ({
   lesson,
   course,
@@ -76,10 +103,198 @@ const LessonFullPage = ({
   onNewAssignmentDataChange,
   onCreateAssignment,
   onDeleteAssignment,
-  onSubmitQuizAssignment
+  onSubmitQuizAssignment,
+  editAssignmentId,
+  editAssignmentData,
+  onEditAssignmentStart,
+  onEditAssignmentChange,
+  onEditAssignmentCancel,
+  onUpdateAssignment,
+  assignmentDrafts,
+  onAssignmentDraftChange,
+  onSubmitAssignment
 }) => {
   const { showWarning, showError, showSuccess } = useUI()
   const [quizDrafts, setQuizDrafts] = useState({})
+  const [activeTestTimes, setActiveTestTimes] = useState({})
+
+  const startTest = (assignmentId, durationMinutes) => {
+    const startTime = Date.now()
+    localStorage.setItem(`test_start_${assignmentId}`, startTime)
+    setActiveTestTimes(prev => ({
+      ...prev,
+      [assignmentId]: durationMinutes * 60
+    }))
+  }
+
+  // Ticks running timers
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveTestTimes(prev => {
+        const next = { ...prev }
+        let updated = false
+        Object.keys(next).forEach(id => {
+          const startStr = localStorage.getItem(`test_start_${id}`)
+          if (!startStr) {
+            delete next[id]
+            updated = true
+            return
+          }
+          const startTime = Number(startStr)
+          const assignment = assignments.find(a => String(a._id) === id)
+          if (!assignment) {
+            delete next[id]
+            updated = true
+            return
+          }
+          const durationSeconds = (assignment.duration || 0) * 60
+          const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000)
+          const remaining = durationSeconds - elapsedSeconds
+          if (remaining <= 0) {
+            delete next[id]
+            localStorage.removeItem(`test_start_${id}`)
+            updated = true
+            
+            // Auto submit
+            if (assignment.type === 'quiz') {
+              const answers = quizDrafts[id] || []
+              const questions = Array.isArray(assignment.questions) ? assignment.questions : []
+              const finalAnswers = questions.map((q, idx) => Number.isInteger(answers[idx]) ? answers[idx] : 0)
+              onSubmitQuizAssignment?.(id, finalAnswers)
+            } else {
+              onSubmitAssignment?.(id)
+            }
+          } else {
+            if (next[id] !== remaining) {
+              next[id] = remaining
+              updated = true
+            }
+          }
+        })
+        return updated ? next : prev
+      })
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [assignments, quizDrafts, onSubmitAssignment, onSubmitQuizAssignment])
+
+  // Populate active test times on mount/update
+  useEffect(() => {
+    const times = {}
+    assignments.forEach(assignment => {
+      if (assignment.duration > 0 && !assignment.mySubmission) {
+        const startStr = localStorage.getItem(`test_start_${assignment._id}`)
+        if (startStr) {
+          const startTime = Number(startStr)
+          const durationSeconds = assignment.duration * 60
+          const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000)
+          const remaining = durationSeconds - elapsedSeconds
+          if (remaining > 0) {
+            times[assignment._id] = remaining
+          } else {
+            localStorage.removeItem(`test_start_${assignment._id}`)
+            if (assignment.type === 'quiz') {
+              const answers = quizDrafts[assignment._id] || []
+              const questions = Array.isArray(assignment.questions) ? assignment.questions : []
+              const finalAnswers = questions.map((q, idx) => Number.isInteger(answers[idx]) ? answers[idx] : 0)
+              onSubmitQuizAssignment?.(assignment._id, finalAnswers)
+            } else {
+              onSubmitAssignment?.(assignment._id)
+            }
+          }
+        }
+      }
+    })
+    setActiveTestTimes(times)
+  }, [assignments])
+
+  const handleTextSubmit = async (assignmentId) => {
+    await onSubmitAssignment?.(assignmentId)
+    localStorage.removeItem(`test_start_${assignmentId}`)
+    setActiveTestTimes(prev => {
+      const next = { ...prev }
+      delete next[assignmentId]
+      return next
+    })
+  }
+
+  const formatDueDate = (dateStr) => {
+    if (!dateStr) return null
+    const d = new Date(dateStr)
+    if (isNaN(d.getTime())) return null
+    const isExpired = d.getTime() < Date.now()
+    const timePart = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+    const datePart = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    return {
+      text: `${timePart} - ${datePart}`,
+      isExpired
+    }
+  }
+
+  const getEditQuizQuestions = () => {
+    const questions = Array.isArray(editAssignmentData?.questions) && editAssignmentData.questions.length
+      ? editAssignmentData.questions
+      : [{ question: '', options: ['', '', '', ''], correctOptionIndex: 0 }]
+    return questions.map(question => ({
+      question: question.question || '',
+      options: [...(question.options || []), '', '', '', ''].slice(0, 4),
+      correctOptionIndex: Number(question.correctOptionIndex) || 0
+    }))
+  }
+
+  const updateEditQuizQuestion = (questionIndex, nextQuestion) => {
+    const questions = getEditQuizQuestions()
+    questions[questionIndex] = nextQuestion
+    onEditAssignmentChange?.({ ...editAssignmentData, questions })
+  }
+
+  const addEditQuizQuestion = () => {
+    onEditAssignmentChange?.({
+      ...editAssignmentData,
+      questions: [...getEditQuizQuestions(), { question: '', options: ['', '', '', ''], correctOptionIndex: 0 }]
+    })
+  }
+
+  const removeEditQuizQuestion = questionIndex => {
+    const questions = getEditQuizQuestions().filter((_, index) => index !== questionIndex)
+    onEditAssignmentChange?.({
+      ...editAssignmentData,
+      questions: questions.length ? questions : [{ question: '', options: ['', '', '', ''], correctOptionIndex: 0 }]
+    })
+  }
+
+  const handleUpdateAssignmentClick = () => {
+    const title = String(editAssignmentData?.title || '').trim()
+    if (!title) {
+      showWarning('Nhập tiêu đề bài tập nhé!')
+      return
+    }
+
+    const questions = editAssignmentData.type === 'quiz' ? getEditQuizQuestions()
+      .map(item => {
+        const options = (item.options || []).map(option => String(option || '').trim()).filter(Boolean)
+        return {
+          question: String(item.question || '').trim(),
+          options,
+          correctOptionIndex: Math.min(Number(item.correctOptionIndex) || 0, Math.max(options.length - 1, 0))
+        }
+      })
+      .filter(item => item.question && item.options.length >= 2) : []
+
+    if (editAssignmentData.type === 'quiz' && !questions.length) {
+      showWarning('Quiz cần ít nhất 1 câu hỏi và mỗi câu có tối thiểu 2 đáp án.')
+      return
+    }
+
+    onUpdateAssignment?.(editAssignmentId, {
+      title,
+      description: editAssignmentData.description || '',
+      type: editAssignmentData.type || 'quiz',
+      duration: Number(editAssignmentData.duration) || 0,
+      lessonId: editAssignmentData.lessonId || null,
+      questions
+    })
+  }
+
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false)
   const [hasVideoEnded, setHasVideoEnded] = useState(false)
   const [hasSeeked, setHasSeeked] = useState(false)
@@ -94,6 +309,9 @@ const LessonFullPage = ({
 
   const sortedLessons = [...lessons].sort((a, b) => (a.order || 1) - (b.order || 1))
   const currentLessonId = String(lesson?._id || '')
+  const lessonAssignments = useMemo(() => {
+    return (Array.isArray(assignments) ? assignments : []).filter(assignment => String(assignment.lesson) === String(lesson?._id))
+  }, [assignments, lesson?._id])
 
   const handleLessonSelect = (lessonId) => {
     const nextLesson = sortedLessons.find(item => String(item._id) === lessonId)
@@ -894,6 +1112,225 @@ const LessonFullPage = ({
                   </div>
                 )}
 
+
+                {(() => {
+                  const isEditingThisLessonAssignment = editAssignmentId && lessonAssignments.some(a => String(a._id) === String(editAssignmentId))
+                  if (!canEditLesson || !isEditingThisLessonAssignment) return null
+                  return (
+                    <CreatePanel
+                      title="Chỉnh sửa bài kiểm tra / bài tập"
+                      eyebrow="Quản lý bài tập"
+                      description="Sửa thông tin bài kiểm tra hoặc bài tập thực hành của bài học này."
+                      isOpen={true}
+                      onToggle={onEditAssignmentCancel}
+                    >
+                      <form className="flex flex-col gap-6" onSubmit={event => { event.preventDefault(); handleUpdateAssignmentClick(); }}>
+                        <FormField label="Tiêu đề bài kiểm tra / bài tập">
+                          <input required type="text" className={baseInputClass} value={editAssignmentData?.title || ''} onChange={event => onEditAssignmentChange({ ...editAssignmentData, title: event.target.value })} />
+                        </FormField>
+                        <FormField label="Mô tả bài tập">
+                          <textarea className="w-full min-h-[80px] p-4 bg-slate-50 border border-slate-200 rounded-xl text-[14px] font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all resize-y" value={editAssignmentData?.description || ''} onChange={event => onEditAssignmentChange({ ...editAssignmentData, description: event.target.value })} />
+                        </FormField>
+                        <div className="grid gap-6 md:grid-cols-2">
+                          <FormField label="Loại bài tập">
+                            <select className={baseInputClass} value={editAssignmentData?.type || 'quiz'} onChange={event => onEditAssignmentChange({ ...editAssignmentData, type: event.target.value })}>
+                              <option value="quiz">Trắc nghiệm (Quiz)</option>
+                              <option value="text">Tự luận / Thực hành lại</option>
+                            </select>
+                          </FormField>
+                          <FormField label="Giới hạn thời gian (Phút)">
+                            <input type="number" min="0" className={baseInputClass} value={editAssignmentData?.duration || 0} onChange={event => onEditAssignmentChange({ ...editAssignmentData, duration: Number(event.target.value) || 0 })} />
+                          </FormField>
+                        </div>
+                        <FormField label="Ngày hết hạn (Hạn chót)">
+                          <input type="datetime-local" className={baseInputClass} value={editAssignmentData?.dueAt || ''} onChange={event => onEditAssignmentChange({ ...editAssignmentData, dueAt: event.target.value })} />
+                        </FormField>
+                        
+                        {editAssignmentData?.type === 'quiz' && (
+                          <div className="flex flex-col gap-4 p-5 bg-slate-50 border border-slate-200 rounded-2xl">
+                            <h5 className="font-bold text-slate-800">Các câu hỏi trắc nghiệm</h5>
+                            {getEditQuizQuestions().map((question, questionIndex) => (
+                              <div key={`edit-quiz-question-${questionIndex}`} className="flex flex-col gap-3 rounded-xl border border-blue-100 bg-white p-4">
+                                <div className="flex items-center justify-between gap-3">
+                                  <strong className="text-[14px] font-black text-slate-800">Câu {questionIndex + 1}</strong>
+                                  {getEditQuizQuestions().length > 1 && (
+                                    <button type="button" className="inline-flex items-center justify-center gap-2 h-9 px-3 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 font-bold transition-all cursor-pointer text-[12px]" onClick={() => removeEditQuizQuestion(questionIndex)}>
+                                      Xóa câu
+                                    </button>
+                                  )}
+                                </div>
+                                <input required type="text" className={baseInputClass} placeholder="Nội dung câu hỏi" value={question.question} onChange={e => updateEditQuizQuestion(questionIndex, { ...question, question: e.target.value })} />
+                                <div className="grid gap-3 md:grid-cols-2">
+                                  {question.options.map((option, optionIndex) => (
+                                    <label key={`edit-quiz-option-${questionIndex}-${optionIndex}`} className="flex items-center gap-2">
+                                      <input type="radio" name={`edit-quiz-correct-${questionIndex}`} checked={question.correctOptionIndex === optionIndex} onChange={() => updateEditQuizQuestion(questionIndex, { ...question, correctOptionIndex: optionIndex })} />
+                                      <input required type="text" className={baseInputClass} placeholder={`Đáp án ${String.fromCharCode(65 + optionIndex)}`} value={option} onChange={e => { const options = [...question.options]; options[optionIndex] = e.target.value; updateEditQuizQuestion(questionIndex, { ...question, options }); }} />
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                            <button type="button" className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-all cursor-pointer text-[13px]" onClick={addEditQuizQuestion}>Thêm câu hỏi</button>
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-3 justify-end mt-4 pt-6 border-t border-slate-100">
+                          <button type="button" className={ghostButtonClass} onClick={onEditAssignmentCancel}>Hủy</button>
+                          <button type="submit" className={baseButtonClass}><CheckCircle2 size={18} /> Cập nhật bài tập</button>
+                        </div>
+                      </form>
+                    </CreatePanel>
+                  )
+                })()}
+
+                {/* Assignments / Quiz Section */}
+                <div className="mt-16 pt-10 border-t border-slate-200">
+                  <h4 className="text-2xl font-black text-slate-900 mb-8 flex items-center gap-3">
+                    <ClipboardList className="text-blue-600" /> Bài tập & Kiểm tra kĩ năng
+                    {lessonAssignments.length === 0 && <span className="text-[14px] font-medium text-slate-400 font-normal">(Không bắt buộc)</span>}
+                  </h4>
+
+                  <div className="flex flex-col gap-6">
+                    {lessonAssignments.length ? (
+                      lessonAssignments.map(assignment => {
+                        const isQuiz = assignment.type === 'quiz'
+                        const isTestStarted = activeTestTimes[assignment._id] !== undefined
+                        const hasSubmitted = Boolean(assignment.mySubmission)
+                        const isTimed = assignment.duration > 0
+
+                        return (
+                          <div key={assignment._id} className="flex flex-col gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
+                            <div>
+                              <div className="flex items-center justify-between gap-4 flex-wrap mb-2">
+                                <h4 className="text-xl font-black text-slate-900">{assignment.title}</h4>
+                                {canEditLesson && (
+                                  <div className="flex gap-2">
+                                    <button className="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 text-[13px] font-bold transition-colors cursor-pointer" onClick={() => onEditAssignmentStart?.(assignment)}>Sửa</button>
+                                    <button className="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-[13px] font-bold transition-colors cursor-pointer" onClick={() => onDeleteAssignment?.(assignment._id)}>Xóa</button>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[13px] font-bold ${isTimed ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-600'}`}>
+                                  ⏱️ {isTimed ? `Thời gian: ${assignment.duration} phút` : 'Không giới hạn thời gian'}
+                                </span>
+                                {(() => {
+                                  const dueInfo = formatDueDate(assignment.dueAt)
+                                  if (!dueInfo) return null
+                                  return (
+                                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[13px] font-bold ${dueInfo.isExpired ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-slate-100 text-slate-600'}`}>
+                                      📅 {dueInfo.isExpired ? `Đã hết hạn (${dueInfo.text})` : `Hạn chót: ${dueInfo.text}`}
+                                    </span>
+                                  )
+                                })()}
+                              </div>
+                              <p className="text-[15px] text-slate-600 mb-4">{assignment.description || 'Không có mô tả.'}</p>
+
+                              {(() => {
+                                const dueInfo = formatDueDate(assignment.dueAt)
+                                const isExpired = dueInfo?.isExpired
+
+                                if (currentUser && currentRole !== 'teacher' && currentRole !== 'admin' && isExpired && !hasSubmitted) {
+                                  return (
+                                    <div className="p-4 bg-red-50 border border-red-100 text-red-700 font-bold rounded-xl text-[14px]">
+                                      🔴 Bài kiểm tra này đã quá hạn nộp bài. Bạn không thể thực hiện bài làm.
+                                    </div>
+                                  )
+                                }
+
+                                if (currentUser && currentRole !== 'teacher' && currentRole !== 'admin' && isTimed && !isTestStarted && !hasSubmitted) {
+                                  return (
+                                    <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col items-center justify-center text-center gap-3 mt-3">
+                                      <ClipboardList size={32} className="text-amber-500" />
+                                      <h5 className="font-bold text-slate-800 text-[16px]">Bài kiểm tra kĩ năng định hướng thời gian</h5>
+                                      <p className="text-[14px] text-slate-500 max-w-md font-medium">
+                                        Bài kiểm tra này có thời gian làm bài giới hạn trong <strong>{assignment.duration} phút</strong>. Đồng hồ sẽ đếm ngược ngay sau khi bạn bắt đầu và tự động nộp bài khi hết giờ.
+                                      </p>
+                                      <button
+                                        className="inline-flex cursor-pointer items-center justify-center gap-2 h-11 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-md mt-2"
+                                        onClick={() => startTest(assignment._id, assignment.duration)}
+                                      >
+                                        Bắt đầu làm bài
+                                      </button>
+                                    </div>
+                                  )
+                                }
+
+                                return (
+                                  <>
+                                    {isTestStarted && (
+                                      <div className="mb-4 p-3 bg-amber-50 border border-amber-200 text-amber-800 font-bold rounded-xl flex items-center justify-between text-[14px]">
+                                        <span className="flex items-center gap-1.5">⚠️ Đang trong thời gian làm bài:</span>
+                                        <span className="text-[16px] text-red-600 bg-white px-3 py-1 rounded-lg border border-amber-300 shadow-sm font-black font-mono">
+                                          {Math.floor(activeTestTimes[assignment._id] / 60)}:
+                                          {String(activeTestTimes[assignment._id] % 60).padStart(2, '0')}
+                                        </span>
+                                      </div>
+                                    )}
+                                    {renderAssignmentBody(assignment)}
+                                  </>
+                                )
+                              })()}
+                            </div>
+
+                            {assignment.mySubmission && (
+                              <div className="mt-2 p-5 bg-slate-50 border border-slate-200 rounded-xl">
+                                <div className="flex items-center justify-between text-[14px] mb-3">
+                                  <span className="font-bold text-slate-600">Trạng thái bài làm:</span>
+                                  <strong className={`px-3 py-1 rounded-lg font-bold ${assignment.mySubmission.status === 'graded' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700'}`}>
+                                    {assignment.mySubmission.status === 'graded'
+                                      ? `Đã chấm - ${assignment.mySubmission.score}${assignment.type === 'quiz' ? '%' : ' điểm'}`
+                                      : assignment.mySubmission.status === 'submitted' ? 'Đã nộp - Đang chờ chấm' : 'Đang chờ chấm'}
+                                  </strong>
+                                </div>
+                                {assignment.mySubmission.content && (
+                                  <div className="p-4 bg-white border border-slate-200 rounded-lg text-[14px] font-medium text-slate-700 mt-3">{assignment.mySubmission.content}</div>
+                                )}
+                                {assignment.mySubmission.status === 'graded' && assignment.mySubmission.feedback && (
+                                  <div className="mt-3 p-4 bg-blue-50 border border-blue-100 rounded-lg text-[14px] font-bold text-blue-800">
+                                    Kết quả: {assignment.mySubmission.feedback}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {currentUser && currentRole !== 'teacher' && currentRole !== 'admin' && !isQuiz && (!isTimed || isTestStarted) && !assignment.mySubmission && (
+                              <div className="mt-4 flex flex-col gap-4">
+                                <textarea
+                                  className="w-full min-h-[120px] p-4 bg-white border border-slate-200 rounded-xl text-[14px] font-medium text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 resize-y"
+                                  value={assignmentDrafts?.[assignment._id] || ''}
+                                  onChange={event => onAssignmentDraftChange?.(assignment._id, event.target.value)}
+                                  placeholder="Nhập nội dung bài làm của bạn..."
+                                />
+                                <button
+                                  className="inline-flex cursor-pointer self-start items-center justify-center gap-2 h-11 px-6 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold transition-all"
+                                  onClick={() => handleTextSubmit(assignment._id)}
+                                >
+                                  Gửi bài nộp
+                                </button>
+                              </div>
+                            )}
+
+                            {currentUser && currentRole !== 'teacher' && currentRole !== 'admin' && isQuiz && !assignment.mySubmission && (!isTimed || isTestStarted) && (
+                              <div className="mt-4 flex flex-col gap-3">
+                                <button
+                                  className="inline-flex cursor-pointer self-start items-center justify-center gap-2 h-11 px-6 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold transition-all"
+                                  onClick={() => handleSubmitQuiz(assignment)}
+                                >
+                                  Nộp trắc nghiệm
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })
+                    ) : (
+                      <div className="py-8 text-center text-[15px] font-medium text-slate-500 bg-slate-50 rounded-2xl border border-dashed border-slate-300">
+                        Chưa có bài tập nào cho bài học này.
+                      </div>
+                    )}
+                  </div>
+                </div>
 
                 {/* Comments Section */}
                 <div className="mt-16 pt-10 border-t border-slate-200">

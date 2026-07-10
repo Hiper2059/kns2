@@ -429,7 +429,19 @@ const LmsView = ({
     () => [...lessons].sort((a, b) => (a.order || 1) - (b.order || 1)),
     [lessons]
   )
-  const visibleAssignments = Array.isArray(assignments) ? assignments : []
+  const formatDueDate = (dateStr) => {
+    if (!dateStr) return null
+    const d = new Date(dateStr)
+    if (isNaN(d.getTime())) return null
+    const isExpired = d.getTime() < Date.now()
+    const timePart = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+    const datePart = d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    return {
+      text: `${timePart} - ${datePart}`,
+      isExpired
+    }
+  }
+  const visibleAssignments = (Array.isArray(assignments) ? assignments : []).filter(assignment => !assignment.lesson)
   const containerRef = useRef(null)
 
   const completedLessonIds = useMemo(() => {
@@ -1097,13 +1109,13 @@ const LmsView = ({
                         onToggle={onEditAssignmentCancel}
                       >
                         <form className="flex flex-col gap-6" onSubmit={event => { event.preventDefault(); handleUpdateAssignmentClick(); }}>
-                          <FormField label="Tiêu đề bài kiểm tra / bài tập" hint="Ví dụ: Kiểm tra kĩ năng thuyết trình">
+                          <FormField label="Tiêu đề bài kiểm tra / bài tập">
                             <input required type="text" className={baseInputClass} value={editAssignmentData?.title || ''} onChange={event => onEditAssignmentChange({ ...editAssignmentData, title: event.target.value })} />
                           </FormField>
-                          <FormField label="Mô tả bài tập" hint="Hướng dẫn làm bài cho học viên">
+                          <FormField label="Mô tả bài tập">
                             <textarea className="w-full min-h-[80px] p-4 bg-slate-50 border border-slate-200 rounded-xl text-[14px] font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all resize-y" value={editAssignmentData?.description || ''} onChange={event => onEditAssignmentChange({ ...editAssignmentData, description: event.target.value })} />
                           </FormField>
-                          <FormField label="Liên kết bài học (Không bắt buộc)" hint="Chọn bài học cụ thể để kiểm tra kỹ năng của bài đó">
+                          <FormField label="Liên kết bài học (Không bắt buộc)">
                             <select className={baseInputClass} value={editAssignmentData?.lessonId || ''} onChange={event => onEditAssignmentChange({ ...editAssignmentData, lessonId: event.target.value || null })}>
                               <option value="">Không liên kết (Kiểm tra tổng hợp lớp học)</option>
                               {sortedLessons.map(l => (
@@ -1118,10 +1130,13 @@ const LmsView = ({
                                 <option value="text">Tự luận / Thực hành lại</option>
                               </select>
                             </FormField>
-                            <FormField label="Giới hạn thời gian (Phút)" hint="Nhập 0 hoặc bỏ trống nếu không giới hạn">
+                            <FormField label="Giới hạn thời gian (Phút)">
                               <input type="number" min="0" className={baseInputClass} value={editAssignmentData?.duration || 0} onChange={event => onEditAssignmentChange({ ...editAssignmentData, duration: Number(event.target.value) || 0 })} />
                             </FormField>
                           </div>
+                          <FormField label="Ngày hết hạn (Hạn chót)">
+                            <input type="datetime-local" className={baseInputClass} value={editAssignmentData?.dueAt || ''} onChange={event => onEditAssignmentChange({ ...editAssignmentData, dueAt: event.target.value })} />
+                          </FormField>
                           
                           {editAssignmentData?.type === 'quiz' && (
                             <div className="flex flex-col gap-4 p-5 bg-slate-50 border border-slate-200 rounded-2xl">
@@ -1166,13 +1181,13 @@ const LmsView = ({
                         onToggle={() => setIsCreateAssignmentOpen(prev => !prev)}
                       >
                         <form className="flex flex-col gap-6" onSubmit={event => { event.preventDefault(); handleCreateAssignmentClick(); }}>
-                          <FormField label="Tiêu đề bài kiểm tra / bài tập" hint="Ví dụ: Kiểm tra kĩ năng thuyết trình">
+                          <FormField label="Tiêu đề bài kiểm tra / bài tập">
                             <input required type="text" className={baseInputClass} value={newAssignmentData?.title || ''} onChange={event => onNewAssignmentDataChange({ ...newAssignmentData, title: event.target.value })} />
                           </FormField>
-                          <FormField label="Mô tả bài tập" hint="Hướng dẫn làm bài cho học viên">
+                          <FormField label="Mô tả bài tập">
                             <textarea className="w-full min-h-[80px] p-4 bg-slate-50 border border-slate-200 rounded-xl text-[14px] font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all resize-y" value={newAssignmentData?.description || ''} onChange={event => onNewAssignmentDataChange({ ...newAssignmentData, description: event.target.value })} />
                           </FormField>
-                          <FormField label="Liên kết bài học (Không bắt buộc)" hint="Chọn bài học cụ thể để kiểm tra kỹ năng của bài đó">
+                          <FormField label="Liên kết bài học (Không bắt buộc)">
                             <select className={baseInputClass} value={newAssignmentData?.lessonId || ''} onChange={event => onNewAssignmentDataChange({ ...newAssignmentData, lessonId: event.target.value || null })}>
                               <option value="">Không liên kết (Kiểm tra tổng hợp lớp học)</option>
                               {sortedLessons.map(l => (
@@ -1187,10 +1202,13 @@ const LmsView = ({
                                 <option value="text">Tự luận / Thực hành lại</option>
                               </select>
                             </FormField>
-                            <FormField label="Giới hạn thời gian (Phút)" hint="Nhập 0 hoặc bỏ trống nếu không giới hạn">
+                            <FormField label="Giới hạn thời gian (Phút)">
                               <input type="number" min="0" className={baseInputClass} value={newAssignmentData?.duration || 0} onChange={event => onNewAssignmentDataChange({ ...newAssignmentData, duration: Number(event.target.value) || 0 })} />
                             </FormField>
                           </div>
+                          <FormField label="Ngày hết hạn (Hạn chót)">
+                            <input type="datetime-local" className={baseInputClass} value={newAssignmentData?.dueAt || ''} onChange={event => onNewAssignmentDataChange({ ...newAssignmentData, dueAt: event.target.value })} />
+                          </FormField>
 
                           {newAssignmentData?.type === 'quiz' && (
                             <div className="flex flex-col gap-4 p-5 bg-slate-50 border border-slate-200 rounded-2xl">
@@ -1270,41 +1288,67 @@ const LmsView = ({
                                   Bài kiểm tra kĩ năng bài: {associatedLesson.title}
                                 </div>
                               )}
-                              <div className="flex items-center gap-2 mb-3">
+                              <div className="flex items-center gap-2 mb-3 flex-wrap">
                                 <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[13px] font-bold ${isTimed ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-600'}`}>
                                   ⏱️ {isTimed ? `Thời gian: ${assignment.duration} phút` : 'Không giới hạn thời gian'}
                                 </span>
+                                {(() => {
+                                  const dueInfo = formatDueDate(assignment.dueAt)
+                                  if (!dueInfo) return null
+                                  return (
+                                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[13px] font-bold ${dueInfo.isExpired ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-slate-100 text-slate-600'}`}>
+                                      📅 {dueInfo.isExpired ? `Đã hết hạn (${dueInfo.text})` : `Hạn chót: ${dueInfo.text}`}
+                                    </span>
+                                  )
+                                })()}
                               </div>
                               <p className="text-[15px] text-slate-600 mb-4">{assignment.description || 'Không có mô tả.'}</p>
 
-                              {currentUser && !canManageLearning && isTimed && !isTestStarted && !hasSubmitted ? (
-                                <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col items-center justify-center text-center gap-3 mt-3">
-                                  <ClipboardList size={32} className="text-amber-500" />
-                                  <h5 className="font-bold text-slate-800 text-[16px]">Bài kiểm tra kĩ năng định hướng thời gian</h5>
-                                  <p className="text-[14px] text-slate-500 max-w-md font-medium">
-                                    Bài kiểm tra này có thời gian làm bài giới hạn trong <strong>{assignment.duration} phút</strong>. Đồng hồ sẽ đếm ngược ngay sau khi bạn bắt đầu và tự động nộp bài khi hết giờ.
-                                  </p>
-                                  <button
-                                    className="inline-flex cursor-pointer items-center justify-center gap-2 h-11 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-md mt-2"
-                                    onClick={() => startTest(assignment._id, assignment.duration)}
-                                  >
-                                    Bắt đầu làm bài
-                                  </button>
-                                </div>
-                              ) : (
-                                <>
-                                  {isTestStarted && (
-                                    <div className="mb-4 p-3 bg-amber-50 border border-amber-200 text-amber-800 font-bold rounded-xl flex items-center justify-between text-[14px]">
-                                      <span className="flex items-center gap-1.5">⚠️ Đang trong thời gian làm bài:</span>
-                                      <span className="text-[16px] text-red-600 bg-white px-3 py-1 rounded-lg border border-amber-300 shadow-sm font-black font-mono">
-                                        {Math.floor(activeTestTimes[assignment._id] / 60)}:
-                                        {String(activeTestTimes[assignment._id] % 60).padStart(2, '0')}
-                                      </span>
+                              {(() => {
+                                const dueInfo = formatDueDate(assignment.dueAt)
+                                const isExpired = dueInfo?.isExpired
+
+                                if (currentUser && !canManageLearning && isExpired && !hasSubmitted) {
+                                  return (
+                                    <div className="p-4 bg-red-50 border border-red-100 text-red-700 font-bold rounded-xl text-[14px]">
+                                      🔴 Bài kiểm tra này đã quá hạn nộp bài. Bạn không thể thực hiện bài làm.
                                     </div>
-                                  )}
-                                  {renderAssignmentBody(assignment)}
-                                </>
-                              )}
+                                  )
+                                }
+
+                                if (currentUser && !canManageLearning && isTimed && !isTestStarted && !hasSubmitted) {
+                                  return (
+                                    <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col items-center justify-center text-center gap-3 mt-3">
+                                      <ClipboardList size={32} className="text-amber-500" />
+                                      <h5 className="font-bold text-slate-800 text-[16px]">Bài kiểm tra kĩ năng định hướng thời gian</h5>
+                                      <p className="text-[14px] text-slate-500 max-w-md font-medium">
+                                        Bài kiểm tra này có thời gian làm bài giới hạn trong <strong>{assignment.duration} phút</strong>. Đồng hồ sẽ đếm ngược ngay sau khi bạn bắt đầu và tự động nộp bài khi hết giờ.
+                                      </p>
+                                      <button
+                                        className="inline-flex cursor-pointer items-center justify-center gap-2 h-11 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all shadow-md mt-2"
+                                        onClick={() => startTest(assignment._id, assignment.duration)}
+                                      >
+                                        Bắt đầu làm bài
+                                      </button>
+                                    </div>
+                                  )
+                                }
+
+                                return (
+                                  <>
+                                    {isTestStarted && (
+                                      <div className="mb-4 p-3 bg-amber-50 border border-amber-200 text-amber-800 font-bold rounded-xl flex items-center justify-between text-[14px]">
+                                        <span className="flex items-center gap-1.5">⚠️ Đang trong thời gian làm bài:</span>
+                                        <span className="text-[16px] text-red-600 bg-white px-3 py-1 rounded-lg border border-amber-300 shadow-sm font-black font-mono">
+                                          {Math.floor(activeTestTimes[assignment._id] / 60)}:
+                                          {String(activeTestTimes[assignment._id] % 60).padStart(2, '0')}
+                                        </span>
+                                      </div>
+                                    )}
+                                    {renderAssignmentBody(assignment)}
+                                  </>
+                                )
+                              })()}
                             </div>
 
                             {assignment.mySubmission && (

@@ -151,6 +151,7 @@ function App() {
     description: '',
     type: 'quiz',
     duration: 0,
+    dueAt: '',
     questions: [
       { question: '', options: ['', '', '', ''], correctOptionIndex: 0 }
     ]
@@ -162,6 +163,7 @@ function App() {
     type: 'quiz',
     duration: 0,
     lessonId: null,
+    dueAt: '',
     questions: [
       { question: '', options: ['', '', '', ''], correctOptionIndex: 0 }
     ]
@@ -1208,7 +1210,8 @@ function App() {
         type: assignmentPayload.type || 'quiz',
         questions: assignmentPayload.questions || [],
         lessonId: assignmentPayload.lessonId || null,
-        duration: Number(assignmentPayload.duration) || 0
+        duration: Number(assignmentPayload.duration) || 0,
+        dueAt: assignmentPayload.dueAt || null
       })
 
       const created = response.data?.assignment
@@ -1223,6 +1226,7 @@ function App() {
         description: '',
         type: 'quiz',
         duration: 0,
+        dueAt: '',
         questions: [
           { question: '', options: ['', '', '', ''], correctOptionIndex: 0 }
         ]
@@ -1240,6 +1244,7 @@ function App() {
       type: assignment.type || 'quiz',
       duration: assignment.duration || 0,
       lessonId: assignment.lesson || null,
+      dueAt: assignment.dueAt ? new Date(assignment.dueAt).toISOString().slice(0, 16) : '',
       questions: Array.isArray(assignment.questions) && assignment.questions.length
         ? assignment.questions.map(item => ({
             question: item.question || '',
@@ -1258,6 +1263,7 @@ function App() {
       type: 'quiz',
       duration: 0,
       lessonId: null,
+      dueAt: '',
       questions: [{ question: '', options: ['', '', '', ''], correctOptionIndex: 0 }]
     })
   }
@@ -1274,6 +1280,7 @@ function App() {
       questions: editAssignmentData.questions || [],
       duration: Number(editAssignmentData.duration) || 0,
       lessonId: editAssignmentData.lessonId || null,
+      dueAt: editAssignmentData.dueAt || null,
       ...(assignmentOverride || {})
     }
 
@@ -1284,7 +1291,8 @@ function App() {
         type: payload.type,
         questions: payload.questions,
         duration: payload.duration,
-        lessonId: payload.lessonId
+        lessonId: payload.lessonId,
+        dueAt: payload.dueAt
       })
 
       const updated = response.data?.assignment
