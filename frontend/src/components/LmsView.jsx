@@ -202,39 +202,46 @@ const LmsView = ({
     setActiveTestTimes(times)
   }, [assignments])
 
-  const [uploadingVideos, setUploadingVideos] = useState({})
-  const [uploadedVideoUrls, setUploadedVideoUrls] = useState({})
+  const [pendingVideoFiles, setPendingVideoFiles] = useState({})
+  const [submittingAssignments, setSubmittingAssignments] = useState({})
 
-  const handleVideoUpload = async (assignmentId, file) => {
+  const handleVideoFileSelect = (assignmentId, file) => {
     if (!file) return
-
-    setUploadingVideos(prev => ({ ...prev, [assignmentId]: true }))
-    try {
-      const videoUrl = await onUploadSubmissionVideo?.(file)
-      if (videoUrl) {
-        setUploadedVideoUrls(prev => ({ ...prev, [assignmentId]: videoUrl }))
-      }
-    } catch (error) {
-      // errors handled in parent
-    } finally {
-      setUploadingVideos(prev => ({ ...prev, [assignmentId]: false }))
-    }
+    setPendingVideoFiles(prev => ({ ...prev, [assignmentId]: file }))
   }
 
   const handleTextSubmit = async (assignmentId) => {
-    const videoUrl = uploadedVideoUrls[assignmentId] || ''
-    await onSubmitAssignment?.(assignmentId, videoUrl)
-    localStorage.removeItem(`test_start_${assignmentId}`)
-    setActiveTestTimes(prev => {
-      const next = { ...prev }
-      delete next[assignmentId]
-      return next
-    })
-    setUploadedVideoUrls(prev => {
-      const next = { ...prev }
-      delete next[assignmentId]
-      return next
-    })
+    const pendingFile = pendingVideoFiles[assignmentId] || null
+    let fileUrl = ''
+
+    setSubmittingAssignments(prev => ({ ...prev, [assignmentId]: true }))
+    try {
+      // Upload video first if a file was selected
+      if (pendingFile) {
+        console.log('[LmsView] Uploading video before submit:', pendingFile.name)
+        fileUrl = await onUploadSubmissionVideo?.(pendingFile) || ''
+        console.log('[LmsView] Upload result fileUrl:', fileUrl)
+      }
+
+      // Now submit assignment with content + fileUrl
+      console.log('[LmsView] Submitting assignment:', assignmentId, 'fileUrl:', fileUrl)
+      await onSubmitAssignment?.(assignmentId, fileUrl)
+
+      // Clean up
+      localStorage.removeItem(`test_start_${assignmentId}`)
+      setActiveTestTimes(prev => {
+        const next = { ...prev }
+        delete next[assignmentId]
+        return next
+      })
+      setPendingVideoFiles(prev => {
+        const next = { ...prev }
+        delete next[assignmentId]
+        return next
+      })
+    } finally {
+      setSubmittingAssignments(prev => ({ ...prev, [assignmentId]: false }))
+    }
   }
 
   const [isCreateAssignmentOpen, setIsCreateAssignmentOpen] = useState(false)
@@ -1425,16 +1432,13 @@ const LmsView = ({
                                       type="file"
                                       accept="video/*"
                                       className="text-[13px] font-semibold text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-[13px] file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
-                                      onChange={e => handleVideoUpload(assignment._id, e.target.files[0])}
-                                      disabled={uploadingVideos[assignment._id]}
+                                      onChange={e => handleVideoFileSelect(assignment._id, e.target.files[0])}
+                                      disabled={submittingAssignments[assignment._id]}
                                     />
-                                    {uploadingVideos[assignment._id] && (
-                                      <span className="text-[13px] font-bold text-blue-600 animate-pulse">⏳ Đang tải video lên...</span>
-                                    )}
                                   </div>
-                                  {uploadedVideoUrls[assignment._id] && (
-                                    <div className="mt-2 text-[13px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 inline-block self-start">
-                                      ✓ Đã tải lên video: <a href={uploadedVideoUrls[assignment._id]} target="_blank" rel="noopener noreferrer" className="underline hover:text-emerald-700">Xem video đã tải</a>
+                                  {pendingVideoFiles[assignment._id] && (
+                                    <div className="mt-2 text-[13px] font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 inline-block self-start">
+                                      📎 Đã chọn: {pendingVideoFiles[assignment._id].name}
                                     </div>
                                   )}
                                 </div>
@@ -1442,9 +1446,9 @@ const LmsView = ({
                                 <button
                                   className="inline-flex cursor-pointer self-start items-center justify-center gap-2 h-11 px-6 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold transition-all disabled:opacity-50"
                                   onClick={() => handleTextSubmit(assignment._id)}
-                                  disabled={uploadingVideos[assignment._id]}
+                                  disabled={submittingAssignments[assignment._id]}
                                 >
-                                  Gửi bài nộp
+                                  {submittingAssignments[assignment._id] ? '⏳ Đang tải lên & nộp bài...' : 'Gửi bài nộp'}
                                 </button>
                               </div>
                             )}
