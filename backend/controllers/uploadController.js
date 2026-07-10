@@ -86,7 +86,7 @@ const signVideoUpload = catchAsync(async (req, res) => {
 
   const timestamp = Math.round(Date.now() / 1000);
   const folder = config.cloudinary.folder || 'kns';
-  const paramsToSign = { folder, resource_type: 'video', timestamp };
+  const paramsToSign = { folder, timestamp };
 
   const signature = cloudinary.utils.api_sign_request(
     paramsToSign,
