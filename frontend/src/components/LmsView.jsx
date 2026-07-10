@@ -106,11 +106,13 @@ const LmsView = ({
   onEditAssignmentCancel,
   onUpdateAssignment,
   onDeleteAssignment,
-  onUploadSubmissionVideo
+  onUploadSubmissionVideo,
+  onUploadVideoFile
 }) => {
   const { showWarning } = useUI()
   const [quizDrafts, setQuizDrafts] = useState({})
   const [activeTestTimes, setActiveTestTimes] = useState({})
+  const [videoUploadProgress, setVideoUploadProgress] = useState(null)
 
   const startTest = (assignmentId, durationMinutes) => {
     const startTime = Date.now()
@@ -1002,10 +1004,29 @@ const LmsView = ({
                               <label className={ghostButtonClass}>
                                 <Film size={18} />
                                 <span>Tải video lên</span>
-                                <input type="file" className="hidden" accept="video/mp4,video/webm,.mp4,.webm,.mov,.ogg" onChange={event => { const file = event.target.files?.[0]; if (file) onEditLessonChange({ ...editLessonData, videoFile: file }); }} />
+                                <input type="file" className="hidden" accept="video/mp4,video/webm,.mp4,.webm,.mov,.ogg" onChange={async event => { 
+                                  const file = event.target.files?.[0]; 
+                                  if (file && onUploadVideoFile) { 
+                                    setVideoUploadProgress(0);
+                                    try {
+                                      const url = await onUploadVideoFile(file, setVideoUploadProgress);
+                                      onEditLessonChange({ ...editLessonData, videoUrl: url, videoFile: null });
+                                    } catch (err) {
+                                      alert("Lỗi upload video: " + err.message);
+                                    } finally {
+                                      setVideoUploadProgress(null);
+                                    }
+                                  } 
+                                }} />
                               </label>
                             </div>
-                            {editLessonData?.videoFile && <div className="text-[13px] text-blue-600 font-medium">Đã chọn file: {editLessonData.videoFile.name}</div>}
+                            {videoUploadProgress !== null && (
+                              <div className="w-full mt-2 bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                                <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style={{ width: `${videoUploadProgress}%` }}></div>
+                                <div className="text-[12px] text-slate-500 mt-1">Đang tải video lên: {videoUploadProgress}%</div>
+                              </div>
+                            )}
+                            {editLessonData?.videoFile && videoUploadProgress === null && <div className="text-[13px] text-blue-600 font-medium">Đã chọn file: {editLessonData.videoFile.name}</div>}
                           </FormField>
                           <FormField label="URL Ảnh nền (Tùy chọn)" hint="Link ảnh bìa của bài học">
                             <div className="flex gap-2">
@@ -1050,10 +1071,29 @@ const LmsView = ({
                               <label className={ghostButtonClass}>
                                 <Film size={18} />
                                 <span>Tải video lên</span>
-                                <input type="file" className="hidden" accept="video/mp4,video/webm,.mp4,.webm,.mov,.ogg" onChange={event => { const file = event.target.files?.[0]; if (file) onNewLessonDataChange({ ...newLessonData, videoFile: file }); }} />
+                                <input type="file" className="hidden" accept="video/mp4,video/webm,.mp4,.webm,.mov,.ogg" onChange={async event => { 
+                                  const file = event.target.files?.[0]; 
+                                  if (file && onUploadVideoFile) { 
+                                    setVideoUploadProgress(0);
+                                    try {
+                                      const url = await onUploadVideoFile(file, setVideoUploadProgress);
+                                      onNewLessonDataChange({ ...newLessonData, videoUrl: url, videoFile: null });
+                                    } catch (err) {
+                                      alert("Lỗi upload video: " + err.message);
+                                    } finally {
+                                      setVideoUploadProgress(null);
+                                    }
+                                  } 
+                                }} />
                               </label>
                             </div>
-                            {newLessonData?.videoFile && <div className="text-[13px] text-blue-600 font-medium">Đã chọn file: {newLessonData.videoFile.name}</div>}
+                            {videoUploadProgress !== null && (
+                              <div className="w-full mt-2 bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                                <div className="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style={{ width: `${videoUploadProgress}%` }}></div>
+                                <div className="text-[12px] text-slate-500 mt-1">Đang tải video lên: {videoUploadProgress}%</div>
+                              </div>
+                            )}
+                            {newLessonData?.videoFile && videoUploadProgress === null && <div className="text-[13px] text-blue-600 font-medium">Đã chọn file: {newLessonData.videoFile.name}</div>}
                           </FormField>
                           <FormField label="URL Ảnh nền (Tùy chọn)" hint="Link ảnh bìa của bài học">
                             <div className="flex gap-2">

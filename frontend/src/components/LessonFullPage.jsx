@@ -391,6 +391,7 @@ const LessonFullPage = ({
   const isDirectVideo = useMemo(() => {
     const url = lesson?.videoUrl || ''
     if (!url) return false
+    if (url.includes('cloudinary.com')) return true
     return /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url)
   }, [lesson?.videoUrl])
 
