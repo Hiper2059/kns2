@@ -1356,9 +1356,14 @@ const LessonFullPage = ({
                                       disabled={submittingAssignments[assignment._id]}
                                     />
                                   </div>
-                                  {pendingVideoFiles[assignment._id] && (
-                                    <div className="mt-2 text-[13px] font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 inline-block self-start">
-                                      📎 Đã chọn: {pendingVideoFiles[assignment._id].name}
+                                                                  {pendingVideoFiles[assignment._id] && (
+                                    <div className="flex flex-col gap-2 mt-2">
+                                      <div className="text-[13px] font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 inline-block self-start">
+                                        📎 Đã chọn: {pendingVideoFiles[assignment._id].name}
+                                      </div>
+                                      <div className="rounded-lg overflow-hidden aspect-video border border-slate-200 bg-black max-w-sm">
+                                        <video src={URL.createObjectURL(pendingVideoFiles[assignment._id])} controls className="w-full h-full" />
+                                      </div>
                                     </div>
                                   )}
                                 </div>
