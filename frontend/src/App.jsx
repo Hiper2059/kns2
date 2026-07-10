@@ -1684,6 +1684,7 @@ function App() {
       formData.append('timestamp', timestamp);
       formData.append('signature', signature);
       formData.append('folder', folder);
+      formData.append('resource_type', 'video');
 
       try {
         cloudinaryResponse = await axios.post(
