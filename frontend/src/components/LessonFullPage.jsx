@@ -112,7 +112,10 @@ const LessonFullPage = ({
   onUpdateAssignment,
   assignmentDrafts,
   onAssignmentDraftChange,
-  onSubmitAssignment
+  onSubmitAssignment,
+  assignmentSubmissions,
+  onLoadAssignmentSubmissions,
+  onGradeSubmission
 }) => {
   const { showWarning, showError, showSuccess } = useUI()
   const [quizDrafts, setQuizDrafts] = useState({})
@@ -1237,6 +1240,7 @@ const LessonFullPage = ({
                         const isTestStarted = activeTestTimes[assignment._id] !== undefined
                         const hasSubmitted = Boolean(assignment.mySubmission)
                         const isTimed = assignment.duration > 0
+                        const isTeacherOrAdmin = currentRole === 'teacher' || currentRole === 'admin'
 
                         return (
                           <div key={assignment._id} className="flex flex-col gap-4 p-6 bg-white border border-slate-200 rounded-2xl shadow-sm">
@@ -1390,6 +1394,82 @@ const LessonFullPage = ({
                                 >
                                   Nộp trắc nghiệm
                                 </button>
+                              </div>
+                            )}
+
+                            {isTeacherOrAdmin && (
+                              <div className="mt-4 border-t border-slate-100 pt-4">
+                                <button
+                                  type="button"
+                                  className="inline-flex items-center justify-center gap-1.5 h-9 px-4 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 text-[13px] font-bold transition-all cursor-pointer"
+                                  onClick={() => onLoadAssignmentSubmissions?.(assignment._id)}
+                                >
+                                  👁️ Xem danh sách bài nộp của học viên
+                                </button>
+
+                                {Array.isArray(assignmentSubmissions?.[assignment._id]) && (
+                                  <div className="mt-4 flex flex-col gap-4 pl-4 border-l-2 border-blue-100">
+                                    <h5 className="text-[14px] font-black text-slate-800">Danh sách bài làm đã nộp ({assignmentSubmissions[assignment._id].length}):</h5>
+                                    {assignmentSubmissions[assignment._id].length === 0 ? (
+                                      <p className="text-[13px] font-medium text-slate-500 italic">Chưa có học sinh nào nộp bài.</p>
+                                    ) : (
+                                      assignmentSubmissions[assignment._id].map(sub => {
+                                        const isSubGraded = sub.status === 'graded'
+                                        return (
+                                          <div key={sub._id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col gap-3">
+                                            <div className="flex items-center justify-between gap-3 text-[13px]">
+                                              <strong className="text-slate-800 font-bold">Học sinh: {sub.studentName}</strong>
+                                              <span className={`px-2 py-0.5 rounded-md font-bold ${isSubGraded ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                                {isSubGraded ? `Đã chấm - ${sub.score}đ` : 'Chờ chấm'}
+                                              </span>
+                                            </div>
+                                            {sub.content && (
+                                              <p className="text-[13px] font-medium text-slate-700 bg-white p-3 border border-slate-100 rounded-lg">{sub.content}</p>
+                                            )}
+                                            {sub.fileUrl && (
+                                              <div>
+                                                <span className="block text-[12px] font-bold text-slate-500 mb-1">Video thực hành của học sinh:</span>
+                                                <div className="rounded-lg overflow-hidden aspect-video border border-slate-200 bg-black max-w-sm">
+                                                  <video src={sub.fileUrl} controls className="w-full h-full" />
+                                                </div>
+                                              </div>
+                                            )}
+                                            {isSubGraded && sub.feedback && (
+                                              <div className="text-[13px] font-semibold text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg">
+                                                Nhận xét: {sub.feedback}
+                                              </div>
+                                            )}
+
+                                            <form
+                                              onSubmit={e => {
+                                                e.preventDefault();
+                                                const form = e.target;
+                                                const score = Number(form.elements.score.value);
+                                                const feedback = form.elements.feedback.value;
+                                                onGradeSubmission?.(sub._id, { score, feedback });
+                                              }}
+                                              className="mt-2 pt-3 border-t border-slate-200/60 flex flex-col gap-2.5"
+                                            >
+                                              <div className="grid gap-3 grid-cols-2">
+                                                <div className="flex flex-col gap-1">
+                                                  <label className="text-[11px] font-bold text-slate-500 uppercase">Điểm số (0 - 100)</label>
+                                                  <input required type="number" name="score" min="0" max="100" defaultValue={sub.score !== null ? sub.score : ''} className="h-9 px-3 bg-white border border-slate-200 rounded-lg text-[13px] font-semibold" />
+                                                </div>
+                                                <div className="flex flex-col gap-1">
+                                                  <label className="text-[11px] font-bold text-slate-500 uppercase">Nhận xét bài làm</label>
+                                                  <input type="text" name="feedback" defaultValue={sub.feedback || ''} className="h-9 px-3 bg-white border border-slate-200 rounded-lg text-[13px] font-semibold" placeholder="Nhập nhận xét..." />
+                                                </div>
+                                              </div>
+                                              <button type="submit" className="inline-flex cursor-pointer self-start items-center justify-center h-8 px-4 rounded-lg bg-slate-800 hover:bg-slate-900 text-white font-bold text-[12px] transition-all">
+                                                Lưu điểm số
+                                              </button>
+                                            </form>
+                                          </div>
+                                        )
+                                      })
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
