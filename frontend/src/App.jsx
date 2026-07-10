@@ -1650,12 +1650,17 @@ function App() {
     if (!allowed.includes(file.type) && !allowedExts.includes(ext)) {
       return 'Chỉ hỗ trợ video MP4, WebM, OGG, MOV.'
     }
-    const maxSize = 200 * 1024 * 1024
-    if (file.size > maxSize) return 'Video vượt quá 200MB.'
+    const maxSize = 100 * 1024 * 1024
+    if (file.size > maxSize) return 'Video vượt quá 100MB (giới hạn Cloudinary free).'
     return ''
   }
 
   const uploadVideoFile = async (file, onProgress) => {
+    const errorMsg = validateVideoFile(file)
+    if (errorMsg) {
+      throw new Error(errorMsg)
+    }
+
     // Step 1: Get signed params from backend (lightweight, no file transfer)
     const signResponse = await api.get('/api/uploads/sign-video')
     const { signature, timestamp, folder, cloudName, apiKey } = signResponse.data || {}
@@ -1671,19 +1676,25 @@ function App() {
     formData.append('signature', signature)
     formData.append('folder', folder)
 
-    const cloudinaryResponse = await axios.post(
-      `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`,
-      formData,
-      {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (progressEvent) => {
-          if (onProgress && progressEvent.total) {
-            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            onProgress(percent);
+    let cloudinaryResponse;
+    try {
+      cloudinaryResponse = await axios.post(
+        `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`,
+        formData,
+        {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: (progressEvent) => {
+            if (onProgress && progressEvent.total) {
+              const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+              onProgress(percent);
+            }
           }
         }
-      }
-    )
+      )
+    } catch (err) {
+      const cloudinaryMsg = err.response?.data?.error?.message;
+      throw new Error(cloudinaryMsg || err.message || 'Upload video lên Cloudinary thất bại.');
+    }
 
     let url = cloudinaryResponse.data?.secure_url || ''
     if (url && url.includes('cloudinary.com')) {
