@@ -1002,7 +1002,7 @@ const LmsView = ({
                               <label className={ghostButtonClass}>
                                 <Film size={18} />
                                 <span>Tải video lên</span>
-                                <input type="file" className="hidden" accept="video/mp4,video/webm" onChange={event => { const file = event.target.files?.[0]; if (file) onEditLessonChange({ ...editLessonData, videoFile: file }); }} />
+                                <input type="file" className="hidden" accept="video/mp4,video/webm,.mp4,.webm,.mov,.ogg" onChange={event => { const file = event.target.files?.[0]; if (file) onEditLessonChange({ ...editLessonData, videoFile: file }); }} />
                               </label>
                             </div>
                             {editLessonData?.videoFile && <div className="text-[13px] text-blue-600 font-medium">Đã chọn file: {editLessonData.videoFile.name}</div>}
@@ -1050,7 +1050,7 @@ const LmsView = ({
                               <label className={ghostButtonClass}>
                                 <Film size={18} />
                                 <span>Tải video lên</span>
-                                <input type="file" className="hidden" accept="video/mp4,video/webm" onChange={event => { const file = event.target.files?.[0]; if (file) onNewLessonDataChange({ ...newLessonData, videoFile: file }); }} />
+                                <input type="file" className="hidden" accept="video/mp4,video/webm,.mp4,.webm,.mov,.ogg" onChange={event => { const file = event.target.files?.[0]; if (file) onNewLessonDataChange({ ...newLessonData, videoFile: file }); }} />
                               </label>
                             </div>
                             {newLessonData?.videoFile && <div className="text-[13px] text-blue-600 font-medium">Đã chọn file: {newLessonData.videoFile.name}</div>}
