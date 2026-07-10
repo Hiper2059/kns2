@@ -441,7 +441,10 @@ const LmsView = ({
       isExpired
     }
   }
-  const visibleAssignments = (Array.isArray(assignments) ? assignments : []).filter(assignment => !assignment.lesson)
+  const visibleAssignments = (Array.isArray(assignments) ? assignments : []).filter(assignment => {
+    console.log("Assignment:", assignment.title, "lesson:", assignment.lesson, "lessonId:", assignment.lessonId)
+    return !assignment.lesson && !assignment.lessonId
+  })
   const containerRef = useRef(null)
 
   const completedLessonIds = useMemo(() => {
