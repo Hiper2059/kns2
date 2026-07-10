@@ -43,7 +43,10 @@ const imageFileFilter = (req, file, cb) => {
 };
 
 const videoFileFilter = (req, file, cb) => {
-  if (!VIDEO_ALLOWED_TYPES.includes(file.mimetype)) {
+  const allowedExts = ['.mp4', '.webm', '.ogg', '.mov'];
+  const ext = path.extname(file.originalname || '').toLowerCase();
+  
+  if (!VIDEO_ALLOWED_TYPES.includes(file.mimetype) && !allowedExts.includes(ext)) {
     return cb(new Error('Chi ho tro video MP4, WebM, OGG, MOV.'));
   }
   return cb(null, true);
