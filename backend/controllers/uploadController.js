@@ -70,8 +70,13 @@ const uploadVideo = catchAsync(async (req, res) => {
 
     const result = await uploadToCloudinary(filePath, 'video');
 
+    let optimizedUrl = result.secure_url || '';
+    if (optimizedUrl.includes('/upload/') && !optimizedUrl.includes('f_auto')) {
+      optimizedUrl = optimizedUrl.replace('/upload/', '/upload/f_auto,q_auto/');
+    }
+
     res.json({
-      url: result.secure_url,
+      url: optimizedUrl,
       publicId: result.public_id
     });
   } finally {
