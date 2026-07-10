@@ -146,9 +146,11 @@ function App() {
   })
   const [newAssignmentData, setNewAssignmentData] = useState({
     courseId: '',
+    lessonId: null,
     title: '',
     description: '',
     type: 'quiz',
+    duration: 0,
     questions: [
       { question: '', options: ['', '', '', ''], correctOptionIndex: 0 }
     ]
@@ -158,6 +160,8 @@ function App() {
     title: '',
     description: '',
     type: 'quiz',
+    duration: 0,
+    lessonId: null,
     questions: [
       { question: '', options: ['', '', '', ''], correctOptionIndex: 0 }
     ]
@@ -1203,7 +1207,8 @@ function App() {
         description: assignmentPayload.description,
         type: assignmentPayload.type || 'quiz',
         questions: assignmentPayload.questions || [],
-        lessonId: assignmentPayload.lessonId || null
+        lessonId: assignmentPayload.lessonId || null,
+        duration: Number(assignmentPayload.duration) || 0
       })
 
       const created = response.data?.assignment
@@ -1217,6 +1222,7 @@ function App() {
         title: '',
         description: '',
         type: 'quiz',
+        duration: 0,
         questions: [
           { question: '', options: ['', '', '', ''], correctOptionIndex: 0 }
         ]
@@ -1232,6 +1238,8 @@ function App() {
       title: assignment.title || '',
       description: assignment.description || '',
       type: assignment.type || 'quiz',
+      duration: assignment.duration || 0,
+      lessonId: assignment.lesson || null,
       questions: Array.isArray(assignment.questions) && assignment.questions.length
         ? assignment.questions.map(item => ({
             question: item.question || '',
@@ -1248,21 +1256,35 @@ function App() {
       title: '',
       description: '',
       type: 'quiz',
+      duration: 0,
+      lessonId: null,
       questions: [{ question: '', options: ['', '', '', ''], correctOptionIndex: 0 }]
     })
   }
 
-  const handleUpdateAssignment = async assignmentId => {
+  const handleUpdateAssignment = async (assignmentId, assignmentOverride) => {
     if (!assignmentId) {
       return
     }
 
+    const payload = {
+      title: editAssignmentData.title,
+      description: editAssignmentData.description,
+      type: editAssignmentData.type || 'quiz',
+      questions: editAssignmentData.questions || [],
+      duration: Number(editAssignmentData.duration) || 0,
+      lessonId: editAssignmentData.lessonId || null,
+      ...(assignmentOverride || {})
+    }
+
     try {
       const response = await api.patch(`/api/assignments/${assignmentId}`, {
-        title: editAssignmentData.title,
-        description: editAssignmentData.description,
-        type: editAssignmentData.type || 'quiz',
-        questions: editAssignmentData.questions || []
+        title: payload.title,
+        description: payload.description,
+        type: payload.type,
+        questions: payload.questions,
+        duration: payload.duration,
+        lessonId: payload.lessonId
       })
 
       const updated = response.data?.assignment
@@ -2475,6 +2497,16 @@ function App() {
                     onUpdateLesson={handleUpdateLesson}
                     onUploadLessonEditorVideo={handleUploadLessonEditorVideo}
                     onUploadEditLessonEditorVideo={handleUploadEditLessonEditorVideo}
+                    newAssignmentData={newAssignmentData}
+                    onNewAssignmentDataChange={setNewAssignmentData}
+                    onCreateAssignment={handleCreateAssignment}
+                    editAssignmentId={editAssignmentId}
+                    editAssignmentData={editAssignmentData}
+                    onEditAssignmentStart={handleEditAssignmentStart}
+                    onEditAssignmentChange={setEditAssignmentData}
+                    onEditAssignmentCancel={handleEditAssignmentCancel}
+                    onUpdateAssignment={handleUpdateAssignment}
+                    onDeleteAssignment={handleDeleteAssignment}
                   />
                 } />
 
@@ -2515,6 +2547,16 @@ function App() {
                     onUpdateLesson={handleUpdateLesson}
                     onUploadLessonEditorVideo={handleUploadLessonEditorVideo}
                     onUploadEditLessonEditorVideo={handleUploadEditLessonEditorVideo}
+                    newAssignmentData={newAssignmentData}
+                    onNewAssignmentDataChange={setNewAssignmentData}
+                    onCreateAssignment={handleCreateAssignment}
+                    editAssignmentId={editAssignmentId}
+                    editAssignmentData={editAssignmentData}
+                    onEditAssignmentStart={handleEditAssignmentStart}
+                    onEditAssignmentChange={setEditAssignmentData}
+                    onEditAssignmentCancel={handleEditAssignmentCancel}
+                    onUpdateAssignment={handleUpdateAssignment}
+                    onDeleteAssignment={handleDeleteAssignment}
                   />
                 } />
 

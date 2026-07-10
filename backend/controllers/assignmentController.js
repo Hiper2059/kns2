@@ -127,7 +127,7 @@ const listAssignments = catchAsync(async (req, res) => {
 
 const createAssignment = catchAsync(async (req, res) => {
   const { courseId } = req.params;
-  const { title, description, dueAt, type, questions, lessonId } = req.body || {};
+  const { title, description, dueAt, type, questions, lessonId, duration } = req.body || {};
   const trimmedTitle = String(title || '').trim();
   const assignmentType = type === 'quiz' ? 'quiz' : 'text';
   const normalizedQuestions = normalizeQuestions(questions);
@@ -165,7 +165,8 @@ const createAssignment = catchAsync(async (req, res) => {
     questions: assignmentType === 'quiz' ? normalizedQuestions : [],
     dueAt: normalizedDueAt,
     createdBy: req.currentUser._id,
-    createdByName: req.currentUser.username
+    createdByName: req.currentUser.username,
+    duration: Number(duration) || 0
   });
 
   res.status(201).json({ message: 'Da tao bai tap.', assignment: created });
@@ -173,7 +174,7 @@ const createAssignment = catchAsync(async (req, res) => {
 
 const updateAssignment = catchAsync(async (req, res) => {
   const { assignmentId } = req.params;
-  const { title, description, dueAt, type, questions, lessonId } = req.body || {};
+  const { title, description, dueAt, type, questions, lessonId, duration } = req.body || {};
 
   if (!mongoose.Types.ObjectId.isValid(assignmentId)) {
     return res.status(400).json({ message: 'assignmentId khong hop le.' });
@@ -225,6 +226,9 @@ const updateAssignment = catchAsync(async (req, res) => {
       return res.status(400).json({ message: 'Han nop bai khong hop le.' });
     }
     assignment.dueAt = normalizedDueAt;
+  }
+  if (duration !== undefined) {
+    assignment.duration = Number(duration) || 0;
   }
 
   await assignment.save();
