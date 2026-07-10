@@ -1128,19 +1128,19 @@ function App() {
     setAssignmentDrafts(prev => ({ ...prev, [assignmentId]: value }))
   }
 
-  const handleSubmitAssignment = async assignmentId => {
+  const handleSubmitAssignment = async (assignmentId, fileUrl = '') => {
     if (!ensureAuthenticated('nộp bài')) {
       return
     }
 
     const content = (assignmentDrafts[assignmentId] || '').trim()
-    if (!content) {
-      showWarning('Cậu nhập nội dung bài nộp trước nhé!')
+    if (!content && !fileUrl) {
+      showWarning('Cậu nhập nội dung bài làm hoặc tải lên video thực hành trước nhé!')
       return
     }
 
     try {
-      const response = await api.post(`/api/assignments/${assignmentId}/submissions`, { content })
+      const response = await api.post(`/api/assignments/${assignmentId}/submissions`, { content, fileUrl })
       const submission = response.data?.submission
 
       setCourseAssignments(prev =>

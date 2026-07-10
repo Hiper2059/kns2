@@ -207,10 +207,53 @@ const LessonFullPage = ({
     setActiveTestTimes(times)
   }, [assignments])
 
+  const [uploadingVideos, setUploadingVideos] = useState({})
+  const [uploadedVideoUrls, setUploadedVideoUrls] = useState({})
+
+  const handleVideoUpload = async (assignmentId, file) => {
+    if (!file) return
+    const allowed = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime']
+    if (!allowed.includes(file.type)) {
+      showWarning('Chỉ hỗ trợ video MP4, WebM, OGG, MOV.')
+      return
+    }
+    const maxSize = 200 * 1024 * 1024
+    if (file.size > maxSize) {
+      showWarning('Video vượt quá 200MB.')
+      return
+    }
+
+    setUploadingVideos(prev => ({ ...prev, [assignmentId]: true }))
+    try {
+      const formData = new FormData()
+      formData.append('video', file)
+      const response = await api.post('/api/uploads/video', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      const videoUrl = response.data?.url || ''
+      if (videoUrl) {
+        setUploadedVideoUrls(prev => ({ ...prev, [assignmentId]: videoUrl }))
+        showSuccess('Tải lên video thành công!')
+      } else {
+        showError('Không lấy được URL video tải lên.')
+      }
+    } catch (error) {
+      showError(error.response?.data?.message || 'Tải video lên thất bại.')
+    } finally {
+      setUploadingVideos(prev => ({ ...prev, [assignmentId]: false }))
+    }
+  }
+
   const handleTextSubmit = async (assignmentId) => {
-    await onSubmitAssignment?.(assignmentId)
+    const videoUrl = uploadedVideoUrls[assignmentId] || ''
+    await onSubmitAssignment?.(assignmentId, videoUrl)
     localStorage.removeItem(`test_start_${assignmentId}`)
     setActiveTestTimes(prev => {
+      const next = { ...prev }
+      delete next[assignmentId]
+      return next
+    })
+    setUploadedVideoUrls(prev => {
       const next = { ...prev }
       delete next[assignmentId]
       return next
@@ -1283,6 +1326,14 @@ const LessonFullPage = ({
                                 {assignment.mySubmission.content && (
                                   <div className="p-4 bg-white border border-slate-200 rounded-lg text-[14px] font-medium text-slate-700 mt-3">{assignment.mySubmission.content}</div>
                                 )}
+                                {assignment.mySubmission.fileUrl && (
+                                  <div className="mt-3">
+                                    <span className="block text-[13px] font-bold text-slate-500 mb-1.5">Video thực hành đã nộp:</span>
+                                    <div className="rounded-xl overflow-hidden aspect-video border border-slate-200 bg-black max-w-md">
+                                      <video src={assignment.mySubmission.fileUrl} controls className="w-full h-full" />
+                                    </div>
+                                  </div>
+                                )}
                                 {assignment.mySubmission.status === 'graded' && assignment.mySubmission.feedback && (
                                   <div className="mt-3 p-4 bg-blue-50 border border-blue-100 rounded-lg text-[14px] font-bold text-blue-800">
                                     Kết quả: {assignment.mySubmission.feedback}
@@ -1299,9 +1350,32 @@ const LessonFullPage = ({
                                   onChange={event => onAssignmentDraftChange?.(assignment._id, event.target.value)}
                                   placeholder="Nhập nội dung bài làm của bạn..."
                                 />
+                                
+                                <div className="flex flex-col gap-2">
+                                  <label className="text-[13px] font-bold text-slate-700">Tải lên Video thực hành (Không bắt buộc):</label>
+                                  <div className="flex items-center gap-3 flex-wrap">
+                                    <input
+                                      type="file"
+                                      accept="video/*"
+                                      className="text-[13px] font-semibold text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-[13px] file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+                                      onChange={e => handleVideoUpload(assignment._id, e.target.files[0])}
+                                      disabled={uploadingVideos[assignment._id]}
+                                    />
+                                    {uploadingVideos[assignment._id] && (
+                                      <span className="text-[13px] font-bold text-blue-600 animate-pulse">⏳ Đang tải video lên...</span>
+                                    )}
+                                  </div>
+                                  {uploadedVideoUrls[assignment._id] && (
+                                    <div className="mt-2 text-[13px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 inline-block self-start">
+                                      ✓ Đã tải lên video: <a href={uploadedVideoUrls[assignment._id]} target="_blank" rel="noopener noreferrer" className="underline hover:text-emerald-700">Xem video đã tải</a>
+                                    </div>
+                                  )}
+                                </div>
+
                                 <button
-                                  className="inline-flex cursor-pointer self-start items-center justify-center gap-2 h-11 px-6 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold transition-all"
+                                  className="inline-flex cursor-pointer self-start items-center justify-center gap-2 h-11 px-6 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold transition-all disabled:opacity-50"
                                   onClick={() => handleTextSubmit(assignment._id)}
+                                  disabled={uploadingVideos[assignment._id]}
                                 >
                                   Gửi bài nộp
                                 </button>
