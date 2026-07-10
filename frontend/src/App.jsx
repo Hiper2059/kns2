@@ -1391,6 +1391,7 @@ function App() {
         if (course?._id) {
           setSelectedCourse(course)
           await fetchCourseLessons(course._id)
+          await fetchCourseAssignments(course._id)
         }
       } catch (error) {
         const message = error.response?.data?.message || 'Không tải được bài học.'
@@ -1402,7 +1403,7 @@ function App() {
         setLessonRouteLoading(false)
       }
     },
-    [fetchCourseLessons, navigate, showError]
+    [fetchCourseLessons, fetchCourseAssignments, navigate, showError]
   )
 
   useEffect(() => {
