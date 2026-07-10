@@ -213,6 +213,7 @@ const LessonFullPage = ({
 
   const [pendingVideoFiles, setPendingVideoFiles] = useState({})
   const [submittingAssignments, setSubmittingAssignments] = useState({})
+  const [resubmittingIds, setResubmittingIds] = useState({})
 
   const handleVideoFileSelect = (assignmentId, file) => {
     if (!file) return
@@ -244,6 +245,11 @@ const LessonFullPage = ({
         return next
       })
       setPendingVideoFiles(prev => {
+        const next = { ...prev }
+        delete next[assignmentId]
+        return next
+      })
+      setResubmittingIds(prev => {
         const next = { ...prev }
         delete next[assignmentId]
         return next
@@ -1307,7 +1313,7 @@ const LessonFullPage = ({
                               })()}
                             </div>
 
-                            {assignment.mySubmission && (
+                            {assignment.mySubmission && !resubmittingIds[assignment._id] && (
                               <div className="mt-2 p-5 bg-slate-50 border border-slate-200 rounded-xl">
                                 <div className="flex items-center justify-between text-[14px] mb-3">
                                   <span className="font-bold text-slate-600">Trạng thái bài làm:</span>
@@ -1330,13 +1336,25 @@ const LessonFullPage = ({
                                 )}
                                 {assignment.mySubmission.status === 'graded' && assignment.mySubmission.feedback && (
                                   <div className="mt-3 p-4 bg-blue-50 border border-blue-100 rounded-lg text-[14px] font-bold text-blue-800">
-                                    Kết quả: {assignment.mySubmission.feedback}
+                                    Nhận xét của giáo viên: {assignment.mySubmission.feedback}
                                   </div>
+                                )}
+                                {currentUser && currentRole !== 'teacher' && currentRole !== 'admin' && (
+                                  <button
+                                    type="button"
+                                    className="mt-4 inline-flex cursor-pointer items-center justify-center h-9 px-4 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-[13px] font-bold transition-all"
+                                    onClick={() => {
+                                      setResubmittingIds(prev => ({ ...prev, [assignment._id]: true }));
+                                      onAssignmentDraftChange?.(assignment._id, assignment.mySubmission.content || '');
+                                    }}
+                                  >
+                                    Nộp lại bài làm khác
+                                  </button>
                                 )}
                               </div>
                             )}
 
-                            {currentUser && currentRole !== 'teacher' && currentRole !== 'admin' && !isQuiz && (!isTimed || isTestStarted) && !assignment.mySubmission && (
+                            {currentUser && currentRole !== 'teacher' && currentRole !== 'admin' && !isQuiz && (!isTimed || isTestStarted) && (!assignment.mySubmission || resubmittingIds[assignment._id]) && (
                               <div className="mt-4 flex flex-col gap-4">
                                 <textarea
                                   className="w-full min-h-[120px] p-4 bg-white border border-slate-200 rounded-xl text-[14px] font-medium text-slate-800 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 resize-y"
@@ -1356,7 +1374,7 @@ const LessonFullPage = ({
                                       disabled={submittingAssignments[assignment._id]}
                                     />
                                   </div>
-                                                                  {pendingVideoFiles[assignment._id] && (
+                                  {pendingVideoFiles[assignment._id] && (
                                     <div className="flex flex-col gap-2 mt-2">
                                       <div className="text-[13px] font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 inline-block self-start">
                                         📎 Đã chọn: {pendingVideoFiles[assignment._id].name}
@@ -1368,13 +1386,29 @@ const LessonFullPage = ({
                                   )}
                                 </div>
 
-                                <button
-                                  className="inline-flex cursor-pointer self-start items-center justify-center gap-2 h-11 px-6 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold transition-all disabled:opacity-50"
-                                  onClick={() => handleTextSubmit(assignment._id)}
-                                  disabled={submittingAssignments[assignment._id]}
-                                >
-                                  {submittingAssignments[assignment._id] ? '⏳ Đang tải lên & nộp bài...' : 'Gửi bài nộp'}
-                                </button>
+                                <div className="flex items-center gap-3">
+                                  <button
+                                    className="inline-flex cursor-pointer items-center justify-center gap-2 h-11 px-6 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold transition-all disabled:opacity-50"
+                                    onClick={() => handleTextSubmit(assignment._id)}
+                                    disabled={submittingAssignments[assignment._id]}
+                                  >
+                                    {submittingAssignments[assignment._id] ? '⏳ Đang tải lên & nộp bài...' : 'Gửi bài nộp'}
+                                  </button>
+                                  {resubmittingIds[assignment._id] && (
+                                    <button
+                                      type="button"
+                                      className="inline-flex cursor-pointer items-center justify-center gap-2 h-11 px-6 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold transition-all"
+                                      onClick={() => setResubmittingIds(prev => {
+                                        const next = { ...prev };
+                                        delete next[assignment._id];
+                                        return next;
+                                      })}
+                                      disabled={submittingAssignments[assignment._id]}
+                                    >
+                                      Hủy nộp lại
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             )}
 
