@@ -1644,7 +1644,11 @@ function App() {
   const validateVideoFile = file => {
     if (!file) return ''
     const allowed = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime']
-    if (!allowed.includes(file.type)) return 'Chỉ hỗ trợ video MP4, WebM, OGG, MOV.'
+    const allowedExts = ['.mp4', '.webm', '.ogg', '.mov']
+    const ext = '.' + String(file.name || '').split('.').pop().toLowerCase()
+    if (!allowed.includes(file.type) && !allowedExts.includes(ext)) {
+      return 'Chỉ hỗ trợ video MP4, WebM, OGG, MOV.'
+    }
     const maxSize = 200 * 1024 * 1024
     if (file.size > maxSize) return 'Video vượt quá 200MB.'
     return ''
