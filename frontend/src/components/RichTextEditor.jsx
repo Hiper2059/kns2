@@ -68,22 +68,51 @@ const RichTextEditor = ({ value, onChange, placeholder }) => {
   const uploadToApi = async (file, type) => {
     if (!file) return null
     const token = localStorage.getItem('zmate_access_token')
-    const formData = new FormData()
-    formData.append(type, file)
+    const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '')
+
     try {
-      const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5000' : '')
+      if (type === 'video') {
+        // Direct Cloudinary upload to bypass Render 30s timeout
+        const signRes = await axios.get(`${API_BASE}/api/uploads/sign-video`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        })
+        const { signature, timestamp, folder, cloudName, apiKey } = signRes.data || {}
+        if (!cloudName || !apiKey || !signature) throw new Error('Không lấy được thông tin upload.')
+
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('api_key', apiKey)
+        formData.append('timestamp', timestamp)
+        formData.append('signature', signature)
+        formData.append('folder', folder)
+        formData.append('resource_type', 'video')
+
+        const res = await axios.post(
+          `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`,
+          formData,
+          {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            onUploadProgress: progressEvent => {
+              const percent = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1))
+              setVideoProgress(percent)
+            }
+          }
+        )
+        setTimeout(() => setVideoProgress(0), 800)
+        return res.data?.secure_url || null
+      }
+
+      // Image upload still goes through backend (small files, no timeout issue)
+      const formData = new FormData()
+      formData.append(type, file)
       const res = await axios.post(`${API_BASE}/api/uploads/${type}`, formData, {
         headers: token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } : { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: progressEvent => {
           const percent = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1))
-          if (type === 'image') setImageProgress(percent)
-          if (type === 'video') setVideoProgress(percent)
+          setImageProgress(percent)
         }
       })
-      setTimeout(() => {
-        if (type === 'image') setImageProgress(0)
-        if (type === 'video') setVideoProgress(0)
-      }, 800)
+      setTimeout(() => setImageProgress(0), 800)
       return res.data?.url || null
     } catch (err) {
       console.error('Upload error', err)

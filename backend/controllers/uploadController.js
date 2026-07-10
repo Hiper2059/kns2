@@ -79,4 +79,27 @@ const uploadVideo = catchAsync(async (req, res) => {
   }
 });
 
-module.exports = { uploadImage, uploadVideo };
+const signVideoUpload = catchAsync(async (req, res) => {
+  if (!isCloudinaryConfigured()) {
+    return res.status(500).json({ message: 'Cloudinary chua duoc cau hinh.' });
+  }
+
+  const timestamp = Math.round(Date.now() / 1000);
+  const folder = config.cloudinary.folder || 'kns';
+  const paramsToSign = { folder, resource_type: 'video', timestamp };
+
+  const signature = cloudinary.utils.api_sign_request(
+    paramsToSign,
+    config.cloudinary.apiSecret
+  );
+
+  res.json({
+    signature,
+    timestamp,
+    folder,
+    cloudName: config.cloudinary.cloudName,
+    apiKey: config.cloudinary.apiKey
+  });
+});
+
+module.exports = { uploadImage, uploadVideo, signVideoUpload };

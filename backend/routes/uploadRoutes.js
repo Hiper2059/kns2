@@ -1,5 +1,5 @@
 const express = require('express');
-const { uploadImage, uploadVideo } = require('../controllers/uploadController');
+const { uploadImage, uploadVideo, signVideoUpload } = require('../controllers/uploadController');
 const { requireActiveUser } = require('../middleware/auth');
 const { imageUpload, videoUpload } = require('../middleware/upload');
 
@@ -23,4 +23,7 @@ router.post('/video', requireActiveUser, (req, res, next) => {
   });
 }, uploadVideo);
 
+router.get('/sign-video', requireActiveUser, signVideoUpload);
+
 module.exports = router;
+
