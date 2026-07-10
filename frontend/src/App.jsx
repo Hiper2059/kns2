@@ -1661,19 +1661,62 @@ function App() {
       throw new Error(errorMsg)
     }
 
-    const formData = new FormData()
-    formData.append('video', file)
+    // Step 1: Get signed params from backend
+    const signResponse = await api.get('/api/uploads/sign-video')
+    const { signature, timestamp, folder, cloudName, apiKey } = signResponse.data || {}
+    if (!cloudName || !apiKey || !signature) {
+      throw new Error('Không lấy được thông tin upload từ server.')
+    }
 
-    const response = await api.post('/api/uploads/video', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-      onUploadProgress: (progressEvent) => {
-        if (onProgress && progressEvent.total) {
-          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          onProgress(percent);
-        }
+    // Step 2: Upload file directly to Cloudinary in chunks (bypasses Render 30s timeout and 100MB limit)
+    const uniqueUploadId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const chunkSize = 20 * 1024 * 1024; // 20MB chunks
+    const totalSize = file.size;
+    let start = 0;
+    let cloudinaryResponse;
+
+    while (start < totalSize) {
+      const end = Math.min(start + chunkSize, totalSize);
+      const chunk = file.slice(start, end);
+      const formData = new FormData();
+      formData.append('file', chunk);
+      formData.append('api_key', apiKey);
+      formData.append('timestamp', timestamp);
+      formData.append('signature', signature);
+      formData.append('folder', folder);
+
+      try {
+        cloudinaryResponse = await axios.post(
+          `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`,
+          formData,
+          {
+            headers: {
+              'X-Unique-Upload-Id': uniqueUploadId,
+              'Content-Range': `bytes ${start}-${end - 1}/${totalSize}`,
+            },
+            onUploadProgress: (progressEvent) => {
+              if (onProgress) {
+                const chunkLoaded = progressEvent.loaded || 0;
+                const totalLoaded = start + chunkLoaded;
+                const percent = Math.round((totalLoaded * 100) / totalSize);
+                onProgress(Math.min(percent, 100));
+              }
+            }
+          }
+        );
+      } catch (err) {
+        const cloudinaryMsg = err.response?.data?.error?.message;
+        throw new Error(cloudinaryMsg || err.message || 'Upload video chunk thất bại.');
       }
-    })
-    return response.data?.url || ''
+      start = end;
+    }
+
+    let optimizedUrl = cloudinaryResponse?.data?.secure_url || '';
+    if (optimizedUrl.includes('/upload/') && !optimizedUrl.includes('f_auto')) {
+      optimizedUrl = optimizedUrl.replace('/upload/', '/upload/f_auto,q_auto/');
+    }
+
+    return optimizedUrl;
   }
 
   const uploadImageFile = async file => {
