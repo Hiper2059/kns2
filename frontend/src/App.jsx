@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom'
 import { createApiClient } from './api/apiClient'
+import axios from 'axios'
 import AppShell from './components/AppShell'
 import { useAuth } from './context/AuthContext'
 import { useUI } from './context/UIContext'
@@ -1654,7 +1655,7 @@ function App() {
     return ''
   }
 
-  const uploadVideoFile = async file => {
+  const uploadVideoFile = async (file, onProgress) => {
     // Step 1: Get signed params from backend (lightweight, no file transfer)
     const signResponse = await api.get('/api/uploads/sign-video')
     const { signature, timestamp, folder, cloudName, apiKey } = signResponse.data || {}
@@ -1662,27 +1663,29 @@ function App() {
       throw new Error('Không lấy được thông tin upload từ server.')
     }
 
-    // Step 2: Upload file directly to Cloudinary (bypasses Render 30s timeout)
+    // Step 2: Upload file directly to Cloudinary using Axios to track progress
     const formData = new FormData()
     formData.append('file', file)
     formData.append('api_key', apiKey)
     formData.append('timestamp', timestamp)
     formData.append('signature', signature)
     formData.append('folder', folder)
-    formData.append('resource_type', 'video')
 
-    const cloudinaryResponse = await fetch(
+    const cloudinaryResponse = await axios.post(
       `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`,
-      { method: 'POST', body: formData }
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          if (onProgress && progressEvent.total) {
+            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            onProgress(percent);
+          }
+        }
+      }
     )
 
-    if (!cloudinaryResponse.ok) {
-      const errorData = await cloudinaryResponse.json().catch(() => ({}))
-      throw new Error(errorData?.error?.message || 'Upload video lên Cloudinary thất bại.')
-    }
-
-    const result = await cloudinaryResponse.json()
-    return result.secure_url || ''
+    return cloudinaryResponse.data?.secure_url || ''
   }
 
   const uploadImageFile = async file => {
