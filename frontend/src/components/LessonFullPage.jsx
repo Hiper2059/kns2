@@ -309,9 +309,6 @@ const LessonFullPage = ({
 
   const sortedLessons = [...lessons].sort((a, b) => (a.order || 1) - (b.order || 1))
   const currentLessonId = String(lesson?._id || '')
-  const lessonAssignments = useMemo(() => {
-    return (Array.isArray(assignments) ? assignments : []).filter(assignment => String(assignment.lesson) === String(lesson?._id))
-  }, [assignments, lesson?._id])
 
   const handleLessonSelect = (lessonId) => {
     const nextLesson = sortedLessons.find(item => String(item._id) === lessonId)
