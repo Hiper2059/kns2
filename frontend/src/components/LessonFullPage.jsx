@@ -151,6 +151,11 @@ const LessonFullPage = ({
     return Array.isArray(assignments) ? assignments.filter(a => String(a.lesson || a.lessonId) === String(lesson?._id)) : []
   }, [assignments, lesson?._id])
 
+  const allAssignmentsSubmitted = useMemo(() => {
+    if (lessonAssignments.length === 0) return true
+    return lessonAssignments.every(assignment => Boolean(assignment.mySubmission))
+  }, [lessonAssignments])
+
   const handleQuizAnswer = (assignmentId, questionIndex, optionIndex) => {
     setQuizDrafts(prev => {
       const nextAnswers = [...(prev[assignmentId] || [])]
