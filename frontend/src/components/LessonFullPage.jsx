@@ -721,7 +721,17 @@ const LessonFullPage = ({
       setHasSeeked(false)
     }
 
-    const src = lesson?.videoUrl || ''
+    const getOptimizedVideoUrl = (url) => {
+      if (!url) return ''
+      if (url.includes('cloudinary.com') && url.includes('/upload/')) {
+        if (!url.includes('f_auto')) {
+          return url.replace('/upload/', '/upload/f_auto,q_auto/')
+        }
+      }
+      return url
+    }
+
+    const src = getOptimizedVideoUrl(lesson?.videoUrl || '')
 
     if (isHls) {
       if (Hls.isSupported()) {
