@@ -2567,6 +2567,7 @@ function App() {
                     onUpdateAssignment={handleUpdateAssignment}
                     onDeleteAssignment={handleDeleteAssignment}
                     onUploadSubmissionVideo={handleUploadSubmissionVideo}
+                    onUploadVideoFile={uploadVideoFile}
                   />
                 } />
 
@@ -2618,6 +2619,7 @@ function App() {
                     onUpdateAssignment={handleUpdateAssignment}
                     onDeleteAssignment={handleDeleteAssignment}
                     onUploadSubmissionVideo={handleUploadSubmissionVideo}
+                    onUploadVideoFile={uploadVideoFile}
                   />
                 } />
 
